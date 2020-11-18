@@ -19,6 +19,8 @@ import io.vertx.ext.web.RoutingContext;
 @Singleton
 public class Routes {
 
+    private static final String EMPTY_RESPONSE = "{}";
+
     private final GitHubService gitHubService;
 
     private final GitHubEventDispatcher gitHubEventDispatcher;
@@ -37,12 +39,16 @@ public class Routes {
             @Header(X_GITHUB_EVENT) String gitHubEvent) {
 
         JsonObject body = routingContext.getBodyAsJson();
+        if (body == null) {
+            return EMPTY_RESPONSE;
+        }
+
         Long installationId = extractInstallationId(body);
 
         gitHubEventDispatcher.dispatch(gitHubService.getInstallationClient(installationId), gitHubEvent,
                 body.getString("action"), routingContext.getBodyAsString());
 
-        return "{}";
+        return EMPTY_RESPONSE;
     }
 
     private Long extractInstallationId(JsonObject body) {
