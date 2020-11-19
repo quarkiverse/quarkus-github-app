@@ -7,6 +7,7 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -26,7 +27,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
-import org.jboss.jandex.Type;
+import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.logging.Logger;
 import org.kohsuke.github.GHEventPayload;
 import org.kohsuke.github.GitHub;
@@ -172,12 +173,13 @@ class GithubAppProcessor {
                 String action = eventDefinition.getAction() != null ? eventDefinition.getAction()
                         : (eventSubscriberInstance.value() != null ? eventSubscriberInstance.value().asString() : null);
 
-                MethodInfo methodInfo = eventSubscriberInstance.target().asMethodParameter().method();
-                List<Type> methodParameters = methodInfo.parameters();
-                if (methodParameters.size() != 1 || !methodParameters.get(0).name().equals(eventDefinition.getPayloadType())) {
+                MethodParameterInfo annotatedParameter = eventSubscriberInstance.target().asMethodParameter();
+                MethodInfo methodInfo = annotatedParameter.method();
+                DotName annotatedParameterType = annotatedParameter.method().parameters().get(annotatedParameter.position()).name();
+                if (!eventDefinition.getPayloadType().equals(annotatedParameterType)) {
                     throw new IllegalStateException(
-                            "Method subscribing to a GitHub '" + eventDefinition.getEvent()
-                                    + "' event should have only one parameter of type '" + eventDefinition.getPayloadType()
+                            "Parameter subscribing to a GitHub '" + eventDefinition.getEvent()
+                                    + "' event should be of type '" + eventDefinition.getPayloadType()
                                     + "'. Offending method: " + methodInfo.declaringClass().name() + "#" + methodInfo);
                 }
 
@@ -385,7 +387,8 @@ class GithubAppProcessor {
                 ResultHandle[] parameterValues = new ResultHandle[method.parameters().size()];
 
                 for (short i = 0; i < method.parameters().size(); i++) {
-                    List<AnnotationInstance> parameterAnnotations = parameterAnnotationMapping.get(i);
+                    List<AnnotationInstance> parameterAnnotations = parameterAnnotationMapping.getOrDefault(i,
+                            Collections.emptyList());
                     AnnotatedElement generatedParameterAnnotations = methodCreator.getParameterAnnotations(i);
                     if (parameterAnnotations.stream().anyMatch(ai -> ai.name().equals(eventSubscriberInstance.name()))) {
                         generatedParameterAnnotations.addAnnotation(DotNames.OBSERVES.toString());
