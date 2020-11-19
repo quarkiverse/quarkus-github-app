@@ -36,13 +36,15 @@ public class Routes {
         }
 
         Long installationId = extractInstallationId(body);
+        String repository = extractRepository(body);
 
-        gitHubEventEmitter.fireAsync(new GitHubEvent(installationId, gitHubEvent, body.getString("action"), routingContext.getBodyAsString()));
+        gitHubEventEmitter.fireAsync(new GitHubEvent(installationId, gitHubDelivery, repository, gitHubEvent,
+                body.getString("action"), routingContext.getBodyAsString()));
 
         return EMPTY_RESPONSE;
     }
 
-    private Long extractInstallationId(JsonObject body) {
+    private static Long extractInstallationId(JsonObject body) {
         Long installationId;
 
         JsonObject installation = body.getJsonObject("installation");
@@ -54,5 +56,14 @@ public class Routes {
         }
 
         throw new IllegalStateException("Unable to extract installation id from payload");
+    }
+
+    private static String extractRepository(JsonObject body) {
+        JsonObject repository = body.getJsonObject("repository");
+        if (repository == null) {
+            return null;
+        }
+
+        return repository.getString("full_name");
     }
 }
