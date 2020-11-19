@@ -27,19 +27,21 @@ public class Routes {
     public String handleRequest(RoutingContext routingContext,
             @Header(X_REQUEST_ID) String requestId,
             @Header(X_HUB_SIGNATURE) String hubSignature,
-            @Header(X_GITHUB_DELIVERY) String gitHubDelivery,
-            @Header(X_GITHUB_EVENT) String gitHubEvent) {
+            @Header(X_GITHUB_DELIVERY) String deliveryId,
+            @Header(X_GITHUB_EVENT) String event) {
 
         JsonObject body = routingContext.getBodyAsJson();
+
         if (body == null) {
             return EMPTY_RESPONSE;
         }
 
         Long installationId = extractInstallationId(body);
         String repository = extractRepository(body);
+        GitHubEvent gitHubEvent = new GitHubEvent(installationId, deliveryId, repository, event,
+                body.getString("action"), routingContext.getBodyAsString());
 
-        gitHubEventEmitter.fireAsync(new GitHubEvent(installationId, gitHubDelivery, repository, gitHubEvent,
-                body.getString("action"), routingContext.getBodyAsString()));
+        gitHubEventEmitter.fire(gitHubEvent);
 
         return EMPTY_RESPONSE;
     }

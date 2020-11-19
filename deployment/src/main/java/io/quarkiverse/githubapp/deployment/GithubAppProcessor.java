@@ -1,5 +1,6 @@
 package io.quarkiverse.githubapp.deployment;
 
+import java.io.PrintStream;
 import java.io.Reader;
 import java.io.StringReader;
 import java.lang.annotation.Annotation;
@@ -15,7 +16,7 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import javax.enterprise.event.Event;
-import javax.enterprise.event.ObservesAsync;
+import javax.enterprise.event.Observes;
 import javax.enterprise.util.AnnotationLiteral;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -32,6 +33,9 @@ import org.jboss.logging.Logger;
 import org.kohsuke.github.GHEventPayload;
 import org.kohsuke.github.GitHub;
 
+import io.jsonwebtoken.impl.DefaultJwtBuilder;
+import io.jsonwebtoken.impl.io.RuntimeClasspathSerializerLocator;
+import io.jsonwebtoken.io.JacksonSerializer;
 import io.quarkiverse.githubapp.deployment.DispatchingConfiguration.EventAnnotation;
 import io.quarkiverse.githubapp.deployment.DispatchingConfiguration.EventAnnotationLiteral;
 import io.quarkiverse.githubapp.deployment.DispatchingConfiguration.EventDispatchingConfiguration;
@@ -39,12 +43,12 @@ import io.quarkiverse.githubapp.deployment.DispatchingConfiguration.EventDispatc
 import io.quarkiverse.githubapp.event.Actions;
 import io.quarkiverse.githubapp.runtime.GitHubEvent;
 import io.quarkiverse.githubapp.runtime.Routes;
+import io.quarkiverse.githubapp.runtime.UtilsProducer;
 import io.quarkiverse.githubapp.runtime.github.GitHubService;
 import io.quarkiverse.githubapp.runtime.signing.JwtTokenCreator;
 import io.quarkiverse.githubapp.runtime.signing.PayloadSignatureChecker;
 import io.quarkiverse.githubapp.runtime.smee.SmeeIoForwarder;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.deployment.AutoAddScopeBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
@@ -58,6 +62,8 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.gizmo.AnnotatedElement;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ClassCreator;
@@ -93,12 +99,44 @@ class GithubAppProcessor {
     }
 
     @BuildStep
+    IndexDependencyBuildItem indexGitHubApiJar() {
+        return new IndexDependencyBuildItem("org.kohsuke", "github-api");
+    }
+
+    @BuildStep
+    void registerForReflection(CombinedIndexBuildItem combinedIndex,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
+        // GitHub API
+        for (DotName rootModelObject : GitHubAppDotNames.GH_ROOT_OBJECTS) {
+            reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, rootModelObject.toString()));
+
+            reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true,
+                    combinedIndex.getIndex().getAllKnownSubclasses(rootModelObject).stream()
+                            .map(ci -> ci.name().toString())
+                            .toArray(String[]::new)));
+        }
+
+        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true,
+                GitHubAppDotNames.GH_SIMPLE_OBJECTS.stream().map(DotName::toString).toArray(String[]::new)));
+
+        // Caffeine
+        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true,
+                "com.github.benmanes.caffeine.cache.SSMSA",
+                "com.github.benmanes.caffeine.cache.PSWMS"));
+
+        // JWT
+        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, DefaultJwtBuilder.class,
+                RuntimeClasspathSerializerLocator.class, JacksonSerializer.class));
+    }
+
+    @BuildStep
     void additionalBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         additionalBeans.produce(new AdditionalBeanBuildItem.Builder().addBeanClasses(JwtTokenCreator.class,
                 PayloadSignatureChecker.class,
                 GitHubService.class,
                 SmeeIoForwarder.class,
-                Routes.class)
+                Routes.class,
+                UtilsProducer.class)
                 .setUnremovable()
                 .setDefaultScope(DotNames.SINGLETON)
                 .build());
@@ -106,11 +144,11 @@ class GithubAppProcessor {
 
     @BuildStep
     void generateClasses(CombinedIndexBuildItem combinedIndex,
-            BuildProducer<AutoAddScopeBuildItem> autoAddScope,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
-            BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
         Collection<EventDefinition> allEventDefinitions = getAllEventDefinitions(combinedIndex.getIndex());
 
         // Add the qualifiers as beans
@@ -125,8 +163,8 @@ class GithubAppProcessor {
         generateAnnotationLiterals(classOutput, dispatchingConfiguration);
 
         ClassOutput beanClassOutput = new GeneratedBeanGizmoAdaptor(generatedBeans);
-        generateDispatcher(beanClassOutput, dispatchingConfiguration);
-        generateMultiplexers(beanClassOutput, dispatchingConfiguration);
+        generateDispatcher(beanClassOutput, reflectiveClasses, dispatchingConfiguration);
+        generateMultiplexers(beanClassOutput, reflectiveClasses, dispatchingConfiguration);
     }
 
     private static Collection<EventDefinition> getAllEventDefinitions(IndexView index) {
@@ -239,9 +277,15 @@ class GithubAppProcessor {
         }
     }
 
-    private static void generateDispatcher(ClassOutput beanClassOutput, DispatchingConfiguration dispatchingConfiguration) {
+    private static void generateDispatcher(ClassOutput beanClassOutput,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            DispatchingConfiguration dispatchingConfiguration) {
+        String dispatcherClassName = GitHubEvent.class.getName() + "DispatcherImpl";
+
+        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, dispatcherClassName));
+
         ClassCreator dispatcherClassCreator = ClassCreator.builder().classOutput(beanClassOutput)
-                .className(GitHubEvent.class.getName() + "DispatcherImpl")
+                .className(dispatcherClassName)
                 .build();
 
         dispatcherClassCreator.addAnnotation(Singleton.class);
@@ -259,7 +303,7 @@ class GithubAppProcessor {
                 void.class,
                 GitHubEvent.class);
         dispatchMethodCreator.setModifiers(Modifier.PUBLIC);
-        dispatchMethodCreator.getParameterAnnotations(0).addAnnotation(ObservesAsync.class);
+        dispatchMethodCreator.getParameterAnnotations(0).addAnnotation(Observes.class);
 
         ResultHandle installationIdRh = dispatchMethodCreator.invokeVirtualMethod(
                 MethodDescriptor.ofMethod(GitHubEvent.class, "getInstallationId", Long.class),
@@ -342,19 +386,26 @@ class GithubAppProcessor {
         dispatcherClassCreator.close();
     }
 
-    private static void generateMultiplexers(ClassOutput beanClassOutput, DispatchingConfiguration dispatchingConfiguration) {
+    private static void generateMultiplexers(ClassOutput beanClassOutput,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            DispatchingConfiguration dispatchingConfiguration) {
         for (Entry<DotName, TreeSet<EventDispatchingMethod>> eventDispatchingMethodsEntry : dispatchingConfiguration
                 .getMethods().entrySet()) {
             DotName declaringClassName = eventDispatchingMethodsEntry.getKey();
             TreeSet<EventDispatchingMethod> eventDispatchingMethods = eventDispatchingMethodsEntry.getValue();
             ClassInfo declaringClass = eventDispatchingMethods.iterator().next().getMethod().declaringClass();
 
+            reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, declaringClassName.toString()));
+
             if (BuiltinScope.isDeclaredOn(declaringClass)) {
                 LOG.warn("Classes listening to GitHub events may not be annotated with CDI scopes annotations.");
             }
 
+            String multiplexerClassName = declaringClassName + "_Mutiplexer";
+            reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, multiplexerClassName));
+
             ClassCreator multiplexerClassCreator = ClassCreator.builder().classOutput(beanClassOutput)
-                    .className(declaringClassName + "_Mutiplexer")
+                    .className(multiplexerClassName)
                     .superClass(declaringClassName.toString())
                     .build();
 
@@ -412,5 +463,13 @@ class GithubAppProcessor {
 
     private static String getLiteralClassName(DotName annotationName) {
         return annotationName + "_AnnotationLiteral";
+    }
+
+    @SuppressWarnings("unused")
+    private static void systemOutPrintln(BytecodeCreator bytecodeCreator, ResultHandle resultHandle) {
+        bytecodeCreator.invokeVirtualMethod(MethodDescriptor.ofMethod(PrintStream.class, "println", void.class, String.class),
+                bytecodeCreator.readStaticField(FieldDescriptor.of(System.class, "out", PrintStream.class)),
+                bytecodeCreator.invokeVirtualMethod(MethodDescriptor.ofMethod(Object.class, "toString", String.class),
+                        resultHandle));
     }
 }

@@ -11,13 +11,16 @@ import javax.inject.Singleton;
 import org.kohsuke.github.GHAppInstallationToken;
 import org.kohsuke.github.GitHub;
 import org.kohsuke.github.GitHubBuilder;
+import org.kohsuke.github.extras.okhttp3.OkHttpConnector;
 
+import com.github.benmanes.caffeine.cache.CacheLoader;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.Expiry;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 
 import io.quarkiverse.githubapp.runtime.config.GitHubAppRuntimeConfig;
 import io.quarkiverse.githubapp.runtime.signing.JwtTokenCreator;
+import okhttp3.OkHttpClient;
 
 @Singleton
 public class GitHubService {
@@ -26,13 +29,17 @@ public class GitHubService {
 
     private final JwtTokenCreator jwtTokenCreator;
 
+    private final OkHttpClient client;
+
     private final LoadingCache<Long, CachedInstallationGitHub> installationCache;
 
     @Inject
-    public GitHubService(GitHubAppRuntimeConfig gitHubAppRuntimeConfig, JwtTokenCreator jwtTokenCreator) {
+    public GitHubService(GitHubAppRuntimeConfig gitHubAppRuntimeConfig, JwtTokenCreator jwtTokenCreator, OkHttpClient client) {
         this.gitHubAppRuntimeConfig = gitHubAppRuntimeConfig;
         this.jwtTokenCreator = jwtTokenCreator;
+        this.client = client;
         this.installationCache = Caffeine.newBuilder()
+                .maximumSize(50)
                 .expireAfter(new Expiry<Long, CachedInstallationGitHub>() {
                     @Override
                     public long expireAfterCreate(Long installationId, CachedInstallationGitHub cachedInstallationGitHub,
@@ -57,23 +64,30 @@ public class GitHubService {
                         return currentDuration;
                     }
                 })
-                .build(this::createInstallationGitHub);
+                .build(new CreateInstallationGitHub());
     }
 
     public GitHub getInstallationClient(Long installationId) {
         return installationCache.get(installationId).getGitHub();
     }
 
-    @SuppressWarnings("deprecation")
-    private CachedInstallationGitHub createInstallationGitHub(Long installationId) {
-        try {
-            GHAppInstallationToken installationToken = createApplicationGitHub().getApp().getInstallationById(installationId)
-                    .createToken().create();
-            return new CachedInstallationGitHub(
-                    new GitHubBuilder().withAppInstallationToken(installationToken.getToken()).build(),
-                    installationToken.getExpiresAt());
-        } catch (IOException e) {
-            throw new IllegalStateException("Unable to create a GitHub client for the installation", e);
+    // Using a lambda leads to a warning
+    private class CreateInstallationGitHub implements CacheLoader<Long, CachedInstallationGitHub> {
+
+        @SuppressWarnings("deprecation")
+        @Override
+        public CachedInstallationGitHub load(Long installationId) throws Exception {
+            try {
+                GHAppInstallationToken installationToken = createApplicationGitHub().getApp().getInstallationById(installationId)
+                        .createToken().create();
+
+                return new CachedInstallationGitHub(
+                        new GitHubBuilder().withConnector(new OkHttpConnector(client))
+                        .withAppInstallationToken(installationToken.getToken()).build(),
+                        installationToken.getExpiresAt());
+            } catch (IOException e) {
+                throw new IllegalStateException("Unable to create a GitHub client for the installation", e);
+            }
         }
     }
 
@@ -89,7 +103,7 @@ public class GitHubService {
         }
 
         try {
-            return new GitHubBuilder().withJwtToken(jwtToken).build();
+            return new GitHubBuilder().withConnector(new OkHttpConnector(client)).withJwtToken(jwtToken).build();
         } catch (IOException e) {
             throw new IllegalStateException("Unable to create a GitHub client for the application", e);
         }
