@@ -34,8 +34,10 @@ import org.kohsuke.github.GHEventPayload;
 import org.kohsuke.github.GitHub;
 
 import io.jsonwebtoken.impl.DefaultJwtBuilder;
-import io.jsonwebtoken.impl.io.RuntimeClasspathSerializerLocator;
-import io.jsonwebtoken.io.JacksonSerializer;
+import io.jsonwebtoken.io.Deserializer;
+import io.jsonwebtoken.io.Serializer;
+import io.jsonwebtoken.jackson.io.JacksonDeserializer;
+import io.jsonwebtoken.jackson.io.JacksonSerializer;
 import io.quarkiverse.githubapp.deployment.DispatchingConfiguration.EventAnnotation;
 import io.quarkiverse.githubapp.deployment.DispatchingConfiguration.EventAnnotationLiteral;
 import io.quarkiverse.githubapp.deployment.DispatchingConfiguration.EventDispatchingConfiguration;
@@ -64,6 +66,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.gizmo.AnnotatedElement;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ClassCreator;
@@ -125,8 +128,13 @@ class GithubAppProcessor {
                 "com.github.benmanes.caffeine.cache.PSWMS"));
 
         // JWT
-        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, DefaultJwtBuilder.class,
-                RuntimeClasspathSerializerLocator.class, JacksonSerializer.class));
+        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, DefaultJwtBuilder.class));
+    }
+
+    @BuildStep
+    void jwtServiceProviderBuildItem(BuildProducer<ServiceProviderBuildItem> serviceProviders) {
+        serviceProviders.produce(new ServiceProviderBuildItem(Serializer.class.getName(), JacksonSerializer.class.getName()));
+        serviceProviders.produce(new ServiceProviderBuildItem(Deserializer.class.getName(), JacksonDeserializer.class.getName()));
     }
 
     @BuildStep
