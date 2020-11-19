@@ -5,13 +5,12 @@ import static io.quarkiverse.githubapp.runtime.Headers.X_GITHUB_EVENT;
 import static io.quarkiverse.githubapp.runtime.Headers.X_HUB_SIGNATURE;
 import static io.quarkiverse.githubapp.runtime.Headers.X_REQUEST_ID;
 
+import javax.enterprise.event.Event;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import io.quarkiverse.githubapp.runtime.github.GitHubService;
 import io.quarkus.vertx.web.Header;
 import io.quarkus.vertx.web.Route;
-import io.quarkus.vertx.web.Route.HandlerType;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
@@ -21,17 +20,10 @@ public class Routes {
 
     private static final String EMPTY_RESPONSE = "{}";
 
-    private final GitHubService gitHubService;
-
-    private final GitHubEventDispatcher gitHubEventDispatcher;
-
     @Inject
-    Routes(GitHubService gitHubService, GitHubEventDispatcher gitHubEventDispatcher) {
-        this.gitHubService = gitHubService;
-        this.gitHubEventDispatcher = gitHubEventDispatcher;
-    }
+    Event<GitHubEvent> gitHubEventEmitter;
 
-    @Route(path = "/", type = HandlerType.BLOCKING, methods = HttpMethod.POST, consumes = "application/json", produces = "application/json")
+    @Route(path = "/", methods = HttpMethod.POST, consumes = "application/json", produces = "application/json")
     public String handleRequest(RoutingContext routingContext,
             @Header(X_REQUEST_ID) String requestId,
             @Header(X_HUB_SIGNATURE) String hubSignature,
@@ -45,8 +37,7 @@ public class Routes {
 
         Long installationId = extractInstallationId(body);
 
-        gitHubEventDispatcher.dispatch(gitHubService.getInstallationClient(installationId), gitHubEvent,
-                body.getString("action"), routingContext.getBodyAsString());
+        gitHubEventEmitter.fireAsync(new GitHubEvent(installationId, gitHubEvent, body.getString("action"), routingContext.getBodyAsString()));
 
         return EMPTY_RESPONSE;
     }

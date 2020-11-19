@@ -14,6 +14,7 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import javax.enterprise.event.Event;
+import javax.enterprise.event.ObservesAsync;
 import javax.enterprise.util.AnnotationLiteral;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -35,7 +36,7 @@ import io.quarkiverse.githubapp.deployment.DispatchingConfiguration.EventAnnotat
 import io.quarkiverse.githubapp.deployment.DispatchingConfiguration.EventDispatchingConfiguration;
 import io.quarkiverse.githubapp.deployment.DispatchingConfiguration.EventDispatchingMethod;
 import io.quarkiverse.githubapp.event.Actions;
-import io.quarkiverse.githubapp.runtime.GitHubEventDispatcher;
+import io.quarkiverse.githubapp.runtime.GitHubEvent;
 import io.quarkiverse.githubapp.runtime.Routes;
 import io.quarkiverse.githubapp.runtime.github.GitHubService;
 import io.quarkiverse.githubapp.runtime.signing.JwtTokenCreator;
@@ -73,6 +74,9 @@ class GithubAppProcessor {
 
     private static final String FEATURE = "github-app";
 
+    private static final String EVENT_EMITTER_FIELD = "eventEmitter";
+    private static final String GITHUB_SERVICE_FIELD = "gitHubService";
+
     private static final MethodDescriptor EVENT_SELECT = MethodDescriptor.ofMethod(Event.class, "select", Event.class,
             Annotation[].class);
     private static final MethodDescriptor EVENT_FIRE = MethodDescriptor.ofMethod(Event.class, "fire", void.class, Object.class);
@@ -100,7 +104,7 @@ class GithubAppProcessor {
     }
 
     @BuildStep
-    void generateDispatcher(CombinedIndexBuildItem combinedIndex,
+    void generateClasses(CombinedIndexBuildItem combinedIndex,
             BuildProducer<AutoAddScopeBuildItem> autoAddScope,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
@@ -235,26 +239,45 @@ class GithubAppProcessor {
 
     private static void generateDispatcher(ClassOutput beanClassOutput, DispatchingConfiguration dispatchingConfiguration) {
         ClassCreator dispatcherClassCreator = ClassCreator.builder().classOutput(beanClassOutput)
-                .className(GitHubEventDispatcher.class.getName() + "Impl")
-                .interfaces(GitHubEventDispatcher.class)
+                .className(GitHubEvent.class.getName() + "DispatcherImpl")
                 .build();
 
         dispatcherClassCreator.addAnnotation(Singleton.class);
 
-        FieldCreator eventFieldCreator = dispatcherClassCreator.getFieldCreator("event", Event.class);
+        FieldCreator eventFieldCreator = dispatcherClassCreator.getFieldCreator(EVENT_EMITTER_FIELD, Event.class);
         eventFieldCreator.addAnnotation(Inject.class);
         eventFieldCreator.setModifiers(Modifier.PROTECTED);
+
+        FieldCreator gitHubServiceFieldCreator = dispatcherClassCreator.getFieldCreator(GITHUB_SERVICE_FIELD, GitHubService.class);
+        gitHubServiceFieldCreator.addAnnotation(Inject.class);
+        gitHubServiceFieldCreator.setModifiers(Modifier.PROTECTED);
 
         MethodCreator dispatchMethodCreator = dispatcherClassCreator.getMethodCreator(
                 "dispatch",
                 void.class,
-                GitHub.class, String.class, String.class, String.class);
+                GitHubEvent.class);
         dispatchMethodCreator.setModifiers(Modifier.PUBLIC);
+        dispatchMethodCreator.getParameterAnnotations(0).addAnnotation(ObservesAsync.class);
 
-        ResultHandle gitHubRh = dispatchMethodCreator.getMethodParam(0);
-        ResultHandle dispatchedEventRh = dispatchMethodCreator.getMethodParam(1);
-        ResultHandle dispatchedActionRh = dispatchMethodCreator.getMethodParam(2);
-        ResultHandle dispatchedPayloadRh = dispatchMethodCreator.getMethodParam(3);
+        ResultHandle installationIdRh = dispatchMethodCreator.invokeVirtualMethod(
+                MethodDescriptor.ofMethod(GitHubEvent.class, "getInstallationId", Long.class),
+                dispatchMethodCreator.getMethodParam(0));
+        ResultHandle dispatchedEventRh = dispatchMethodCreator.invokeVirtualMethod(
+                MethodDescriptor.ofMethod(GitHubEvent.class, "getEvent", String.class),
+                dispatchMethodCreator.getMethodParam(0));
+        ResultHandle dispatchedActionRh = dispatchMethodCreator.invokeVirtualMethod(
+                MethodDescriptor.ofMethod(GitHubEvent.class, "getAction", String.class),
+                dispatchMethodCreator.getMethodParam(0));
+        ResultHandle dispatchedPayloadRh = dispatchMethodCreator.invokeVirtualMethod(
+                MethodDescriptor.ofMethod(GitHubEvent.class, "getPayload", String.class),
+                dispatchMethodCreator.getMethodParam(0));
+
+        ResultHandle gitHubRh = dispatchMethodCreator.invokeVirtualMethod(
+                MethodDescriptor.ofMethod(GitHubService.class, "getInstallationClient", GitHub.class, Long.class),
+                dispatchMethodCreator.readInstanceField(
+                        FieldDescriptor.of(dispatcherClassCreator.getClassName(), GITHUB_SERVICE_FIELD, GitHubService.class),
+                        dispatchMethodCreator.getThis()),
+                installationIdRh);
 
         for (EventDispatchingConfiguration eventDispatchingConfiguration : dispatchingConfiguration.getEventConfigurations()
                 .values()) {
@@ -292,7 +315,7 @@ class GithubAppProcessor {
                 if (Actions.ALL.equals(action)) {
                     ResultHandle cdiEventRh = eventMatchesCreator.invokeInterfaceMethod(EVENT_SELECT,
                             eventMatchesCreator.readInstanceField(
-                                    FieldDescriptor.of(dispatcherClassCreator.getClassName(), "event", Event.class),
+                                    FieldDescriptor.of(dispatcherClassCreator.getClassName(), EVENT_EMITTER_FIELD, Event.class),
                                     eventMatchesCreator.getThis()),
                             annotationLiteralArray);
                     eventMatchesCreator.invokeInterfaceMethod(EVENT_FIRE, cdiEventRh, payloadInstanceRh);
@@ -304,7 +327,7 @@ class GithubAppProcessor {
 
                     ResultHandle cdiEventRh = actionMatchesCreator.invokeInterfaceMethod(EVENT_SELECT,
                             actionMatchesCreator.readInstanceField(
-                                    FieldDescriptor.of(dispatcherClassCreator.getClassName(), "event", Event.class),
+                                    FieldDescriptor.of(dispatcherClassCreator.getClassName(), EVENT_EMITTER_FIELD, Event.class),
                                     eventMatchesCreator.getThis()),
                             annotationLiteralArray);
                     actionMatchesCreator.invokeInterfaceMethod(EVENT_FIRE, cdiEventRh, payloadInstanceRh);
