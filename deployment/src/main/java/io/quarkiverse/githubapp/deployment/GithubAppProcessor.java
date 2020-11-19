@@ -39,6 +39,7 @@ import io.quarkiverse.githubapp.deployment.DispatchingConfiguration.EventDispatc
 import io.quarkiverse.githubapp.event.Actions;
 import io.quarkiverse.githubapp.runtime.GitHubEvent;
 import io.quarkiverse.githubapp.runtime.Routes;
+import io.quarkiverse.githubapp.runtime.UtilsProducer;
 import io.quarkiverse.githubapp.runtime.github.GitHubService;
 import io.quarkiverse.githubapp.runtime.signing.JwtTokenCreator;
 import io.quarkiverse.githubapp.runtime.signing.PayloadSignatureChecker;
@@ -98,7 +99,8 @@ class GithubAppProcessor {
                 PayloadSignatureChecker.class,
                 GitHubService.class,
                 SmeeIoForwarder.class,
-                Routes.class)
+                Routes.class,
+                UtilsProducer.class)
                 .setUnremovable()
                 .setDefaultScope(DotNames.SINGLETON)
                 .build());

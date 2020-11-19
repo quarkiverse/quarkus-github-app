@@ -37,14 +37,15 @@ public class SmeeIoForwarder {
     private final EventSource eventSource;
 
     @Inject
-    SmeeIoForwarder(GitHubAppRuntimeConfig gitHubAppRuntimeConfig, HttpConfiguration httpConfiguration, ObjectMapper objectMapper) {
+    SmeeIoForwarder(GitHubAppRuntimeConfig gitHubAppRuntimeConfig, HttpConfiguration httpConfiguration, OkHttpClient client,
+            ObjectMapper objectMapper) {
         if (!gitHubAppRuntimeConfig.webhookProxyUrl.isPresent()) {
             this.eventSource = null;
             return;
         }
 
         String localUrl = "http://" + httpConfiguration.host + ":" + httpConfiguration.port + "/";
-        this.eventSource = startEventSource(gitHubAppRuntimeConfig.webhookProxyUrl.get(), localUrl, objectMapper);
+        this.eventSource = startEventSource(gitHubAppRuntimeConfig.webhookProxyUrl.get(), localUrl, client, objectMapper);
     }
 
     void stopEventSource(@Observes ShutdownEvent shutdownEvent) {
@@ -53,9 +54,11 @@ public class SmeeIoForwarder {
         }
     }
 
-    private static EventSource startEventSource(String webhookProxyUrl, String localUrl, ObjectMapper objectMapper) {
-        EventSource.Builder builder = new EventSource.Builder(new SimpleEventHandler(localUrl, objectMapper), URI.create(webhookProxyUrl))
-                .reconnectTime(Duration.ofMillis(3000));
+    private static EventSource startEventSource(String webhookProxyUrl, String localUrl, OkHttpClient client,
+            ObjectMapper objectMapper) {
+        EventSource.Builder builder = new EventSource.Builder(new SimpleEventHandler(localUrl, client, objectMapper),
+                URI.create(webhookProxyUrl))
+                        .reconnectTime(Duration.ofMillis(3000));
 
         EventSource eventSource = builder.build();
         eventSource.start();
@@ -71,8 +74,8 @@ public class SmeeIoForwarder {
 
         private final ObjectMapper objectMapper;
 
-        private SimpleEventHandler(String localUrl, ObjectMapper objectMapper) {
-            this.client = new OkHttpClient();
+        private SimpleEventHandler(String localUrl, OkHttpClient client, ObjectMapper objectMapper) {
+            this.client = client;
             this.localUrl = localUrl;
             this.objectMapper = objectMapper;
         }
