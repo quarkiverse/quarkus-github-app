@@ -11,6 +11,7 @@ import javax.inject.Singleton;
 
 import io.quarkus.vertx.web.Header;
 import io.quarkus.vertx.web.Route;
+import io.quarkus.vertx.web.Route.HandlerType;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
@@ -23,7 +24,7 @@ public class Routes {
     @Inject
     Event<GitHubEvent> gitHubEventEmitter;
 
-    @Route(path = "/", methods = HttpMethod.POST, consumes = "application/json", produces = "application/json")
+    @Route(path = "/", type = HandlerType.BLOCKING, methods = HttpMethod.POST, consumes = "application/json", produces = "application/json")
     public String handleRequest(RoutingContext routingContext,
             @Header(X_REQUEST_ID) String requestId,
             @Header(X_HUB_SIGNATURE) String hubSignature,
