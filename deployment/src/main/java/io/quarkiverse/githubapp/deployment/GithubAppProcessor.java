@@ -3,62 +3,83 @@ package io.quarkiverse.githubapp.deployment;
 import java.io.Reader;
 import java.io.StringReader;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
+import javax.enterprise.event.Event;
+import javax.enterprise.event.ObservesAsync;
+import javax.enterprise.util.AnnotationLiteral;
+import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+import org.jboss.logging.Logger;
 import org.kohsuke.github.GHEventPayload;
 import org.kohsuke.github.GitHub;
 
+import io.quarkiverse.githubapp.deployment.DispatchingConfiguration.EventAnnotation;
+import io.quarkiverse.githubapp.deployment.DispatchingConfiguration.EventAnnotationLiteral;
+import io.quarkiverse.githubapp.deployment.DispatchingConfiguration.EventDispatchingConfiguration;
+import io.quarkiverse.githubapp.deployment.DispatchingConfiguration.EventDispatchingMethod;
 import io.quarkiverse.githubapp.event.Actions;
-import io.quarkiverse.githubapp.runtime.GitHubEventDispatcher;
+import io.quarkiverse.githubapp.runtime.GitHubEvent;
 import io.quarkiverse.githubapp.runtime.Routes;
 import io.quarkiverse.githubapp.runtime.github.GitHubService;
 import io.quarkiverse.githubapp.runtime.signing.JwtTokenCreator;
 import io.quarkiverse.githubapp.runtime.signing.PayloadSignatureChecker;
 import io.quarkiverse.githubapp.runtime.smee.SmeeIoForwarder;
-import io.quarkus.arc.ArcContainer;
-import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AutoAddScopeBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.arc.processor.BuiltinScope;
+import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.MethodDescriptors;
+import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.gizmo.AnnotatedElement;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
+import io.quarkus.gizmo.FieldCreator;
+import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.runtime.util.HashUtil;
 
 class GithubAppProcessor {
 
+    private static final Logger LOG = Logger.getLogger(GithubAppProcessor.class);
+
     private static final String FEATURE = "github-app";
 
-    private static final MethodDescriptor ARC_CONTAINER_INSTANCE_METHOD_DESCRIPTOR = MethodDescriptor
-            .ofMethod(ArcContainer.class, "instance", InstanceHandle.class, Class.class, Annotation[].class);
-    private static final MethodDescriptor INSTANCE_HANDLE_GET_METHOD_DESCRIPTOR = MethodDescriptor.ofMethod(InstanceHandle.class,
-            "get", Object.class);
+    private static final String EVENT_EMITTER_FIELD = "eventEmitter";
+    private static final String GITHUB_SERVICE_FIELD = "gitHubService";
+
+    private static final MethodDescriptor EVENT_SELECT = MethodDescriptor.ofMethod(Event.class, "select", Event.class,
+            Annotation[].class);
+    private static final MethodDescriptor EVENT_FIRE = MethodDescriptor.ofMethod(Event.class, "fire", void.class, Object.class);
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -78,113 +99,40 @@ class GithubAppProcessor {
                 SmeeIoForwarder.class,
                 Routes.class)
                 .setUnremovable()
-                .setDefaultScope(io.quarkus.arc.processor.DotNames.SINGLETON)
+                .setDefaultScope(DotNames.SINGLETON)
                 .build());
     }
 
     @BuildStep
-    void generateDispatcher(CombinedIndexBuildItem combinedIndex,
+    void generateClasses(CombinedIndexBuildItem combinedIndex,
             BuildProducer<AutoAddScopeBuildItem> autoAddScope,
-            BuildProducer<GeneratedBeanBuildItem> generatedBean,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+            BuildProducer<GeneratedBeanBuildItem> generatedBeans,
+            BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
         Collection<EventDefinition> allEventDefinitions = getAllEventDefinitions(combinedIndex.getIndex());
 
-        DotName[] subscriberAnnotations = allEventDefinitions.stream().map(d -> d.getAnnotation()).toArray(DotName[]::new);
+        // Add the qualifiers as beans
+        String[] subscriberAnnotations = allEventDefinitions.stream().map(d -> d.getAnnotation().toString())
+                .toArray(String[]::new);
+        additionalBeans.produce(new AdditionalBeanBuildItem(subscriberAnnotations));
 
-        autoAddScope.produce(AutoAddScopeBuildItem.builder()
-                .containsAnnotations(subscriberAnnotations)
-                .defaultScope(io.quarkus.arc.processor.DotNames.SINGLETON)
-                .build());
-
-        for (DotName subscriberAnnotation : subscriberAnnotations) {
-            unremovableBeans.produce(UnremovableBeanBuildItem.beanClassAnnotation(subscriberAnnotation));
-        }
-
-        Map<String, EventDispatchingConfiguration> eventDispatchingConfigurations = getEventDispatchingConfigurations(
+        DispatchingConfiguration dispatchingConfiguration = getDispatchingConfiguration(
                 combinedIndex.getIndex(), allEventDefinitions);
 
-        ClassOutput classOutput = new GeneratedBeanGizmoAdaptor(generatedBean);
+        ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClasses, true);
+        generateAnnotationLiterals(classOutput, dispatchingConfiguration);
 
-        ClassCreator classCreator = ClassCreator.builder().classOutput(classOutput)
-                .className(GitHubEventDispatcher.class.getName() + "Impl")
-                .interfaces(GitHubEventDispatcher.class)
-                .build();
-        classCreator.addAnnotation(Singleton.class);
-
-        MethodCreator dispatchMethodCreator = classCreator.getMethodCreator(
-                "dispatch",
-                void.class,
-                GitHub.class, String.class, String.class, String.class);
-
-        ResultHandle arcContainerRh = dispatchMethodCreator.invokeStaticMethod(MethodDescriptors.ARC_CONTAINER);
-
-        // we will need to split this in different methods, probably one per type
-        for (EventDispatchingConfiguration eventDispatchingConfiguration : eventDispatchingConfigurations.values()) {
-            ResultHandle gitHubRh = dispatchMethodCreator.getMethodParam(0);
-            ResultHandle dispatchedEventRh = dispatchMethodCreator.getMethodParam(1);
-            ResultHandle dispatchedActionRh = dispatchMethodCreator.getMethodParam(2);
-            ResultHandle dispatchedPayloadRh = dispatchMethodCreator.getMethodParam(3);
-
-            ResultHandle eventRh = dispatchMethodCreator.load(eventDispatchingConfiguration.getEvent());
-            String payloadType = eventDispatchingConfiguration.getPayload();
-
-            BytecodeCreator eventMatchesCreator = dispatchMethodCreator
-                    .ifTrue(dispatchMethodCreator.invokeVirtualMethod(MethodDescriptors.OBJECT_EQUALS, eventRh, dispatchedEventRh))
-                    .trueBranch();
-
-            ResultHandle payloadInstanceRh = eventMatchesCreator.invokeVirtualMethod(
-                    MethodDescriptor.ofMethod(GitHub.class, "parseEventPayload", GHEventPayload.class, Reader.class,
-                            Class.class),
-                    gitHubRh,
-                    eventMatchesCreator.newInstance(MethodDescriptor.ofConstructor(StringReader.class, String.class),
-                            dispatchedPayloadRh),
-                    eventMatchesCreator.loadClass(payloadType));
-
-            for (Entry<String, TreeSet<EventDispatchingMethod>> eventDispatchingMethodsEntry : eventDispatchingConfiguration.getMethods().entrySet()) {
-                String action = eventDispatchingMethodsEntry.getKey();
-                if (Actions.ALL.equals(action)) {
-                    for (EventDispatchingMethod eventDispatchingMethod : eventDispatchingMethodsEntry.getValue()) {
-                        eventMatchesCreator.invokeVirtualMethod(
-                                MethodDescriptor.ofMethod(eventDispatchingMethod.getClassName(),
-                                        eventDispatchingMethod.getMethodName(), void.class, payloadType),
-                                eventMatchesCreator.invokeInterfaceMethod(INSTANCE_HANDLE_GET_METHOD_DESCRIPTOR,
-                                        eventMatchesCreator.invokeInterfaceMethod(ARC_CONTAINER_INSTANCE_METHOD_DESCRIPTOR,
-                                                arcContainerRh,
-                                                eventMatchesCreator
-                                                        .loadClass(eventDispatchingMethod.getClassName()),
-                                                eventMatchesCreator.newArray(Annotation.class, 0))),
-                                payloadInstanceRh);
-                    }
-                } else {
-                    BytecodeCreator actionMatchesCreator = eventMatchesCreator
-                            .ifTrue(eventMatchesCreator.invokeVirtualMethod(MethodDescriptors.OBJECT_EQUALS, eventMatchesCreator.load(action), dispatchedActionRh))
-                            .trueBranch();
-
-                    for (EventDispatchingMethod eventDispatchingMethod : eventDispatchingMethodsEntry.getValue()) {
-                        actionMatchesCreator.invokeVirtualMethod(
-                                MethodDescriptor.ofMethod(eventDispatchingMethod.getClassName(),
-                                        eventDispatchingMethod.getMethodName(), void.class, payloadType),
-                                actionMatchesCreator.invokeInterfaceMethod(INSTANCE_HANDLE_GET_METHOD_DESCRIPTOR,
-                                        actionMatchesCreator.invokeInterfaceMethod(ARC_CONTAINER_INSTANCE_METHOD_DESCRIPTOR,
-                                                arcContainerRh,
-                                                actionMatchesCreator
-                                                        .loadClass(eventDispatchingMethod.getClassName()),
-                                                actionMatchesCreator.newArray(Annotation.class, 0))),
-                                payloadInstanceRh);
-                    }
-                }
-            }
-        }
-        dispatchMethodCreator.returnValue(null);
-
-        classCreator.close();
+        ClassOutput beanClassOutput = new GeneratedBeanGizmoAdaptor(generatedBeans);
+        generateDispatcher(beanClassOutput, dispatchingConfiguration);
+        generateMultiplexers(beanClassOutput, dispatchingConfiguration);
     }
 
     private static Collection<EventDefinition> getAllEventDefinitions(IndexView index) {
         Collection<EventDefinition> mainEventDefinitions = new ArrayList<>();
         Collection<EventDefinition> allEventDefinitions = new ArrayList<>();
 
-        for (AnnotationInstance eventInstance : index.getAnnotations(DotNames.EVENT)) {
+        for (AnnotationInstance eventInstance : index.getAnnotations(GitHubAppDotNames.EVENT)) {
             if (eventInstance.target().kind() == Kind.CLASS) {
                 mainEventDefinitions.add(new EventDefinition(eventInstance.target().asClass().name(),
                         eventInstance.value("name").asString(),
@@ -203,7 +151,7 @@ class GithubAppProcessor {
                     allEventDefinitions.add(new EventDefinition(eventInstance.target().asClass().name(),
                             mainEventDefinition.getEvent(),
                             actionValue != null ? actionValue.asString() : null,
-                            mainEventDefinition.getPayload()));
+                            mainEventDefinition.getPayloadType()));
                 }
             }
         }
@@ -211,9 +159,9 @@ class GithubAppProcessor {
         return allEventDefinitions;
     }
 
-    private static Map<String, EventDispatchingConfiguration> getEventDispatchingConfigurations(
+    private static DispatchingConfiguration getDispatchingConfiguration(
             IndexView index, Collection<EventDefinition> allEventDefinitions) {
-        Map<String, EventDispatchingConfiguration> eventDispatchingConfiguration = new TreeMap<>();
+        DispatchingConfiguration configuration = new DispatchingConfiguration();
 
         for (EventDefinition eventDefinition : allEventDefinitions) {
             Collection<AnnotationInstance> eventSubscriberInstances = index.getAnnotations(eventDefinition.getAnnotation())
@@ -226,118 +174,240 @@ class GithubAppProcessor {
 
                 MethodInfo methodInfo = eventSubscriberInstance.target().asMethodParameter().method();
                 List<Type> methodParameters = methodInfo.parameters();
-                if (methodParameters.size() != 1 || !methodParameters.get(0).name().equals(eventDefinition.getPayload())) {
+                if (methodParameters.size() != 1 || !methodParameters.get(0).name().equals(eventDefinition.getPayloadType())) {
                     throw new IllegalStateException(
                             "Method subscribing to a GitHub '" + eventDefinition.getEvent()
-                                    + "' event should have only one parameter of type '" + eventDefinition.getPayload()
+                                    + "' event should have only one parameter of type '" + eventDefinition.getPayloadType()
                                     + "'. Offending method: " + methodInfo.declaringClass().name() + "#" + methodInfo);
                 }
 
-                eventDispatchingConfiguration
-                        .computeIfAbsent(eventDefinition.getEvent(),
-                                e -> new EventDispatchingConfiguration(e, eventDefinition.getPayload().toString()))
-                        .addMethod(action, new EventDispatchingMethod(methodInfo.declaringClass().name().toString(), methodInfo.name()));
+                configuration
+                        .getOrCreateEventConfiguration(eventDefinition.getEvent(), eventDefinition.getPayloadType().toString())
+                        .addEventAnnotation(action, eventSubscriberInstance);
+                configuration.addEventDispatchingMethod(new EventDispatchingMethod(eventSubscriberInstance, methodInfo));
             }
         }
 
-        return eventDispatchingConfiguration;
+        return configuration;
     }
 
-    static class EventDispatchingConfiguration {
+    private static void generateAnnotationLiterals(ClassOutput classOutput, DispatchingConfiguration dispatchingConfiguration) {
+        for (EventDispatchingConfiguration eventDispatchingConfiguration : dispatchingConfiguration.getEventConfigurations()
+                .values()) {
+            for (EventAnnotationLiteral eventAnnotationLiteral : eventDispatchingConfiguration.getEventAnnotationLiterals()) {
+                String literalClassName = getLiteralClassName(eventAnnotationLiteral.getName());
 
-        private final String event;
+                String signature = String.format("Ljavax/enterprise/util/AnnotationLiteral<L%1$s;>;L%1$s;",
+                        eventAnnotationLiteral.getName().toString().replace('.', '/'));
 
-        private final String payload;
+                ClassCreator literalClassCreator = ClassCreator.builder().classOutput(classOutput)
+                        .className(literalClassName)
+                        .signature(signature)
+                        .superClass(AnnotationLiteral.class)
+                        .interfaces(eventAnnotationLiteral.getName().toString())
+                        .build();
 
-        private final TreeMap<String, TreeSet<EventDispatchingMethod>> methods = new TreeMap<>();
+                Class<?>[] parameterTypes = new Class<?>[eventAnnotationLiteral.getAttributes().size()];
+                Arrays.fill(parameterTypes, String.class);
 
-        EventDispatchingConfiguration(String event, String payload) {
-            this.event = event;
-            this.payload = payload;
-        }
+                MethodCreator constructorCreator = literalClassCreator.getMethodCreator("<init>", "V",
+                        (Object[]) parameterTypes);
+                constructorCreator.invokeSpecialMethod(MethodDescriptor.ofConstructor(AnnotationLiteral.class),
+                        constructorCreator.getThis());
+                for (int i = 0; i < eventAnnotationLiteral.getAttributes().size(); i++) {
+                    constructorCreator.writeInstanceField(
+                            FieldDescriptor.of(literalClassName, eventAnnotationLiteral.getAttributes().get(i), String.class),
+                            constructorCreator.getThis(), constructorCreator.getMethodParam(i));
+                    constructorCreator.setModifiers(Modifier.PUBLIC);
+                }
+                constructorCreator.returnValue(null);
 
-        public String getEvent() {
-            return event;
-        }
+                for (String attribute : eventAnnotationLiteral.getAttributes()) {
+                    // we only support String for now
+                    literalClassCreator.getFieldCreator(attribute, String.class)
+                            .setModifiers(Modifier.PRIVATE);
+                    MethodCreator getterCreator = literalClassCreator.getMethodCreator(attribute, String.class);
+                    getterCreator.setModifiers(Modifier.PUBLIC);
+                    getterCreator.returnValue(getterCreator.readInstanceField(
+                            FieldDescriptor.of(literalClassName, attribute, String.class), getterCreator.getThis()));
+                }
 
-        public String getPayload() {
-            return payload;
-        }
-
-        public TreeMap<String, TreeSet<EventDispatchingMethod>> getMethods() {
-            return methods;
-        }
-
-        void addMethod(String action, EventDispatchingMethod method) {
-            methods.computeIfAbsent(action, k -> new TreeSet<>()).add(method);
+                literalClassCreator.close();
+            }
         }
     }
 
-    static class EventDispatchingMethod implements Comparable<EventDispatchingMethod> {
+    private static void generateDispatcher(ClassOutput beanClassOutput, DispatchingConfiguration dispatchingConfiguration) {
+        ClassCreator dispatcherClassCreator = ClassCreator.builder().classOutput(beanClassOutput)
+                .className(GitHubEvent.class.getName() + "DispatcherImpl")
+                .build();
 
-        private final String className;
+        dispatcherClassCreator.addAnnotation(Singleton.class);
 
-        private final String methodName;
+        FieldCreator eventFieldCreator = dispatcherClassCreator.getFieldCreator(EVENT_EMITTER_FIELD, Event.class);
+        eventFieldCreator.addAnnotation(Inject.class);
+        eventFieldCreator.setModifiers(Modifier.PROTECTED);
 
-        EventDispatchingMethod(String className, String methodName) {
-            this.className = className;
-            this.methodName = methodName;
+        FieldCreator gitHubServiceFieldCreator = dispatcherClassCreator.getFieldCreator(GITHUB_SERVICE_FIELD, GitHubService.class);
+        gitHubServiceFieldCreator.addAnnotation(Inject.class);
+        gitHubServiceFieldCreator.setModifiers(Modifier.PROTECTED);
+
+        MethodCreator dispatchMethodCreator = dispatcherClassCreator.getMethodCreator(
+                "dispatch",
+                void.class,
+                GitHubEvent.class);
+        dispatchMethodCreator.setModifiers(Modifier.PUBLIC);
+        dispatchMethodCreator.getParameterAnnotations(0).addAnnotation(ObservesAsync.class);
+
+        ResultHandle installationIdRh = dispatchMethodCreator.invokeVirtualMethod(
+                MethodDescriptor.ofMethod(GitHubEvent.class, "getInstallationId", Long.class),
+                dispatchMethodCreator.getMethodParam(0));
+        ResultHandle dispatchedEventRh = dispatchMethodCreator.invokeVirtualMethod(
+                MethodDescriptor.ofMethod(GitHubEvent.class, "getEvent", String.class),
+                dispatchMethodCreator.getMethodParam(0));
+        ResultHandle dispatchedActionRh = dispatchMethodCreator.invokeVirtualMethod(
+                MethodDescriptor.ofMethod(GitHubEvent.class, "getAction", String.class),
+                dispatchMethodCreator.getMethodParam(0));
+        ResultHandle dispatchedPayloadRh = dispatchMethodCreator.invokeVirtualMethod(
+                MethodDescriptor.ofMethod(GitHubEvent.class, "getPayload", String.class),
+                dispatchMethodCreator.getMethodParam(0));
+
+        ResultHandle gitHubRh = dispatchMethodCreator.invokeVirtualMethod(
+                MethodDescriptor.ofMethod(GitHubService.class, "getInstallationClient", GitHub.class, Long.class),
+                dispatchMethodCreator.readInstanceField(
+                        FieldDescriptor.of(dispatcherClassCreator.getClassName(), GITHUB_SERVICE_FIELD, GitHubService.class),
+                        dispatchMethodCreator.getThis()),
+                installationIdRh);
+
+        for (EventDispatchingConfiguration eventDispatchingConfiguration : dispatchingConfiguration.getEventConfigurations()
+                .values()) {
+            ResultHandle eventRh = dispatchMethodCreator.load(eventDispatchingConfiguration.getEvent());
+            String payloadType = eventDispatchingConfiguration.getPayloadType();
+
+            BytecodeCreator eventMatchesCreator = dispatchMethodCreator
+                    .ifTrue(dispatchMethodCreator.invokeVirtualMethod(MethodDescriptors.OBJECT_EQUALS, eventRh,
+                            dispatchedEventRh))
+                    .trueBranch();
+
+            ResultHandle payloadInstanceRh = eventMatchesCreator.invokeVirtualMethod(
+                    MethodDescriptor.ofMethod(GitHub.class, "parseEventPayload", GHEventPayload.class, Reader.class,
+                            Class.class),
+                    gitHubRh,
+                    eventMatchesCreator.newInstance(MethodDescriptor.ofConstructor(StringReader.class, String.class),
+                            dispatchedPayloadRh),
+                    eventMatchesCreator.loadClass(payloadType));
+
+            for (Entry<String, EventAnnotation> eventAnnotationEntry : eventDispatchingConfiguration.getEventAnnotations()
+                    .entrySet()) {
+                String action = eventAnnotationEntry.getKey();
+                EventAnnotation eventAnnotation = eventAnnotationEntry.getValue();
+
+                Class<?>[] literalParameterTypes = new Class<?>[eventAnnotation.getValues().size()];
+                Arrays.fill(literalParameterTypes, String.class);
+                List<ResultHandle> literalParameters = new ArrayList<>();
+
+                ResultHandle annotationLiteral = eventMatchesCreator.newInstance(MethodDescriptor
+                        .ofConstructor(getLiteralClassName(eventAnnotation.getName()), (Object[]) literalParameterTypes),
+                        literalParameters.toArray(ResultHandle[]::new));
+                ResultHandle annotationLiteralArray = eventMatchesCreator.newArray(Annotation.class, 1);
+                eventMatchesCreator.writeArrayValue(annotationLiteralArray, 0, annotationLiteral);
+
+                if (Actions.ALL.equals(action)) {
+                    ResultHandle cdiEventRh = eventMatchesCreator.invokeInterfaceMethod(EVENT_SELECT,
+                            eventMatchesCreator.readInstanceField(
+                                    FieldDescriptor.of(dispatcherClassCreator.getClassName(), EVENT_EMITTER_FIELD, Event.class),
+                                    eventMatchesCreator.getThis()),
+                            annotationLiteralArray);
+                    eventMatchesCreator.invokeInterfaceMethod(EVENT_FIRE, cdiEventRh, payloadInstanceRh);
+                } else {
+                    BytecodeCreator actionMatchesCreator = eventMatchesCreator
+                            .ifTrue(eventMatchesCreator.invokeVirtualMethod(MethodDescriptors.OBJECT_EQUALS,
+                                    eventMatchesCreator.load(action), dispatchedActionRh))
+                            .trueBranch();
+
+                    ResultHandle cdiEventRh = actionMatchesCreator.invokeInterfaceMethod(EVENT_SELECT,
+                            actionMatchesCreator.readInstanceField(
+                                    FieldDescriptor.of(dispatcherClassCreator.getClassName(), EVENT_EMITTER_FIELD, Event.class),
+                                    eventMatchesCreator.getThis()),
+                            annotationLiteralArray);
+                    actionMatchesCreator.invokeInterfaceMethod(EVENT_FIRE, cdiEventRh, payloadInstanceRh);
+                }
+            }
         }
 
-        public String getClassName() {
-            return className;
-        }
+        dispatchMethodCreator.returnValue(null);
 
-        public String getMethodName() {
-            return methodName;
-        }
+        dispatcherClassCreator.close();
+    }
 
-        @Override
-        public int compareTo(EventDispatchingMethod other) {
-            int classNameCompareTo = className.compareTo(other.className);
-            if (classNameCompareTo != 0) {
-                return classNameCompareTo;
+    private static void generateMultiplexers(ClassOutput beanClassOutput, DispatchingConfiguration dispatchingConfiguration) {
+        for (Entry<DotName, TreeSet<EventDispatchingMethod>> eventDispatchingMethodsEntry : dispatchingConfiguration
+                .getMethods().entrySet()) {
+            DotName declaringClassName = eventDispatchingMethodsEntry.getKey();
+            TreeSet<EventDispatchingMethod> eventDispatchingMethods = eventDispatchingMethodsEntry.getValue();
+            ClassInfo declaringClass = eventDispatchingMethods.iterator().next().getMethod().declaringClass();
+
+            if (BuiltinScope.isDeclaredOn(declaringClass)) {
+                LOG.warn("Classes listening to GitHub events may not be annotated with CDI scopes annotations.");
             }
 
-            return methodName.compareTo(other.methodName);
+            ClassCreator multiplexerClassCreator = ClassCreator.builder().classOutput(beanClassOutput)
+                    .className(declaringClassName + "_Mutiplexer")
+                    .superClass(declaringClassName.toString())
+                    .build();
+
+            multiplexerClassCreator.addAnnotation(Singleton.class);
+
+            for (AnnotationInstance classAnnotation : declaringClass.classAnnotations()) {
+                multiplexerClassCreator.addAnnotation(classAnnotation);
+            }
+
+            // TODO we should "copy" the constructor too as it could be used for injection and initialization
+
+            for (EventDispatchingMethod eventDispatchingMethod : eventDispatchingMethods) {
+                AnnotationInstance eventSubscriberInstance = eventDispatchingMethod.getEventSubscriberInstance();
+                MethodInfo method = eventDispatchingMethod.getMethod();
+                Map<Short, List<AnnotationInstance>> parameterAnnotationMapping = method.annotations().stream()
+                        .filter(ai -> ai.target().kind() == Kind.METHOD_PARAMETER)
+                        .collect(Collectors.groupingBy(ai -> ai.target().asMethodParameter().position()));
+
+                // if the method already has an @Observes annotation
+                if (method.hasAnnotation(DotNames.OBSERVES)) {
+                    LOG.warn("Methods listening to GitHub events may not be annotated with @Observes. Offending method: "
+                            + method.declaringClass().name() + "#" + method);
+                }
+
+                MethodCreator methodCreator = multiplexerClassCreator.getMethodCreator(
+                        method.name() + "_" + HashUtil.sha1(eventSubscriberInstance.toString()),
+                        method.returnType().name().toString(),
+                        method.parameters().stream().map(p -> p.name().toString()).toArray(String[]::new));
+
+                ResultHandle[] parameterValues = new ResultHandle[method.parameters().size()];
+
+                for (short i = 0; i < method.parameters().size(); i++) {
+                    List<AnnotationInstance> parameterAnnotations = parameterAnnotationMapping.get(i);
+                    AnnotatedElement generatedParameterAnnotations = methodCreator.getParameterAnnotations(i);
+                    if (parameterAnnotations.stream().anyMatch(ai -> ai.name().equals(eventSubscriberInstance.name()))) {
+                        generatedParameterAnnotations.addAnnotation(DotNames.OBSERVES.toString());
+                        generatedParameterAnnotations.addAnnotation(eventSubscriberInstance);
+                    } else {
+                        for (AnnotationInstance annotationInstance : parameterAnnotations) {
+                            generatedParameterAnnotations.addAnnotation(annotationInstance);
+                        }
+                    }
+
+                    parameterValues[i] = methodCreator.getMethodParam(i);
+                }
+
+                ResultHandle returnValue = methodCreator.invokeVirtualMethod(method, methodCreator.getThis(), parameterValues);
+                methodCreator.returnValue(returnValue);
+            }
+
+            multiplexerClassCreator.close();
         }
     }
 
-    static class EventDefinition {
-
-        private final DotName annotation;
-
-        private final String event;
-
-        private final String action;
-
-        private final DotName payload;
-
-        EventDefinition(DotName annotation, String event, String action, DotName payload) {
-            this.annotation = annotation;
-            this.event = event;
-            this.action = action;
-            this.payload = payload;
-        }
-
-        DotName getAnnotation() {
-            return annotation;
-        }
-
-        String getEvent() {
-            return event;
-        }
-
-        String getAction() {
-            return action;
-        }
-
-        public DotName getPayload() {
-            return payload;
-        }
-
-        boolean isWildCard() {
-            return action == null || Actions.ALL.equals(action);
-        }
+    private static String getLiteralClassName(DotName annotationName) {
+        return annotationName + "_AnnotationLiteral";
     }
 }
