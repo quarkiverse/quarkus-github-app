@@ -19,13 +19,40 @@ public @interface Issue {
 
     String value() default Actions.ALL;
 
-    @Issue(Opened.NAME)
+    @Issue(Assigned.NAME)
     @Target(PARAMETER)
     @Retention(RUNTIME)
     @Qualifier
-    public @interface Opened {
+    public @interface Assigned {
 
-        String NAME = Actions.OPENED;
+        String NAME = Actions.ASSIGNED;
+    }
+
+    @Issue(Closed.NAME)
+    @Target(PARAMETER)
+    @Retention(RUNTIME)
+    @Qualifier
+    public @interface Closed {
+
+        String NAME = Actions.CLOSED;
+    }
+
+    @Issue(Deleted.NAME)
+    @Target(PARAMETER)
+    @Retention(RUNTIME)
+    @Qualifier
+    public @interface Deleted {
+
+        String NAME = Actions.DELETED;
+    }
+
+    @Issue(Demilestoned.NAME)
+    @Target(PARAMETER)
+    @Retention(RUNTIME)
+    @Qualifier
+    public @interface Demilestoned {
+
+        String NAME = Actions.DEMILESTONED;
     }
 
     @Issue(Edited.NAME)
@@ -35,5 +62,104 @@ public @interface Issue {
     public @interface Edited {
 
         String NAME = Actions.EDITED;
+    }
+
+    @Issue(Labeled.NAME)
+    @Target(PARAMETER)
+    @Retention(RUNTIME)
+    @Qualifier
+    public @interface Labeled {
+
+        String NAME = Actions.LABELED;
+    }
+
+    @Issue(Locked.NAME)
+    @Target(PARAMETER)
+    @Retention(RUNTIME)
+    @Qualifier
+    public @interface Locked {
+
+        String NAME = Actions.LOCKED;
+    }
+
+    @Issue(Milestoned.NAME)
+    @Target(PARAMETER)
+    @Retention(RUNTIME)
+    @Qualifier
+    public @interface Milestoned {
+
+        String NAME = Actions.MILESTONED;
+    }
+
+    @Issue(Opened.NAME)
+    @Target(PARAMETER)
+    @Retention(RUNTIME)
+    @Qualifier
+    public @interface Opened {
+
+        String NAME = Actions.OPENED;
+    }
+
+    @Issue(Pinned.NAME)
+    @Target(PARAMETER)
+    @Retention(RUNTIME)
+    @Qualifier
+    public @interface Pinned {
+
+        String NAME = Actions.PINNED;
+    }
+
+    @Issue(Reopened.NAME)
+    @Target(PARAMETER)
+    @Retention(RUNTIME)
+    @Qualifier
+    public @interface Reopened {
+
+        String NAME = Actions.REOPENED;
+    }
+
+    @Issue(Transferred.NAME)
+    @Target(PARAMETER)
+    @Retention(RUNTIME)
+    @Qualifier
+    public @interface Transferred {
+
+        String NAME = Actions.TRANSFERRED;
+    }
+
+    @Issue(Unassigned.NAME)
+    @Target(PARAMETER)
+    @Retention(RUNTIME)
+    @Qualifier
+    public @interface Unassigned {
+
+        String NAME = Actions.UNASSIGNED;
+    }
+
+    @Issue(Unlabeled.NAME)
+    @Target(PARAMETER)
+    @Retention(RUNTIME)
+    @Qualifier
+    public @interface Unlabeled {
+
+        String NAME = Actions.UNLABELED;
+    }
+
+    @Issue(Unlocked.NAME)
+    @Target(PARAMETER)
+    @Retention(RUNTIME)
+    @Qualifier
+    public @interface Unlocked {
+
+        String NAME = Actions.UNLOCKED;
+    }
+
+    @Issue(Unpinned.NAME)
+    @Target(PARAMETER)
+    @Retention(RUNTIME)
+    @Qualifier
+    public @interface Unpinned {
+
+        String NAME = Actions.UNPINNED;
     }
 }
