@@ -1,5 +1,10 @@
 package io.quarkiverse.githubapp.deployment;
 
+import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.CONFIG_FILE;
+import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.EVENT;
+import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.GH_ROOT_OBJECTS;
+import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.GH_SIMPLE_OBJECTS;
+
 import java.io.PrintStream;
 import java.io.Reader;
 import java.io.StringReader;
@@ -115,7 +120,7 @@ class GithubAppProcessor {
     void registerForReflection(CombinedIndexBuildItem combinedIndex,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
         // GitHub API
-        for (DotName rootModelObject : GitHubAppDotNames.GH_ROOT_OBJECTS) {
+        for (DotName rootModelObject : GH_ROOT_OBJECTS) {
             reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, rootModelObject.toString()));
 
             reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true,
@@ -125,7 +130,7 @@ class GithubAppProcessor {
         }
 
         reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true,
-                GitHubAppDotNames.GH_SIMPLE_OBJECTS.stream().map(DotName::toString).toArray(String[]::new)));
+                GH_SIMPLE_OBJECTS.stream().map(DotName::toString).toArray(String[]::new)));
 
         // Caffeine
         reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true,
@@ -184,7 +189,7 @@ class GithubAppProcessor {
         Collection<EventDefinition> mainEventDefinitions = new ArrayList<>();
         Collection<EventDefinition> allEventDefinitions = new ArrayList<>();
 
-        for (AnnotationInstance eventInstance : index.getAnnotations(GitHubAppDotNames.EVENT)) {
+        for (AnnotationInstance eventInstance : index.getAnnotations(EVENT)) {
             if (eventInstance.target().kind() == Kind.CLASS) {
                 mainEventDefinitions.add(new EventDefinition(eventInstance.target().asClass().name(),
                         eventInstance.value("name").asString(),
@@ -451,7 +456,7 @@ class GithubAppProcessor {
                 for (short i = 0; i < originalMethodParameterTypes.size(); i++) {
                     List<AnnotationInstance> originalMethodAnnotations = originalMethodParameterAnnotationMapping
                             .getOrDefault(i, Collections.emptyList());
-                    if (originalMethodAnnotations.stream().anyMatch(ai -> GitHubAppDotNames.CONFIG_FILE.equals(ai.name()))) {
+                    if (originalMethodAnnotations.stream().anyMatch(ai -> CONFIG_FILE.equals(ai.name()))) {
                         // if the parameter is annotated with @ConfigFile, we skip it
                         continue;
                     }
@@ -460,7 +465,7 @@ class GithubAppProcessor {
                     parameterMapping.put(i, j);
                     j++;
                 }
-                if (originalMethod.hasAnnotation(GitHubAppDotNames.CONFIG_FILE)) {
+                if (originalMethod.hasAnnotation(CONFIG_FILE)) {
                     parameterTypes.add(ConfigFileReader.class.getName());
                 }
 
@@ -490,9 +495,9 @@ class GithubAppProcessor {
                         generatedParameterAnnotations.addAnnotation(DotNames.OBSERVES.toString());
                         generatedParameterAnnotations.addAnnotation(eventSubscriberInstance);
                         parameterValues[i] = methodCreator.getMethodParam(parameterMapping.get(i));
-                    } else if (parameterAnnotations.stream().anyMatch(ai -> ai.name().equals(GitHubAppDotNames.CONFIG_FILE))) {
+                    } else if (parameterAnnotations.stream().anyMatch(ai -> ai.name().equals(CONFIG_FILE))) {
                         AnnotationInstance configFileAnnotationInstance = parameterAnnotations.stream()
-                                .filter(ai -> ai.name().equals(GitHubAppDotNames.CONFIG_FILE)).findFirst().get();
+                                .filter(ai -> ai.name().equals(CONFIG_FILE)).findFirst().get();
                         String configObjectType = originalMethodParameterTypes.get(i).name().toString();
                         // it's a config file, we will use the ConfigFileReader (last parameter of the method) and inject the result
                         ResultHandle configFileReaderRh = methodCreator.getMethodParam(parameterTypes.size() - 1);
