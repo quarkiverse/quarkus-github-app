@@ -119,6 +119,14 @@ class GithubAppProcessor {
     @BuildStep
     void registerForReflection(CombinedIndexBuildItem combinedIndex,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
+        // Types used for config files
+        for (AnnotationInstance configFileAnnotationInstance : combinedIndex.getIndex().getAnnotations(CONFIG_FILE)) {
+            MethodParameterInfo methodParameter = configFileAnnotationInstance.target().asMethodParameter();
+            short parameterPosition = methodParameter.position();
+            Type parameterType = methodParameter.method().parameters().get(parameterPosition);
+            reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, parameterType.name().toString()));
+        }
+
         // GitHub API
         for (DotName rootModelObject : GH_ROOT_OBJECTS) {
             reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, rootModelObject.toString()));
