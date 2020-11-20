@@ -49,11 +49,13 @@ import org.kohsuke.github.GHVerification;
 import org.kohsuke.github.GitUser;
 import org.kohsuke.github.PagedIterable;
 
+import io.quarkiverse.githubapp.ConfigFile;
 import io.quarkiverse.githubapp.event.Event;
 
 final class GitHubAppDotNames {
 
     static final DotName EVENT = DotName.createSimple(Event.class.getName());
+    static final DotName CONFIG_FILE = DotName.createSimple(ConfigFile.class.getName());
 
     // GitHub API
 
