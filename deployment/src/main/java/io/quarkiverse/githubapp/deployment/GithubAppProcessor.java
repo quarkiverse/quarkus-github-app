@@ -1,5 +1,10 @@
 package io.quarkiverse.githubapp.deployment;
 
+import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.CONFIG_FILE;
+import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.EVENT;
+import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.GH_ROOT_OBJECTS;
+import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.GH_SIMPLE_OBJECTS;
+
 import java.io.PrintStream;
 import java.io.Reader;
 import java.io.StringReader;
@@ -9,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -29,8 +35,10 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.MethodParameterInfo;
+import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.kohsuke.github.GHEventPayload;
+import org.kohsuke.github.GHRepository;
 import org.kohsuke.github.GitHub;
 
 import io.jsonwebtoken.impl.DefaultJwtBuilder;
@@ -43,10 +51,12 @@ import io.quarkiverse.githubapp.deployment.DispatchingConfiguration.EventAnnotat
 import io.quarkiverse.githubapp.deployment.DispatchingConfiguration.EventDispatchingConfiguration;
 import io.quarkiverse.githubapp.deployment.DispatchingConfiguration.EventDispatchingMethod;
 import io.quarkiverse.githubapp.event.Actions;
+import io.quarkiverse.githubapp.runtime.ConfigFileReader;
 import io.quarkiverse.githubapp.runtime.GitHubEvent;
 import io.quarkiverse.githubapp.runtime.Routes;
 import io.quarkiverse.githubapp.runtime.UtilsProducer;
 import io.quarkiverse.githubapp.runtime.github.GitHubService;
+import io.quarkiverse.githubapp.runtime.github.PayloadHelper;
 import io.quarkiverse.githubapp.runtime.signing.JwtTokenCreator;
 import io.quarkiverse.githubapp.runtime.signing.PayloadSignatureChecker;
 import io.quarkiverse.githubapp.runtime.smee.SmeeIoForwarder;
@@ -110,7 +120,7 @@ class GithubAppProcessor {
     void registerForReflection(CombinedIndexBuildItem combinedIndex,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
         // GitHub API
-        for (DotName rootModelObject : GitHubAppDotNames.GH_ROOT_OBJECTS) {
+        for (DotName rootModelObject : GH_ROOT_OBJECTS) {
             reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, rootModelObject.toString()));
 
             reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true,
@@ -120,7 +130,7 @@ class GithubAppProcessor {
         }
 
         reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true,
-                GitHubAppDotNames.GH_SIMPLE_OBJECTS.stream().map(DotName::toString).toArray(String[]::new)));
+                GH_SIMPLE_OBJECTS.stream().map(DotName::toString).toArray(String[]::new)));
 
         // Caffeine
         reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true,
@@ -171,15 +181,15 @@ class GithubAppProcessor {
         generateAnnotationLiterals(classOutput, dispatchingConfiguration);
 
         ClassOutput beanClassOutput = new GeneratedBeanGizmoAdaptor(generatedBeans);
-        generateDispatcher(beanClassOutput, reflectiveClasses, dispatchingConfiguration);
-        generateMultiplexers(beanClassOutput, reflectiveClasses, dispatchingConfiguration);
+        generateDispatcher(beanClassOutput, combinedIndex, dispatchingConfiguration, reflectiveClasses);
+        generateMultiplexers(beanClassOutput, dispatchingConfiguration, reflectiveClasses);
     }
 
     private static Collection<EventDefinition> getAllEventDefinitions(IndexView index) {
         Collection<EventDefinition> mainEventDefinitions = new ArrayList<>();
         Collection<EventDefinition> allEventDefinitions = new ArrayList<>();
 
-        for (AnnotationInstance eventInstance : index.getAnnotations(GitHubAppDotNames.EVENT)) {
+        for (AnnotationInstance eventInstance : index.getAnnotations(EVENT)) {
             if (eventInstance.target().kind() == Kind.CLASS) {
                 mainEventDefinitions.add(new EventDefinition(eventInstance.target().asClass().name(),
                         eventInstance.value("name").asString(),
@@ -286,8 +296,9 @@ class GithubAppProcessor {
     }
 
     private static void generateDispatcher(ClassOutput beanClassOutput,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
-            DispatchingConfiguration dispatchingConfiguration) {
+            CombinedIndexBuildItem combinedIndex,
+            DispatchingConfiguration dispatchingConfiguration,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
         String dispatcherClassName = GitHubEvent.class.getName() + "DispatcherImpl";
 
         reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, dispatcherClassName));
@@ -395,8 +406,8 @@ class GithubAppProcessor {
     }
 
     private static void generateMultiplexers(ClassOutput beanClassOutput,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
-            DispatchingConfiguration dispatchingConfiguration) {
+            DispatchingConfiguration dispatchingConfiguration,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
         for (Entry<DotName, TreeSet<EventDispatchingMethod>> eventDispatchingMethodsEntry : dispatchingConfiguration
                 .getMethods().entrySet()) {
             DotName declaringClassName = eventDispatchingMethodsEntry.getKey();
@@ -427,41 +438,89 @@ class GithubAppProcessor {
 
             for (EventDispatchingMethod eventDispatchingMethod : eventDispatchingMethods) {
                 AnnotationInstance eventSubscriberInstance = eventDispatchingMethod.getEventSubscriberInstance();
-                MethodInfo method = eventDispatchingMethod.getMethod();
-                Map<Short, List<AnnotationInstance>> parameterAnnotationMapping = method.annotations().stream()
+                MethodInfo originalMethod = eventDispatchingMethod.getMethod();
+                Map<Short, List<AnnotationInstance>> originalMethodParameterAnnotationMapping = originalMethod.annotations().stream()
                         .filter(ai -> ai.target().kind() == Kind.METHOD_PARAMETER)
                         .collect(Collectors.groupingBy(ai -> ai.target().asMethodParameter().position()));
 
                 // if the method already has an @Observes annotation
-                if (method.hasAnnotation(DotNames.OBSERVES)) {
+                if (originalMethod.hasAnnotation(DotNames.OBSERVES)) {
                     LOG.warn("Methods listening to GitHub events may not be annotated with @Observes. Offending method: "
-                            + method.declaringClass().name() + "#" + method);
+                            + originalMethod.declaringClass().name() + "#" + originalMethod);
+                }
+
+                List<String> parameterTypes = new ArrayList<>();
+                List<Type> originalMethodParameterTypes = originalMethod.parameters();
+                short j = 0;
+                Map<Short, Short> parameterMapping = new HashMap<>();
+                for (short i = 0; i < originalMethodParameterTypes.size(); i++) {
+                    List<AnnotationInstance> originalMethodAnnotations = originalMethodParameterAnnotationMapping
+                            .getOrDefault(i, Collections.emptyList());
+                    if (originalMethodAnnotations.stream().anyMatch(ai -> CONFIG_FILE.equals(ai.name()))) {
+                        // if the parameter is annotated with @ConfigFile, we skip it
+                        continue;
+                    }
+
+                    parameterTypes.add(originalMethodParameterTypes.get(i).name().toString());
+                    parameterMapping.put(i, j);
+                    j++;
+                }
+                if (originalMethod.hasAnnotation(CONFIG_FILE)) {
+                    parameterTypes.add(ConfigFileReader.class.getName());
                 }
 
                 MethodCreator methodCreator = multiplexerClassCreator.getMethodCreator(
-                        method.name() + "_" + HashUtil.sha1(eventSubscriberInstance.toString()),
-                        method.returnType().name().toString(),
-                        method.parameters().stream().map(p -> p.name().toString()).toArray(String[]::new));
+                        originalMethod.name() + "_" + HashUtil.sha1(eventSubscriberInstance.toString()),
+                        originalMethod.returnType().name().toString(),
+                        parameterTypes.toArray());
 
-                ResultHandle[] parameterValues = new ResultHandle[method.parameters().size()];
+                ResultHandle[] parameterValues = new ResultHandle[originalMethod.parameters().size()];
 
-                for (short i = 0; i < method.parameters().size(); i++) {
-                    List<AnnotationInstance> parameterAnnotations = parameterAnnotationMapping.getOrDefault(i,
+                // detect the parameter that is a payload
+                short payloadParameterPosition = 0;
+                for (short i = 0; i < originalMethodParameterTypes.size(); i++) {
+                    List<AnnotationInstance> parameterAnnotations = originalMethodParameterAnnotationMapping.getOrDefault(i,
+                            Collections.emptyList());
+                    if (parameterAnnotations.stream().anyMatch(ai -> ai.name().equals(eventSubscriberInstance.name()))) {
+                        payloadParameterPosition = i;
+                        break;
+                    }
+                }
+
+                for (short i = 0; i < originalMethodParameterTypes.size(); i++) {
+                    List<AnnotationInstance> parameterAnnotations = originalMethodParameterAnnotationMapping.getOrDefault(i,
                             Collections.emptyList());
                     AnnotatedElement generatedParameterAnnotations = methodCreator.getParameterAnnotations(i);
                     if (parameterAnnotations.stream().anyMatch(ai -> ai.name().equals(eventSubscriberInstance.name()))) {
                         generatedParameterAnnotations.addAnnotation(DotNames.OBSERVES.toString());
                         generatedParameterAnnotations.addAnnotation(eventSubscriberInstance);
+                        parameterValues[i] = methodCreator.getMethodParam(parameterMapping.get(i));
+                    } else if (parameterAnnotations.stream().anyMatch(ai -> ai.name().equals(CONFIG_FILE))) {
+                        AnnotationInstance configFileAnnotationInstance = parameterAnnotations.stream()
+                                .filter(ai -> ai.name().equals(CONFIG_FILE)).findFirst().get();
+                        String configObjectType = originalMethodParameterTypes.get(i).name().toString();
+                        // it's a config file, we will use the ConfigFileReader (last parameter of the method) and inject the result
+                        ResultHandle configFileReaderRh = methodCreator.getMethodParam(parameterTypes.size() - 1);
+                        ResultHandle ghRepositoryRh = methodCreator.invokeStaticMethod(MethodDescriptor
+                                .ofMethod(PayloadHelper.class, "getRepository", GHRepository.class, GHEventPayload.class),
+                                methodCreator.getMethodParam(payloadParameterPosition));
+                        ResultHandle configObject = methodCreator.invokeVirtualMethod(
+                                MethodDescriptor.ofMethod(ConfigFileReader.class, "getConfigObject", Object.class,
+                                        GHRepository.class, String.class, Class.class),
+                                configFileReaderRh,
+                                ghRepositoryRh,
+                                methodCreator.load(configFileAnnotationInstance.value().asString()),
+                                methodCreator.loadClass(configObjectType));
+                        parameterValues[i] = methodCreator.checkCast(configObject, configObjectType);
                     } else {
                         for (AnnotationInstance annotationInstance : parameterAnnotations) {
                             generatedParameterAnnotations.addAnnotation(annotationInstance);
                         }
+                        parameterValues[i] = methodCreator.getMethodParam(parameterMapping.get(i));
                     }
-
-                    parameterValues[i] = methodCreator.getMethodParam(i);
                 }
 
-                ResultHandle returnValue = methodCreator.invokeVirtualMethod(method, methodCreator.getThis(), parameterValues);
+                ResultHandle returnValue = methodCreator.invokeVirtualMethod(originalMethod, methodCreator.getThis(), parameterValues);
                 methodCreator.returnValue(returnValue);
             }
 
