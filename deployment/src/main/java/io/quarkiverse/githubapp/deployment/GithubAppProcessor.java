@@ -235,7 +235,7 @@ class GithubAppProcessor {
                     .collect(Collectors.toList());
             for (AnnotationInstance eventSubscriberInstance : eventSubscriberInstances) {
                 String action = eventDefinition.getAction() != null ? eventDefinition.getAction()
-                        : (eventSubscriberInstance.value() != null ? eventSubscriberInstance.value().asString() : null);
+                        : (eventSubscriberInstance.value() != null ? eventSubscriberInstance.value().asString() : Actions.ALL);
 
                 MethodParameterInfo annotatedParameter = eventSubscriberInstance.target().asMethodParameter();
                 MethodInfo methodInfo = annotatedParameter.method();
