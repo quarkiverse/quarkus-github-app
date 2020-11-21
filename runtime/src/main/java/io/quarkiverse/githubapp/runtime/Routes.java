@@ -9,6 +9,8 @@ import javax.enterprise.event.Event;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import io.quarkiverse.githubapp.GitHubEvent;
+import io.quarkiverse.githubapp.runtime.config.GitHubAppRuntimeConfig;
 import io.quarkus.vertx.web.Header;
 import io.quarkus.vertx.web.Route;
 import io.quarkus.vertx.web.Route.HandlerType;
@@ -23,6 +25,9 @@ public class Routes {
 
     @Inject
     Event<GitHubEvent> gitHubEventEmitter;
+
+    @Inject
+    GitHubAppRuntimeConfig gitHubAppRuntimeConfig;
 
     @Route(path = "/", type = HandlerType.BLOCKING, methods = HttpMethod.POST, consumes = "application/json", produces = "application/json")
     public String handleRequest(RoutingContext routingContext,
@@ -39,8 +44,8 @@ public class Routes {
 
         Long installationId = extractInstallationId(body);
         String repository = extractRepository(body);
-        GitHubEvent gitHubEvent = new GitHubEvent(installationId, deliveryId, repository, event,
-                body.getString("action"), routingContext.getBodyAsString());
+        GitHubEvent gitHubEvent = new GitHubEvent(installationId, gitHubAppRuntimeConfig.appName.orElse(null), deliveryId,
+                repository, event, body.getString("action"), routingContext.getBodyAsString(), body);
 
         gitHubEventEmitter.fire(gitHubEvent);
 
