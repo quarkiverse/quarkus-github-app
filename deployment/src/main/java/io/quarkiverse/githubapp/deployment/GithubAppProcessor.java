@@ -458,7 +458,7 @@ class GithubAppProcessor {
                                 + declaringClass.name());
             }
 
-            String multiplexerClassName = declaringClassName + "_Mutiplexer";
+            String multiplexerClassName = declaringClassName + "_Multiplexer";
             reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, multiplexerClassName));
 
             ClassCreator multiplexerClassCreator = ClassCreator.builder().classOutput(beanClassOutput)
@@ -472,7 +472,35 @@ class GithubAppProcessor {
                 multiplexerClassCreator.addAnnotation(classAnnotation);
             }
 
-            // TODO we should "copy" the constructor too as it could be used for injection and initialization
+            for (MethodInfo originalConstructor : declaringClass.constructors()) {
+                MethodCreator constructorCreator = multiplexerClassCreator.getMethodCreator(MethodDescriptor.ofConstructor(multiplexerClassName,
+                        originalConstructor.parameters().stream().map(t -> t.name().toString()).toArray(String[]::new)));
+
+                List<AnnotationInstance> originalMethodAnnotations = originalConstructor.annotations().stream()
+                        .filter(ai -> ai.target().kind() == Kind.METHOD).collect(Collectors.toList());
+                for (AnnotationInstance originalMethodAnnotation : originalMethodAnnotations) {
+                    constructorCreator.addAnnotation(originalMethodAnnotation);
+                }
+
+                Map<Short, List<AnnotationInstance>> originalConstructorParameterAnnotationMapping = originalConstructor.annotations().stream()
+                        .filter(ai -> ai.target().kind() == Kind.METHOD_PARAMETER)
+                        .collect(Collectors.groupingBy(ai -> ai.target().asMethodParameter().position()));
+
+                List<ResultHandle> parametersRh = new ArrayList<>();
+                for (short i = 0; i < originalConstructor.parameters().size(); i++) {
+                    parametersRh.add(constructorCreator.getMethodParam(i));
+
+                    AnnotatedElement parameterAnnotations = constructorCreator.getParameterAnnotations(i);
+                    List<AnnotationInstance> originalConstructorParameterAnnotations = originalConstructorParameterAnnotationMapping
+                            .getOrDefault(i, Collections.emptyList());
+                    for (AnnotationInstance originalConstructorParameterAnnotation : originalConstructorParameterAnnotations) {
+                        parameterAnnotations.addAnnotation(originalConstructorParameterAnnotation);
+                    }
+                }
+
+                constructorCreator.invokeSpecialMethod(MethodDescriptor.of(originalConstructor), constructorCreator.getThis(), parametersRh.toArray(ResultHandle[]::new));
+                constructorCreator.returnValue(null);
+            }
 
             for (EventDispatchingMethod eventDispatchingMethod : eventDispatchingMethods) {
                 AnnotationInstance eventSubscriberInstance = eventDispatchingMethod.getEventSubscriberInstance();
