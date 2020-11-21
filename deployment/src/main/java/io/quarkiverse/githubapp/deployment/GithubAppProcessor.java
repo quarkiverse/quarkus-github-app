@@ -19,10 +19,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeSet;
+import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
 import javax.enterprise.event.Event;
-import javax.enterprise.event.Observes;
 import javax.enterprise.util.AnnotationLiteral;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -99,7 +99,7 @@ class GithubAppProcessor {
 
     private static final MethodDescriptor EVENT_SELECT = MethodDescriptor.ofMethod(Event.class, "select", Event.class,
             Annotation[].class);
-    private static final MethodDescriptor EVENT_FIRE = MethodDescriptor.ofMethod(Event.class, "fire", void.class, Object.class);
+    private static final MethodDescriptor EVENT_FIRE_ASYNC = MethodDescriptor.ofMethod(Event.class, "fireAsync", CompletionStage.class, Object.class);
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -330,7 +330,7 @@ class GithubAppProcessor {
                 void.class,
                 GitHubEvent.class);
         dispatchMethodCreator.setModifiers(Modifier.PUBLIC);
-        dispatchMethodCreator.getParameterAnnotations(0).addAnnotation(Observes.class);
+        dispatchMethodCreator.getParameterAnnotations(0).addAnnotation(DotNames.OBSERVES.toString());
 
         ResultHandle installationIdRh = dispatchMethodCreator.invokeVirtualMethod(
                 MethodDescriptor.ofMethod(GitHubEvent.class, "getInstallationId", Long.class),
@@ -391,7 +391,7 @@ class GithubAppProcessor {
                                     FieldDescriptor.of(dispatcherClassCreator.getClassName(), EVENT_EMITTER_FIELD, Event.class),
                                     eventMatchesCreator.getThis()),
                             annotationLiteralArray);
-                    eventMatchesCreator.invokeInterfaceMethod(EVENT_FIRE, cdiEventRh, payloadInstanceRh);
+                    eventMatchesCreator.invokeInterfaceMethod(EVENT_FIRE_ASYNC, cdiEventRh, payloadInstanceRh);
                 } else {
                     BytecodeCreator actionMatchesCreator = eventMatchesCreator
                             .ifTrue(eventMatchesCreator.invokeVirtualMethod(MethodDescriptors.OBJECT_EQUALS,
@@ -403,7 +403,7 @@ class GithubAppProcessor {
                                     FieldDescriptor.of(dispatcherClassCreator.getClassName(), EVENT_EMITTER_FIELD, Event.class),
                                     eventMatchesCreator.getThis()),
                             annotationLiteralArray);
-                    actionMatchesCreator.invokeInterfaceMethod(EVENT_FIRE, cdiEventRh, payloadInstanceRh);
+                    actionMatchesCreator.invokeInterfaceMethod(EVENT_FIRE_ASYNC, cdiEventRh, payloadInstanceRh);
                 }
             }
         }
@@ -451,10 +451,11 @@ class GithubAppProcessor {
                         .filter(ai -> ai.target().kind() == Kind.METHOD_PARAMETER)
                         .collect(Collectors.groupingBy(ai -> ai.target().asMethodParameter().position()));
 
-                // if the method already has an @Observes annotation
-                if (originalMethod.hasAnnotation(DotNames.OBSERVES)) {
-                    LOG.warn("Methods listening to GitHub events may not be annotated with @Observes. Offending method: "
-                            + originalMethod.declaringClass().name() + "#" + originalMethod);
+                // if the method already has an @Observes or @ObservesAsync annotation
+                if (originalMethod.hasAnnotation(DotNames.OBSERVES) || originalMethod.hasAnnotation(DotNames.OBSERVES_ASYNC)) {
+                    LOG.warn(
+                            "Methods listening to GitHub events may not be annotated with @Observes or @ObservesAsync. Offending method: "
+                                    + originalMethod.declaringClass().name() + "#" + originalMethod);
                 }
 
                 List<String> parameterTypes = new ArrayList<>();
@@ -500,7 +501,7 @@ class GithubAppProcessor {
                             Collections.emptyList());
                     AnnotatedElement generatedParameterAnnotations = methodCreator.getParameterAnnotations(i);
                     if (parameterAnnotations.stream().anyMatch(ai -> ai.name().equals(eventSubscriberInstance.name()))) {
-                        generatedParameterAnnotations.addAnnotation(DotNames.OBSERVES.toString());
+                        generatedParameterAnnotations.addAnnotation(DotNames.OBSERVES_ASYNC.toString());
                         generatedParameterAnnotations.addAnnotation(eventSubscriberInstance);
                         parameterValues[i] = methodCreator.getMethodParam(parameterMapping.get(i));
                     } else if (parameterAnnotations.stream().anyMatch(ai -> ai.name().equals(CONFIG_FILE))) {
