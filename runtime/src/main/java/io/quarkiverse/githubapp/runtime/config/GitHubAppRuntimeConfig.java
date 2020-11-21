@@ -18,6 +18,14 @@ public class GitHubAppRuntimeConfig {
     public String appId;
 
     /**
+     * The GitHub name of the application.
+     * <p>
+     * Optional, only used for improving the user experience.
+     */
+    @ConfigItem
+    public Optional<String> appName;
+
+    /**
      * The RSA private key.
      */
     @ConfigItem

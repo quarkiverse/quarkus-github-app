@@ -1,12 +1,18 @@
-package io.quarkiverse.githubapp.runtime;
+package io.quarkiverse.githubapp;
+
+import java.util.Optional;
+
+import io.vertx.core.json.JsonObject;
 
 public class GitHubEvent {
 
     private final Long installationId;
 
+    private final Optional<String> appName;
+
     private final String deliveryId;
 
-    private final String repository;
+    private final Optional<String> repository;
 
     private final String event;
 
@@ -14,24 +20,33 @@ public class GitHubEvent {
 
     private final String payload;
 
-    public GitHubEvent(Long installationId, String deliveryId, String repository, String event, String action, String payload) {
+    private final JsonObject parsedPayload;
+
+    public GitHubEvent(Long installationId, String appName, String deliveryId, String repository, String event, String action,
+            String payload, JsonObject parsedPayload) {
         this.installationId = installationId;
+        this.appName = Optional.ofNullable(appName);
         this.deliveryId = deliveryId;
-        this.repository = repository;
+        this.repository = Optional.ofNullable(repository);
         this.event = event;
         this.action = action;
         this.payload = payload;
+        this.parsedPayload = parsedPayload;
     }
 
     public Long getInstallationId() {
         return installationId;
     }
 
+    public Optional<String> getAppName() {
+        return appName;
+    }
+
     public String getDeliveryId() {
         return deliveryId;
     }
 
-    public String getRepository() {
+    public Optional<String> getRepository() {
         return repository;
     }
 
@@ -45,6 +60,10 @@ public class GitHubEvent {
 
     public String getPayload() {
         return payload;
+    }
+
+    public JsonObject getParsedPayload() {
+        return parsedPayload;
     }
 
     @Override
