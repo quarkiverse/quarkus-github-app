@@ -1,0 +1,57 @@
+[.configuration-legend]
+icon:lock[title=Fixed at build time] Configuration property fixed at build time - All other configuration properties are overridable at runtime
+[.configuration-reference.searchable, cols="80,.^10,.^10"]
+|===
+
+h|[[quarkus-github-app_configuration]]link:#quarkus-github-app_configuration[Configuration property]
+
+h|Type
+h|Default
+
+a| [[quarkus-github-app_quarkus.github-app.app-id]]`link:#quarkus-github-app_quarkus.github-app.app-id[quarkus.github-app.app-id]`
+
+[.description]
+--
+The numeric application id provided by GitHub.
+--|string 
+|required icon:exclamation-circle[title=Configuration property is required]
+
+
+a| [[quarkus-github-app_quarkus.github-app.app-name]]`link:#quarkus-github-app_quarkus.github-app.app-name[quarkus.github-app.app-name]`
+
+[.description]
+--
+The GitHub name of the application. 
+ Optional, only used for improving the user experience.
+--|string 
+|
+
+
+a| [[quarkus-github-app_quarkus.github-app.private-key]]`link:#quarkus-github-app_quarkus.github-app.private-key[quarkus.github-app.private-key]`
+
+[.description]
+--
+The RSA private key.
+--|link:https://docs.oracle.com/javase/8/docs/api/java/security/PrivateKey.html[PrivateKey]
+ 
+|required icon:exclamation-circle[title=Configuration property is required]
+
+
+a| [[quarkus-github-app_quarkus.github-app.webhook-secret]]`link:#quarkus-github-app_quarkus.github-app.webhook-secret[quarkus.github-app.webhook-secret]`
+
+[.description]
+--
+The webhook secret if defined in the GitHub UI.
+--|string 
+|
+
+
+a| [[quarkus-github-app_quarkus.github-app.webhook-proxy-url]]`link:#quarkus-github-app_quarkus.github-app.webhook-proxy-url[quarkus.github-app.webhook-proxy-url]`
+
+[.description]
+--
+The Smee.io proxy URL used when testing locally.
+--|string 
+|
+
+|===

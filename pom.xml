@@ -19,6 +19,7 @@
         <maven.compiler.parameters>true</maven.compiler.parameters>
         <quarkus.version>1.10.0.Final</quarkus.version>
         <compiler-plugin.version>3.8.1</compiler-plugin.version>
+        <resource-plugin.version>3.2.0</resource-plugin.version>
         <jandex-plugin.version>1.0.8</jandex-plugin.version>
 
         <okhttp-eventsource.version>2.3.1</okhttp-eventsource.version>
@@ -29,6 +30,7 @@
     <modules>
         <module>deployment</module>
         <module>runtime</module>
+        <module>docs</module>
     </modules>
 
     <dependencyManagement>
@@ -70,6 +72,10 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>${compiler-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-resources-plugin</artifactId>
+                    <version>${resource-plugin.version}</version>
                 </plugin>
                 <plugin>
                     <groupId>org.jboss.jandex</groupId>
