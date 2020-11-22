@@ -1,0 +1,5 @@
+name: quarkiverse-github-app
+title: Quarkiverse GitHub App
+version: dev
+nav:
+- modules/ROOT/nav.adoc
