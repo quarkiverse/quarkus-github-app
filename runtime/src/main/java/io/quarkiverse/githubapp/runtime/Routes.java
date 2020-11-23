@@ -2,18 +2,25 @@ package io.quarkiverse.githubapp.runtime;
 
 import static io.quarkiverse.githubapp.runtime.Headers.X_GITHUB_DELIVERY;
 import static io.quarkiverse.githubapp.runtime.Headers.X_GITHUB_EVENT;
-import static io.quarkiverse.githubapp.runtime.Headers.X_HUB_SIGNATURE;
+import static io.quarkiverse.githubapp.runtime.Headers.X_HUB_SIGNATURE_256;
 import static io.quarkiverse.githubapp.runtime.Headers.X_REQUEST_ID;
 
 import javax.enterprise.event.Event;
+import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import org.jboss.logging.Logger;
+
 import io.quarkiverse.githubapp.GitHubEvent;
 import io.quarkiverse.githubapp.runtime.config.GitHubAppRuntimeConfig;
+import io.quarkiverse.githubapp.runtime.signing.PayloadSignatureChecker;
+import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.StartupEvent;
 import io.quarkus.vertx.web.Header;
 import io.quarkus.vertx.web.Route;
 import io.quarkus.vertx.web.Route.HandlerType;
+import io.quarkus.vertx.web.RoutingExchange;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
@@ -21,7 +28,7 @@ import io.vertx.ext.web.RoutingContext;
 @Singleton
 public class Routes {
 
-    private static final String EMPTY_RESPONSE = "{}";
+    private static final Logger LOG = Logger.getLogger(GitHubEvent.class.getPackageName());
 
     @Inject
     Event<GitHubEvent> gitHubEventEmitter;
@@ -29,17 +36,39 @@ public class Routes {
     @Inject
     GitHubAppRuntimeConfig gitHubAppRuntimeConfig;
 
+    @Inject
+    PayloadSignatureChecker payloadSignatureChecker;
+
+    @Inject
+    LaunchMode launchMode;
+
+    public void init(@Observes StartupEvent startupEvent) {
+        if (gitHubAppRuntimeConfig.webhookSecret.isPresent() && launchMode.isDevOrTest()) {
+            LOG.warn("Payload signature checking is disabled in dev and test modes.");
+        }
+    }
+
     @Route(path = "/", type = HandlerType.BLOCKING, methods = HttpMethod.POST, consumes = "application/json", produces = "application/json")
-    public String handleRequest(RoutingContext routingContext,
+    public void handleRequest(RoutingContext routingContext,
+            RoutingExchange routingExchange,
             @Header(X_REQUEST_ID) String requestId,
-            @Header(X_HUB_SIGNATURE) String hubSignature,
+            @Header(X_HUB_SIGNATURE_256) String hubSignature,
             @Header(X_GITHUB_DELIVERY) String deliveryId,
             @Header(X_GITHUB_EVENT) String event) {
 
         JsonObject body = routingContext.getBodyAsJson();
 
         if (body == null) {
-            return EMPTY_RESPONSE;
+            routingExchange.ok().end();
+            return;
+        }
+
+        if (gitHubAppRuntimeConfig.webhookSecret.isPresent() && !launchMode.isDevOrTest()) {
+            if (!payloadSignatureChecker.matches(routingContext.getBodyAsString(), hubSignature)) {
+                LOG.error("Invalid signature for delivery: " + deliveryId);
+                routingExchange.serverError().end("Invalid signature.");
+                return;
+            }
         }
 
         Long installationId = extractInstallationId(body);
@@ -49,7 +78,7 @@ public class Routes {
 
         gitHubEventEmitter.fire(gitHubEvent);
 
-        return EMPTY_RESPONSE;
+        routingExchange.ok().end();
     }
 
     private static Long extractInstallationId(JsonObject body) {
