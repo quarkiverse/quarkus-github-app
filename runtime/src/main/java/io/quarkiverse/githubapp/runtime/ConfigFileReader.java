@@ -81,9 +81,11 @@ public class ConfigFileReader {
                 throw new IllegalStateException("Error deserializing config file " + fullPath + " to type " + type.getName(), e);
             }
         } catch (GHFileNotFoundException e) {
-            // the config being not found can be perfectly acceptable, we log a warning in dev and test modes
+            // The config being not found can be perfectly acceptable, we log a warning in dev and test modes.
+            // Note that you will have a GHFileNotFoundException if the file exists but you don't have the 'Contents' permission.
             if (launchMode.isDevOrTest()) {
-                LOG.warn("Unable to find config file " + fullPath + " for repository " + ghRepository.getFullName());
+                LOG.warn("Unable to find config file " + fullPath + " for repository " + ghRepository.getFullName()
+                        + ". Either the file does not exist or the 'Contents' permission has not been set for the application.");
             }
             return null;
         } catch (IOException e) {
