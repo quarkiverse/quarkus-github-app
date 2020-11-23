@@ -20,6 +20,7 @@
         <quarkus.version>1.10.0.Final</quarkus.version>
         <compiler-plugin.version>3.8.1</compiler-plugin.version>
         <resource-plugin.version>3.2.0</resource-plugin.version>
+        <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
         <jandex-plugin.version>1.0.8</jandex-plugin.version>
 
         <okhttp-eventsource.version>2.3.1</okhttp-eventsource.version>
@@ -76,6 +77,15 @@
                 <plugin>
                     <artifactId>maven-resources-plugin</artifactId>
                     <version>${resource-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>${surefire-plugin.version}</version>
+                    <configuration>
+                        <systemPropertyVariables>
+                            <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                        </systemPropertyVariables>
+                    </configuration>
                 </plugin>
                 <plugin>
                     <groupId>org.jboss.jandex</groupId>
