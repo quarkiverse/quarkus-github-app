@@ -19,7 +19,7 @@ public @interface PullRequest {
 
     String value() default Actions.ALL;
 
-    @Issue(Assigned.NAME)
+    @PullRequest(Assigned.NAME)
     @Target(PARAMETER)
     @Retention(RUNTIME)
     @Qualifier
@@ -28,7 +28,7 @@ public @interface PullRequest {
         String NAME = Actions.ASSIGNED;
     }
 
-    @Issue(Closed.NAME)
+    @PullRequest(Closed.NAME)
     @Target(PARAMETER)
     @Retention(RUNTIME)
     @Qualifier
@@ -37,7 +37,7 @@ public @interface PullRequest {
         String NAME = Actions.CLOSED;
     }
 
-    @Issue(Edited.NAME)
+    @PullRequest(Edited.NAME)
     @Target(PARAMETER)
     @Retention(RUNTIME)
     @Qualifier
@@ -46,7 +46,7 @@ public @interface PullRequest {
         String NAME = Actions.EDITED;
     }
 
-    @Issue(Labeled.NAME)
+    @PullRequest(Labeled.NAME)
     @Target(PARAMETER)
     @Retention(RUNTIME)
     @Qualifier
@@ -55,7 +55,7 @@ public @interface PullRequest {
         String NAME = Actions.LABELED;
     }
 
-    @Issue(Locked.NAME)
+    @PullRequest(Locked.NAME)
     @Target(PARAMETER)
     @Retention(RUNTIME)
     @Qualifier
@@ -64,7 +64,7 @@ public @interface PullRequest {
         String NAME = Actions.LOCKED;
     }
 
-    @Issue(Opened.NAME)
+    @PullRequest(Opened.NAME)
     @Target(PARAMETER)
     @Retention(RUNTIME)
     @Qualifier
@@ -73,7 +73,7 @@ public @interface PullRequest {
         String NAME = Actions.OPENED;
     }
 
-    @Issue(ReadyForReview.NAME)
+    @PullRequest(ReadyForReview.NAME)
     @Target(PARAMETER)
     @Retention(RUNTIME)
     @Qualifier
@@ -82,7 +82,7 @@ public @interface PullRequest {
         String NAME = Actions.READY_FOR_REVIEW;
     }
 
-    @Issue(Reopened.NAME)
+    @PullRequest(Reopened.NAME)
     @Target(PARAMETER)
     @Retention(RUNTIME)
     @Qualifier
@@ -91,7 +91,7 @@ public @interface PullRequest {
         String NAME = Actions.REOPENED;
     }
 
-    @Issue(ReviewRequested.NAME)
+    @PullRequest(ReviewRequested.NAME)
     @Target(PARAMETER)
     @Retention(RUNTIME)
     @Qualifier
@@ -100,7 +100,7 @@ public @interface PullRequest {
         String NAME = Actions.REVIEW_REQUESTED;
     }
 
-    @Issue(ReviewRequestRemoved.NAME)
+    @PullRequest(ReviewRequestRemoved.NAME)
     @Target(PARAMETER)
     @Retention(RUNTIME)
     @Qualifier
@@ -109,7 +109,7 @@ public @interface PullRequest {
         String NAME = Actions.REVIEW_REQUEST_REMOVED;
     }
 
-    @Issue(Synchronize.NAME)
+    @PullRequest(Synchronize.NAME)
     @Target(PARAMETER)
     @Retention(RUNTIME)
     @Qualifier
@@ -118,7 +118,7 @@ public @interface PullRequest {
         String NAME = Actions.SYNCHRONIZE;
     }
 
-    @Issue(Unassigned.NAME)
+    @PullRequest(Unassigned.NAME)
     @Target(PARAMETER)
     @Retention(RUNTIME)
     @Qualifier
@@ -127,7 +127,7 @@ public @interface PullRequest {
         String NAME = Actions.UNASSIGNED;
     }
 
-    @Issue(Unlabeled.NAME)
+    @PullRequest(Unlabeled.NAME)
     @Target(PARAMETER)
     @Retention(RUNTIME)
     @Qualifier
@@ -136,7 +136,7 @@ public @interface PullRequest {
         String NAME = Actions.UNLABELED;
     }
 
-    @Issue(Unlocked.NAME)
+    @PullRequest(Unlocked.NAME)
     @Target(PARAMETER)
     @Retention(RUNTIME)
     @Qualifier
