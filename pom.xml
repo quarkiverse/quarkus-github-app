@@ -24,7 +24,7 @@
         <jandex-plugin.version>1.0.8</jandex-plugin.version>
 
         <okhttp-eventsource.version>2.3.1</okhttp-eventsource.version>
-        <github-api.version>1.116</github-api.version>
+        <github-api.version>1.117</github-api.version>
         <jjwt.version>0.11.2</jjwt.version>
     </properties>
 
