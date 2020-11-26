@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeSet;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -78,6 +79,7 @@ import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
@@ -92,6 +94,7 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.util.HashUtil;
 
 class GithubAppProcessor {
@@ -109,6 +112,10 @@ class GithubAppProcessor {
             CompletionStage.class, Object.class);
     private static final MethodDescriptor COMPLETION_STAGE_EXCEPTIONALLY = MethodDescriptor.ofMethod(CompletionStage.class,
             "exceptionally", CompletionStage.class, Function.class);
+    private static final MethodDescriptor COMPLETION_STAGE_TO_COMPLETABLE_FUTURE = MethodDescriptor.ofMethod(CompletionStage.class,
+            "toCompletableFuture", CompletableFuture.class);
+    private static final MethodDescriptor COMPLETABLE_FUTURE_JOIN = MethodDescriptor.ofMethod(CompletableFuture.class,
+            "join", Object.class);
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -185,7 +192,7 @@ class GithubAppProcessor {
     }
 
     @BuildStep
-    void generateClasses(CombinedIndexBuildItem combinedIndex,
+    void generateClasses(CombinedIndexBuildItem combinedIndex, LaunchModeBuildItem launchMode,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
@@ -205,7 +212,7 @@ class GithubAppProcessor {
         generateAnnotationLiterals(classOutput, dispatchingConfiguration);
 
         ClassOutput beanClassOutput = new GeneratedBeanGizmoAdaptor(generatedBeans);
-        generateDispatcher(beanClassOutput, combinedIndex, dispatchingConfiguration, reflectiveClasses);
+        generateDispatcher(beanClassOutput, combinedIndex, launchMode, dispatchingConfiguration, reflectiveClasses);
         generateMultiplexers(beanClassOutput, dispatchingConfiguration, reflectiveClasses);
     }
 
@@ -321,6 +328,7 @@ class GithubAppProcessor {
 
     private static void generateDispatcher(ClassOutput beanClassOutput,
             CombinedIndexBuildItem combinedIndex,
+            LaunchModeBuildItem launchMode,
             DispatchingConfiguration dispatchingConfiguration,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
         String dispatcherClassName = GitHubEvent.class.getName() + "DispatcherImpl";
@@ -406,16 +414,16 @@ class GithubAppProcessor {
                 eventMatchesCreator.writeArrayValue(annotationLiteralArrayRh, 0, annotationLiteralRh);
 
                 if (Actions.ALL.equals(action)) {
-                    fireAsyncAction(eventMatchesCreator, dispatcherClassCreator.getClassName(), gitHubEventRh, payloadInstanceRh,
-                            annotationLiteralArrayRh);
+                    fireAsyncAction(eventMatchesCreator, launchMode.getLaunchMode(), dispatcherClassCreator.getClassName(),
+                            gitHubEventRh, payloadInstanceRh, annotationLiteralArrayRh);
                 } else {
                     BytecodeCreator actionMatchesCreator = eventMatchesCreator
                             .ifTrue(eventMatchesCreator.invokeVirtualMethod(MethodDescriptors.OBJECT_EQUALS,
                                     eventMatchesCreator.load(action), dispatchedActionRh))
                             .trueBranch();
 
-                    fireAsyncAction(actionMatchesCreator, dispatcherClassCreator.getClassName(), gitHubEventRh, payloadInstanceRh,
-                            annotationLiteralArrayRh);
+                    fireAsyncAction(actionMatchesCreator, launchMode.getLaunchMode(), dispatcherClassCreator.getClassName(),
+                            gitHubEventRh, payloadInstanceRh, annotationLiteralArrayRh);
                 }
             }
         }
@@ -430,8 +438,8 @@ class GithubAppProcessor {
         dispatcherClassCreator.close();
     }
 
-    private static ResultHandle fireAsyncAction(BytecodeCreator bytecodeCreator, String className, ResultHandle gitHubEventRh,
-            ResultHandle payloadInstanceRh, ResultHandle annotationLiteralArrayRh) {
+    private static ResultHandle fireAsyncAction(BytecodeCreator bytecodeCreator, LaunchMode launchMode, String className,
+            ResultHandle gitHubEventRh, ResultHandle payloadInstanceRh, ResultHandle annotationLiteralArrayRh) {
         ResultHandle cdiEventRh = bytecodeCreator.invokeInterfaceMethod(EVENT_SELECT,
                 bytecodeCreator.readInstanceField(
                         FieldDescriptor.of(className, EVENT_EMITTER_FIELD, Event.class),
@@ -441,11 +449,20 @@ class GithubAppProcessor {
         ResultHandle fireAsyncCompletionStageRH = bytecodeCreator.invokeInterfaceMethod(EVENT_FIRE_ASYNC, cdiEventRh,
                 payloadInstanceRh);
 
-        return bytecodeCreator.invokeInterfaceMethod(COMPLETION_STAGE_EXCEPTIONALLY, fireAsyncCompletionStageRH,
+        ResultHandle exceptionallyRH = bytecodeCreator.invokeInterfaceMethod(COMPLETION_STAGE_EXCEPTIONALLY,
+                fireAsyncCompletionStageRH,
                 bytecodeCreator.newInstance(
                         MethodDescriptor.ofConstructor(ErrorHandlerBridgeFunction.class, GitHubEvent.class,
                                 GHEventPayload.class),
                         gitHubEventRh, payloadInstanceRh));
+
+        if (LaunchMode.TEST.equals(launchMode)) {
+            ResultHandle toFutureRH = bytecodeCreator.invokeInterfaceMethod(COMPLETION_STAGE_TO_COMPLETABLE_FUTURE,
+                    exceptionallyRH);
+            return bytecodeCreator.invokeVirtualMethod(COMPLETABLE_FUTURE_JOIN, toFutureRH);
+        } else {
+            return exceptionallyRH;
+        }
     }
 
     private static void generateMultiplexers(ClassOutput beanClassOutput,
