@@ -79,6 +79,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.gizmo.AnnotatedElement;
 import io.quarkus.gizmo.BytecodeCreator;
@@ -126,13 +127,19 @@ class GithubAppProcessor {
 
     @BuildStep
     void registerForReflection(CombinedIndexBuildItem combinedIndex,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchies) {
         // Types used for config files
         for (AnnotationInstance configFileAnnotationInstance : combinedIndex.getIndex().getAnnotations(CONFIG_FILE)) {
             MethodParameterInfo methodParameter = configFileAnnotationInstance.target().asMethodParameter();
             short parameterPosition = methodParameter.position();
             Type parameterType = methodParameter.method().parameters().get(parameterPosition);
-            reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, parameterType.name().toString()));
+            reflectiveHierarchies.produce(new ReflectiveHierarchyBuildItem.Builder()
+                    .type(parameterType)
+                    .index(combinedIndex.getIndex())
+                    .source(GithubAppProcessor.class.getSimpleName() + " > " + methodParameter.method().declaringClass() + "#"
+                            + methodParameter.method())
+                    .build());
         }
 
         // GitHub API
