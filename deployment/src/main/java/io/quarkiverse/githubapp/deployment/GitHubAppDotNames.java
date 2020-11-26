@@ -6,6 +6,7 @@ import java.util.List;
 import javax.naming.directory.SearchResult;
 
 import org.jboss.jandex.DotName;
+import org.kohsuke.github.GHAppInstallation;
 import org.kohsuke.github.GHAppInstallationToken;
 import org.kohsuke.github.GHAuthorization;
 import org.kohsuke.github.GHBlob;
@@ -37,6 +38,7 @@ import org.kohsuke.github.GHMembership;
 import org.kohsuke.github.GHMeta;
 import org.kohsuke.github.GHNotificationStream;
 import org.kohsuke.github.GHObject;
+import org.kohsuke.github.GHPullRequestChanges;
 import org.kohsuke.github.GHPullRequestCommitDetail;
 import org.kohsuke.github.GHPullRequestFileDetail;
 import org.kohsuke.github.GHRateLimit;
@@ -83,6 +85,8 @@ final class GitHubAppDotNames {
             PAGED_ITERABLE, GH_HOOK, GH_REPOSITORY_TRAFFIC, GH_REPOSITORY_TRAFFIC_DAILY_INFO, GH_KEY, SEARCH_RESULT, GIT_USER, GH_COMMIT);
 
     // Simple objects
+    private static final DotName GH_APP_INSTALLATION_GH_APP_INSTALLATION_REPOSITORY_RESULT = DotName
+            .createSimple(GHAppInstallation.class.getName() + "$GHAppInstallationRepositoryResult");
     private static final DotName GH_APP_INSTALLATION_TOKEN = DotName.createSimple(GHAppInstallationToken.class.getName());
     private static final DotName GH_APP_AUTHORIZATION_APP = DotName.createSimple(GHAuthorization.class.getName() + "$App");
     private static final DotName GH_BLOB = DotName.createSimple(GHBlob.class.getName());
@@ -127,6 +131,9 @@ final class GitHubAppDotNames {
     private static final DotName GH_NOTIFICATION_STREAM = DotName.createSimple(GHNotificationStream.class.getName());
     private static final DotName GH_ORG_HOOK = DotName.createSimple("org.kohsuke.github.GHOrgHook");
     private static final DotName GH_PERMISSION = DotName.createSimple("org.kohsuke.github.GHPermission");
+    private static final DotName GH_PULL_REQUEST_CHANGES = DotName.createSimple(GHPullRequestChanges.class.getName());
+    private static final DotName GH_PULL_REQUEST_CHANGES_GH_FROM = DotName.createSimple(GHPullRequestChanges.GHFrom.class.getName());
+    private static final DotName GH_PULL_REQUEST_CHANGES_GH_COMMIT_POINTER = DotName.createSimple(GHPullRequestChanges.GHCommitPointer.class.getName());
     private static final DotName GH_PULL_REQUEST_COMMIT_DETAIL = DotName.createSimple(GHPullRequestCommitDetail.class.getName());
     private static final DotName GH_PULL_REQUEST_COMMIT_DETAIL_COMMIT = DotName.createSimple(GHPullRequestCommitDetail.Commit.class.getName());
     private static final DotName GH_PULL_REQUEST_COMMIT_DETAIL_COMMIT_POINTER = DotName.createSimple(GHPullRequestCommitDetail.CommitPointer.class.getName());
@@ -155,7 +162,8 @@ final class GitHubAppDotNames {
     private static final DotName GITHUB_REQUEST_ENTRY = DotName.createSimple("org.kohsuke.github.GitHubRequest$Entry");
     private static final DotName GITHUB_RESPONSE = DotName.createSimple("org.kohsuke.github.GitHubResponse");
 
-    static final List<DotName> GH_SIMPLE_OBJECTS = Arrays.asList(GH_APP_INSTALLATION_TOKEN, GH_APP_AUTHORIZATION_APP, GH_BLOB,
+    static final List<DotName> GH_SIMPLE_OBJECTS = Arrays.asList(GH_APP_INSTALLATION_GH_APP_INSTALLATION_REPOSITORY_RESULT,
+            GH_APP_INSTALLATION_TOKEN, GH_APP_AUTHORIZATION_APP, GH_BLOB,
             GH_BRANCH,
             GH_BRANCH_COMMIT, GH_BRANCH_PROTECTION, GH_BRANCH_PROTECTION_ENFORCE_ADMINS, GH_BRANCH_PROTECTION_REQUIRED_REVIEWS,
             GH_BRANCH_PROTECTION_REQUIRED_SIGNATURES, GH_BRANCH_PROTECTION_REQUIRED_STATUS_CHECKS,
@@ -168,7 +176,9 @@ final class GitHubAppDotNames {
             GH_EVENT_PAYLOAD_PUSH_PUSH_COMMIT, GH_GIST_FILE, GH_ISSUE_PULL_REQUEST, GH_ISSUE_EVENT, GH_LABEL,
             GH_MARKETPLACE_PENDING_CHANGE, GH_MARKETPLACE_PLAN,
             GH_MARKETPLACE_PURCHASE, GH_MARKETPLACE_USER_PURCHASE, GH_MEMBERSHIP, GH_META, GH_NOTIFICATION_STREAM,
-            GH_ORG_HOOK, GH_PERMISSION, GH_PULL_REQUEST_COMMIT_DETAIL, GH_PULL_REQUEST_COMMIT_DETAIL_COMMIT,
+            GH_ORG_HOOK, GH_PERMISSION, GH_PULL_REQUEST_CHANGES, GH_PULL_REQUEST_CHANGES_GH_FROM,
+            GH_PULL_REQUEST_CHANGES_GH_COMMIT_POINTER,
+            GH_PULL_REQUEST_COMMIT_DETAIL, GH_PULL_REQUEST_COMMIT_DETAIL_COMMIT,
             GH_PULL_REQUEST_COMMIT_DETAIL_COMMIT_POINTER, GH_PULL_REQUEST_COMMIT_DETAIL_TREE,
             GH_PULL_REQUEST_FILE_DETAIL, GH_RATE_LIMIT, GH_RATE_LIMIT_RECORD, GH_RATE_LIMIT_UNKNOWN_LIMIT_RECORD, GH_REF,
             GH_REF_GH_OBJECT, GH_REPOSITORY_GH_REPO_PERMISSION, GH_REPOSITORY_TOPICS,
