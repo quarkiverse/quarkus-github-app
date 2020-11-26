@@ -56,7 +56,7 @@ public class Routes {
             @Header(X_GITHUB_DELIVERY) String deliveryId,
             @Header(X_GITHUB_EVENT) String event) {
 
-        if (isBlank(deliveryId) || isBlank(hubSignature)) {
+        if (!launchMode.isDevOrTest() && (isBlank(deliveryId) || isBlank(hubSignature))) {
             routingExchange.response().setStatusCode(400).end();
             return;
         }
