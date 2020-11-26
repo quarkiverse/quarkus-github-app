@@ -36,12 +36,12 @@ public class PayloadSignatureChecker {
         }
     }
 
-    public boolean matches(String payload, String headerSignature) {
+    public boolean matches(byte[] payload, String headerSignature) {
         if (mac == null) {
             throw new IllegalStateException("Payload signature checking is disabled");
         }
 
-        String payloadSignature = hex(mac.doFinal(payload.getBytes(UTF_8)));
+        String payloadSignature = hex(mac.doFinal(payload));
 
         // we need a constant time equals thus why we don't use String.equals()
         return MessageDigest.isEqual(payloadSignature.getBytes(),

@@ -15,7 +15,7 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class PayloadSignatureCheckerTest {
 
-    private static final String PAYLOAD = "payloads/application-payload-signature-checker.json";
+    private static final String PAYLOAD = "payloads/payload-signature-checker.json";
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -30,7 +30,7 @@ public class PayloadSignatureCheckerTest {
     @Test
     public void testPayloadSignatureCheck() {
         assertThat(payloadSignatureChecker.matches(
-                PayloadUtil.getPayload(PAYLOAD),
+                PayloadUtil.getPayloadAsBytes(PAYLOAD),
                 "sha256=360cb83c969705ab4d8a3b2b78ce9f875fb48096765aaeb71258dd4ba891fa2b")).isTrue();
     }
 }
