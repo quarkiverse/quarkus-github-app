@@ -61,33 +61,27 @@ public class Routes {
             return;
         }
 
-        String rawBody = routingContext.getBodyAsString();
+        JsonObject body = routingContext.getBodyAsJson();
 
-        if (rawBody == null) {
+        if (body == null) {
             routingExchange.ok().end();
             return;
         }
 
         if (gitHubAppRuntimeConfig.webhookSecret.isPresent() && !launchMode.isDevOrTest()) {
-            if (!payloadSignatureChecker.matches(rawBody, hubSignature)) {
-                StringBuilder signatureError = new StringBuilder("Invalid signature for delivery: ").append(deliveryId);
+            if (!payloadSignatureChecker.matches(routingContext.getBody().getBytes(), hubSignature)) {
+                StringBuilder signatureError = new StringBuilder("Invalid signature for delivery: ").append(deliveryId)
+                        .append("\n");
                 signatureError.append("› Signature: ").append(hubSignature).append("\n");
                 signatureError.append("› Payload:\n")
                         .append("----\n")
-                        .append(rawBody).append("\n")
+                        .append(routingContext.getBodyAsString()).append("\n")
                         .append("----");
                 LOG.error(signatureError.toString());
 
                 routingExchange.response().setStatusCode(400).end("Invalid signature.");
                 return;
             }
-        }
-
-        JsonObject body = routingContext.getBodyAsJson();
-
-        if (body == null) {
-            routingExchange.ok().end();
-            return;
         }
 
         Long installationId = extractInstallationId(body);
