@@ -56,26 +56,38 @@ public class Routes {
             @Header(X_GITHUB_DELIVERY) String deliveryId,
             @Header(X_GITHUB_EVENT) String event) {
 
-        JsonObject body = routingContext.getBodyAsJson();
+        if (isBlank(deliveryId) || isBlank(hubSignature)) {
+            routingExchange.response().setStatusCode(400).end();
+            return;
+        }
 
-        if (body == null) {
+        String rawBody = routingContext.getBodyAsString();
+
+        if (rawBody == null) {
             routingExchange.ok().end();
             return;
         }
 
         if (gitHubAppRuntimeConfig.webhookSecret.isPresent() && !launchMode.isDevOrTest()) {
-            if (!payloadSignatureChecker.matches(routingContext.getBodyAsString(), hubSignature)) {
+            if (!payloadSignatureChecker.matches(rawBody, hubSignature)) {
                 StringBuilder signatureError = new StringBuilder("Invalid signature for delivery: ").append(deliveryId);
                 signatureError.append("› Signature: ").append(hubSignature).append("\n");
                 signatureError.append("› Payload:\n")
                         .append("----\n")
-                        .append(routingContext.getBodyAsString()).append("\n")
+                        .append(rawBody).append("\n")
                         .append("----");
                 LOG.error(signatureError.toString());
 
-                routingExchange.serverError().end("Invalid signature.");
+                routingExchange.response().setStatusCode(400).end("Invalid signature.");
                 return;
             }
+        }
+
+        JsonObject body = routingContext.getBodyAsJson();
+
+        if (body == null) {
+            routingExchange.ok().end();
+            return;
         }
 
         Long installationId = extractInstallationId(body);
@@ -86,6 +98,10 @@ public class Routes {
         gitHubEventEmitter.fire(gitHubEvent);
 
         routingExchange.ok().end();
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 
     private static Long extractInstallationId(JsonObject body) {
