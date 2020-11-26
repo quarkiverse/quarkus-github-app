@@ -30,9 +30,9 @@ public class DefaultErrorHandler implements ErrorHandler {
         StringBuilder errorMessage = new StringBuilder();
         errorMessage.append("Error handling delivery " + gitHubEvent.getDeliveryId() + "\n");
         if (gitHubEvent.getRepository().isPresent()) {
-            errorMessage.append("> Repository: " + gitHubEvent.getRepository().get() + "\n");
+            errorMessage.append("› Repository: " + gitHubEvent.getRepository().get() + "\n");
         }
-        errorMessage.append("> Event:      " + gitHubEvent.getEvent());
+        errorMessage.append("› Event:      " + gitHubEvent.getEvent());
         if (gitHubEvent.getAction() != null) {
             errorMessage.append("." + gitHubEvent.getAction());
         }
@@ -41,16 +41,16 @@ public class DefaultErrorHandler implements ErrorHandler {
         if (payload != null) {
             Optional<String> context = PayloadHelper.getContext(payload);
             if (context.isPresent()) {
-                errorMessage.append("> Context:    " + PayloadHelper.getContext(payload).get() + "\n");
+                errorMessage.append("› Context:    " + PayloadHelper.getContext(payload).get() + "\n");
             }
         }
 
         if (gitHubEvent.getAppName().isPresent()) {
-            errorMessage.append("> Redeliver:  " + String.format(REDELIVERY_URL, gitHubEvent.getAppName().get()) + "\n");
+            errorMessage.append("› Redeliver:  " + String.format(REDELIVERY_URL, gitHubEvent.getAppName().get()) + "\n");
         }
 
         if (launchMode.isDevOrTest()) {
-            errorMessage.append("> Payload:\n")
+            errorMessage.append("› Payload:\n")
                     .append("----\n")
                     .append(gitHubEvent.getParsedPayload().encodePrettily()).append("\n")
                     .append("----\n");

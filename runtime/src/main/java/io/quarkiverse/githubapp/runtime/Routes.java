@@ -65,7 +65,14 @@ public class Routes {
 
         if (gitHubAppRuntimeConfig.webhookSecret.isPresent() && !launchMode.isDevOrTest()) {
             if (!payloadSignatureChecker.matches(routingContext.getBodyAsString(), hubSignature)) {
-                LOG.error("Invalid signature for delivery: " + deliveryId);
+                StringBuilder signatureError = new StringBuilder("Invalid signature for delivery: ").append(deliveryId);
+                signatureError.append("› Signature: ").append(hubSignature).append("\n");
+                signatureError.append("› Payload:\n")
+                        .append("----\n")
+                        .append(routingContext.getBodyAsString()).append("\n")
+                        .append("----");
+                LOG.error(signatureError.toString());
+
                 routingExchange.serverError().end("Invalid signature.");
                 return;
             }
