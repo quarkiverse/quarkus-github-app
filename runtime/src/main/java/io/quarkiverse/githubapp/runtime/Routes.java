@@ -7,6 +7,7 @@ import static io.quarkiverse.githubapp.runtime.Headers.X_REQUEST_ID;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -49,6 +50,8 @@ public class Routes {
     @Inject
     LaunchMode launchMode;
 
+    Path tmpDirectory;
+
     public void init(@Observes StartupEvent startupEvent) throws IOException {
         if (gitHubAppRuntimeConfig.webhookSecret.isPresent() && launchMode.isDevOrTest()) {
             LOG.warn("Payload signature checking is disabled in dev and test modes.");
@@ -59,6 +62,8 @@ public class Routes {
             LOG.warn("Payloads saved in directory: "
                     + gitHubAppRuntimeConfig.debug.payloadDirectory.get().toAbsolutePath().toString());
         }
+
+        tmpDirectory = Files.createTempDirectory("github-app-");
     }
 
     @Route(path = "/", type = HandlerType.BLOCKING, methods = HttpMethod.POST, consumes = "application/json", produces = "application/json")
@@ -92,12 +97,14 @@ public class Routes {
             if (!payloadSignatureChecker.matches(bodyBytes, hubSignature)) {
                 StringBuilder signatureError = new StringBuilder("Invalid signature for delivery: ").append(deliveryId)
                         .append("\n");
-                signatureError.append("› Signature: ").append(hubSignature).append("\n");
-                signatureError.append("› Payload:\n")
-                        .append("----\n")
-                        .append(routingContext.getBodyAsString()).append("\n")
-                        .append("----");
+                signatureError.append("› Signature: ").append(hubSignature);
                 LOG.error(signatureError.toString());
+
+                // temporary to debug issues
+                String fileName = DATE_TIME_FORMATTER.format(LocalDateTime.now()) + "-" + event + "-" + body.getString("action") + "-"
+                        + deliveryId + ".json";
+                LOG.warn("› Saving payload to: " + fileName);
+                Files.write(tmpDirectory.resolve(fileName), bodyBytes);
 
                 routingExchange.response().setStatusCode(400).end("Invalid signature.");
                 return;
@@ -112,6 +119,19 @@ public class Routes {
         gitHubEventEmitter.fire(gitHubEvent);
 
         routingExchange.ok().end();
+    }
+
+    @Route(path = "/payload/:file", type = HandlerType.BLOCKING, methods = HttpMethod.GET, produces = "application/json")
+    public void handleRequest(RoutingContext routingContext, RoutingExchange routingExchange) throws IOException {
+        String fileName = routingContext.pathParam("file");
+        if (!isBlank(fileName)) {
+            Path filePath = tmpDirectory.resolve(fileName);
+            if (Files.isReadable(filePath)) {
+                routingExchange.ok().sendFile(filePath.toAbsolutePath().toFile().getPath());
+                return;
+            }
+        }
+        routingExchange.serverError().end();
     }
 
     private static boolean isBlank(String value) {

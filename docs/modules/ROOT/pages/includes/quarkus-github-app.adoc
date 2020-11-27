@@ -59,7 +59,7 @@ a| [[quarkus-github-app_quarkus.github-app.debug.payload-directory]]`link:#quark
 
 [.description]
 --
-A directory in which the payloads will be saved.
+A directory in which the payloads are saved.
 --|path 
 |
 

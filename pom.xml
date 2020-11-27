@@ -23,6 +23,7 @@
         <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
         <jandex-plugin.version>1.0.8</jandex-plugin.version>
 
+        <okhttp.version>4.9.0</okhttp.version>
         <okhttp-eventsource.version>2.3.1</okhttp-eventsource.version>
         <github-api.version>1.117</github-api.version>
         <jjwt.version>0.11.2</jjwt.version>
@@ -42,6 +43,11 @@
                 <version>${quarkus.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.squareup.okhttp3</groupId>
+                <artifactId>okhttp</artifactId>
+                <version>${okhttp.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.launchdarkly</groupId>
