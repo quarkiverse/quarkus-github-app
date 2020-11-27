@@ -5,6 +5,11 @@ import static io.quarkiverse.githubapp.runtime.Headers.X_GITHUB_EVENT;
 import static io.quarkiverse.githubapp.runtime.Headers.X_HUB_SIGNATURE_256;
 import static io.quarkiverse.githubapp.runtime.Headers.X_REQUEST_ID;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
 import javax.enterprise.event.Event;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
@@ -30,6 +35,8 @@ public class Routes {
 
     private static final Logger LOG = Logger.getLogger(GitHubEvent.class.getPackageName());
 
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss");
+
     @Inject
     Event<GitHubEvent> gitHubEventEmitter;
 
@@ -42,9 +49,15 @@ public class Routes {
     @Inject
     LaunchMode launchMode;
 
-    public void init(@Observes StartupEvent startupEvent) {
+    public void init(@Observes StartupEvent startupEvent) throws IOException {
         if (gitHubAppRuntimeConfig.webhookSecret.isPresent() && launchMode.isDevOrTest()) {
             LOG.warn("Payload signature checking is disabled in dev and test modes.");
+        }
+
+        if (gitHubAppRuntimeConfig.debug.payloadDirectory.isPresent()) {
+            Files.createDirectories(gitHubAppRuntimeConfig.debug.payloadDirectory.get());
+            LOG.warn("Payloads saved in directory: "
+                    + gitHubAppRuntimeConfig.debug.payloadDirectory.get().toAbsolutePath().toString());
         }
     }
 
@@ -54,11 +67,18 @@ public class Routes {
             @Header(X_REQUEST_ID) String requestId,
             @Header(X_HUB_SIGNATURE_256) String hubSignature,
             @Header(X_GITHUB_DELIVERY) String deliveryId,
-            @Header(X_GITHUB_EVENT) String event) {
+            @Header(X_GITHUB_EVENT) String event) throws IOException {
 
         if (!launchMode.isDevOrTest() && (isBlank(deliveryId) || isBlank(hubSignature))) {
             routingExchange.response().setStatusCode(400).end();
             return;
+        }
+
+        byte[] bodyBytes = routingContext.getBody().getBytes();
+
+        if (!isBlank(deliveryId) && gitHubAppRuntimeConfig.debug.payloadDirectory.isPresent()) {
+            String fileName = DATE_TIME_FORMATTER.format(LocalDateTime.now()) + "-" + event + "-" + deliveryId + ".json";
+            Files.write(gitHubAppRuntimeConfig.debug.payloadDirectory.get().resolve(fileName), bodyBytes);
         }
 
         JsonObject body = routingContext.getBodyAsJson();
@@ -69,7 +89,7 @@ public class Routes {
         }
 
         if (gitHubAppRuntimeConfig.webhookSecret.isPresent() && !launchMode.isDevOrTest()) {
-            if (!payloadSignatureChecker.matches(routingContext.getBody().getBytes(), hubSignature)) {
+            if (!payloadSignatureChecker.matches(bodyBytes, hubSignature)) {
                 StringBuilder signatureError = new StringBuilder("Invalid signature for delivery: ").append(deliveryId)
                         .append("\n");
                 signatureError.append("› Signature: ").append(hubSignature).append("\n");

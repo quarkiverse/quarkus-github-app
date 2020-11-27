@@ -54,4 +54,13 @@ The Smee.io proxy URL used when testing locally.
 --|string 
 |
 
+
+a| [[quarkus-github-app_quarkus.github-app.debug.payload-directory]]`link:#quarkus-github-app_quarkus.github-app.debug.payload-directory[quarkus.github-app.debug.payload-directory]`
+
+[.description]
+--
+A directory in which the payloads will be saved.
+--|path 
+|
+
 |===

@@ -1,8 +1,10 @@
 package io.quarkiverse.githubapp.runtime.config;
 
+import java.nio.file.Path;
 import java.security.PrivateKey;
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -43,4 +45,20 @@ public class GitHubAppRuntimeConfig {
      */
     @ConfigItem
     public Optional<String> webhookProxyUrl;
+
+    /**
+     * Debug configuration.
+     */
+    @ConfigItem
+    public Debug debug;
+
+    @ConfigGroup
+    public static class Debug {
+
+        /**
+         * A directory in which the payloads are saved.
+         */
+        @ConfigItem
+        public Optional<Path> payloadDirectory;
+    }
 }
