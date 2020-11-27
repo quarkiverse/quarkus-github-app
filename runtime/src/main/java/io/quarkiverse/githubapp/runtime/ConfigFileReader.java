@@ -1,30 +1,25 @@
 package io.quarkiverse.githubapp.runtime;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
 
-import org.jboss.logging.Logger;
-import org.kohsuke.github.GHContent;
-import org.kohsuke.github.GHFileNotFoundException;
 import org.kohsuke.github.GHRepository;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkiverse.githubapp.runtime.UtilsProducer.Yaml;
-import io.quarkus.runtime.LaunchMode;
+import io.quarkiverse.githubapp.runtime.github.GitHubFileDownloader;
 
 @RequestScoped
 public class ConfigFileReader {
-
-    private static final Logger LOG = Logger.getLogger(ConfigFileReader.class);
 
     private static final List<String> YAML_EXTENSIONS = Arrays.asList(".yml", ".yaml");
     private static final List<String> JSON_EXTENSIONS = Collections.singletonList(".json");
@@ -37,14 +32,14 @@ public class ConfigFileReader {
     private final Map<String, Object> cache = new ConcurrentHashMap<>();
 
     @Inject
+    GitHubFileDownloader gitHubFileDownloader;
+
+    @Inject
     ObjectMapper jsonObjectMapper;
 
     @Inject
     @Yaml
     ObjectMapper yamlObjectMapper;
-
-    @Inject
-    LaunchMode launchMode;
 
     public Object getConfigObject(GHRepository ghRepository, String path, Class<?> type) {
         String fullPath = getFilePath(path.trim());
@@ -58,38 +53,29 @@ public class ConfigFileReader {
         return cache.computeIfAbsent(cacheKey, k -> readConfigFile(ghRepository, fullPath, type));
     }
 
-    @SuppressWarnings("deprecation")
     private Object readConfigFile(GHRepository ghRepository, String fullPath, Class<?> type) {
-        try {
-            GHContent ghContent = ghRepository.getFileContent(fullPath);
-            String content = ghContent.getContent();
-
-            if (matchExtensions(fullPath, TEXT_EXTENSIONS) && !String.class.equals(type)) {
-                throw new IllegalArgumentException(
-                        "Text extensions (" + String.join(", ", TEXT_EXTENSIONS) + ") only support String: " + fullPath
-                                + " required type " + type.getName());
-            }
-
-            if (String.class.equals(type)) {
-                return content;
-            }
-
-            try {
-                ObjectMapper objectMapper = getObjectMapper(fullPath);
-                return objectMapper.readValue(content, type);
-            } catch (Exception e) {
-                throw new IllegalStateException("Error deserializing config file " + fullPath + " to type " + type.getName(), e);
-            }
-        } catch (GHFileNotFoundException e) {
-            // The config being not found can be perfectly acceptable, we log a warning in dev and test modes.
-            // Note that you will have a GHFileNotFoundException if the file exists but you don't have the 'Contents' permission.
-            if (launchMode.isDevOrTest()) {
-                LOG.warn("Unable to find config file " + fullPath + " for repository " + ghRepository.getFullName()
-                        + ". Either the file does not exist or the 'Contents' permission has not been set for the application.");
-            }
+        Optional<String> contentOptional = gitHubFileDownloader.getFileContent(ghRepository, fullPath);
+        if (contentOptional.isEmpty()) {
             return null;
-        } catch (IOException e) {
-            throw new IllegalStateException("Error downloading config file " + fullPath + " for repository " + ghRepository.getFullName(), e);
+        }
+
+        String content = contentOptional.get();
+
+        if (matchExtensions(fullPath, TEXT_EXTENSIONS) && !String.class.equals(type)) {
+            throw new IllegalArgumentException(
+                    "Text extensions (" + String.join(", ", TEXT_EXTENSIONS) + ") only support String: " + fullPath
+                            + " required type " + type.getName());
+        }
+
+        if (String.class.equals(type)) {
+            return content;
+        }
+
+        try {
+            ObjectMapper objectMapper = getObjectMapper(fullPath);
+            return objectMapper.readValue(content, type);
+        } catch (Exception e) {
+            throw new IllegalStateException("Error deserializing config file " + fullPath + " to type " + type.getName(), e);
         }
     }
 
