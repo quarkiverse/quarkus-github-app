@@ -59,11 +59,9 @@ public class Routes {
 
         if (gitHubAppRuntimeConfig.debug.payloadDirectory.isPresent()) {
             Files.createDirectories(gitHubAppRuntimeConfig.debug.payloadDirectory.get());
-            LOG.warn("Payloads saved in directory: "
+            LOG.warn("Payloads saved to: "
                     + gitHubAppRuntimeConfig.debug.payloadDirectory.get().toAbsolutePath().toString());
         }
-
-        tmpDirectory = Files.createTempDirectory("github-app-");
     }
 
     @Route(path = "/", type = HandlerType.BLOCKING, methods = HttpMethod.POST, consumes = "application/json", produces = "application/json")
@@ -79,18 +77,20 @@ public class Routes {
             return;
         }
 
-        byte[] bodyBytes = routingContext.getBody().getBytes();
-
-        if (!isBlank(deliveryId) && gitHubAppRuntimeConfig.debug.payloadDirectory.isPresent()) {
-            String fileName = DATE_TIME_FORMATTER.format(LocalDateTime.now()) + "-" + event + "-" + deliveryId + ".json";
-            Files.write(gitHubAppRuntimeConfig.debug.payloadDirectory.get().resolve(fileName), bodyBytes);
-        }
-
         JsonObject body = routingContext.getBodyAsJson();
 
         if (body == null) {
             routingExchange.ok().end();
             return;
+        }
+
+        byte[] bodyBytes = routingContext.getBody().getBytes();
+        String action = body.getString("action");
+
+        if (!isBlank(deliveryId) && gitHubAppRuntimeConfig.debug.payloadDirectory.isPresent()) {
+            String fileName = DATE_TIME_FORMATTER.format(LocalDateTime.now()) + "-" + event + "-"
+                    + (!isBlank(action) ? action + "-" : "") + deliveryId + ".json";
+            Files.write(gitHubAppRuntimeConfig.debug.payloadDirectory.get().resolve(fileName), bodyBytes);
         }
 
         if (gitHubAppRuntimeConfig.webhookSecret.isPresent() && !launchMode.isDevOrTest()) {
@@ -100,12 +100,6 @@ public class Routes {
                 signatureError.append("› Signature: ").append(hubSignature);
                 LOG.error(signatureError.toString());
 
-                // temporary to debug issues
-                String fileName = DATE_TIME_FORMATTER.format(LocalDateTime.now()) + "-" + event + "-" + body.getString("action") + "-"
-                        + deliveryId + ".json";
-                LOG.warn("› Saving payload to: " + fileName);
-                Files.write(tmpDirectory.resolve(fileName), bodyBytes);
-
                 routingExchange.response().setStatusCode(400).end("Invalid signature.");
                 return;
             }
@@ -114,24 +108,11 @@ public class Routes {
         Long installationId = extractInstallationId(body);
         String repository = extractRepository(body);
         GitHubEvent gitHubEvent = new GitHubEvent(installationId, gitHubAppRuntimeConfig.appName.orElse(null), deliveryId,
-                repository, event, body.getString("action"), routingContext.getBodyAsString(), body);
+                repository, event, action, routingContext.getBodyAsString(), body);
 
         gitHubEventEmitter.fire(gitHubEvent);
 
         routingExchange.ok().end();
-    }
-
-    @Route(path = "/payload/:file", type = HandlerType.BLOCKING, methods = HttpMethod.GET, produces = "application/json")
-    public void handleRequest(RoutingContext routingContext, RoutingExchange routingExchange) throws IOException {
-        String fileName = routingContext.pathParam("file");
-        if (!isBlank(fileName)) {
-            Path filePath = tmpDirectory.resolve(fileName);
-            if (Files.isReadable(filePath)) {
-                routingExchange.ok().sendFile(filePath.toAbsolutePath().toFile().getPath());
-                return;
-            }
-        }
-        routingExchange.serverError().end();
     }
 
     private static boolean isBlank(String value) {
