@@ -14,6 +14,15 @@
         "code",
         "maintenance"
       ]
+    },
+    {
+      "login": "yrodiere",
+      "name": "Yoann Rodière",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/412878?v=4",
+      "profile": "https://github.com/yrodiere",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "contributorsPerLine": 7,
