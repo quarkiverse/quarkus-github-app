@@ -6,7 +6,7 @@
     <parent>
         <groupId>io.quarkiverse.githubapp</groupId>
         <artifactId>quarkiverse-github-app-parent</artifactId>
-        <version>999-SNAPSHOT</version>
+        <version>0.0.1-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -35,24 +35,16 @@
             <artifactId>quarkus-caffeine</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.squareup.okhttp3</groupId>
-            <artifactId>okhttp</artifactId>
+            <groupId>io.quarkiverse.githubapi</groupId>
+            <artifactId>quarkiverse-github-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.jjwtjackson</groupId>
+            <artifactId>quarkiverse-jjwt-jackson</artifactId>
         </dependency>
         <dependency>
             <groupId>com.launchdarkly</groupId>
             <artifactId>okhttp-eventsource</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.kohsuke</groupId>
-            <artifactId>github-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt-impl</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt-jackson</artifactId>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>

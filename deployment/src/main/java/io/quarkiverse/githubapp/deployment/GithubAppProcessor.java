@@ -2,8 +2,6 @@ package io.quarkiverse.githubapp.deployment;
 
 import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.CONFIG_FILE;
 import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.EVENT;
-import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.GH_ROOT_OBJECTS;
-import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.GH_SIMPLE_OBJECTS;
 
 import java.io.PrintStream;
 import java.io.Reader;
@@ -42,11 +40,6 @@ import org.kohsuke.github.GHEventPayload;
 import org.kohsuke.github.GHRepository;
 import org.kohsuke.github.GitHub;
 
-import io.jsonwebtoken.impl.DefaultJwtBuilder;
-import io.jsonwebtoken.io.Deserializer;
-import io.jsonwebtoken.io.Serializer;
-import io.jsonwebtoken.jackson.io.JacksonDeserializer;
-import io.jsonwebtoken.jackson.io.JacksonSerializer;
 import io.quarkiverse.githubapp.GitHubEvent;
 import io.quarkiverse.githubapp.deployment.DispatchingConfiguration.EventAnnotation;
 import io.quarkiverse.githubapp.deployment.DispatchingConfiguration.EventAnnotationLiteral;
@@ -74,13 +67,10 @@ import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
-import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
-import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.gizmo.AnnotatedElement;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.CatchBlockCreator;
@@ -116,16 +106,6 @@ class GithubAppProcessor {
     }
 
     @BuildStep
-    ExtensionSslNativeSupportBuildItem requireSsl() {
-        return new ExtensionSslNativeSupportBuildItem(FEATURE);
-    }
-
-    @BuildStep
-    IndexDependencyBuildItem indexGitHubApiJar() {
-        return new IndexDependencyBuildItem("org.kohsuke", "github-api");
-    }
-
-    @BuildStep
     void registerForReflection(CombinedIndexBuildItem combinedIndex,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchies) {
@@ -142,32 +122,10 @@ class GithubAppProcessor {
                     .build());
         }
 
-        // GitHub API
-        for (DotName rootModelObject : GH_ROOT_OBJECTS) {
-            reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, rootModelObject.toString()));
-
-            reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true,
-                    combinedIndex.getIndex().getAllKnownSubclasses(rootModelObject).stream()
-                            .map(ci -> ci.name().toString())
-                            .toArray(String[]::new)));
-        }
-
-        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true,
-                GH_SIMPLE_OBJECTS.stream().map(DotName::toString).toArray(String[]::new)));
-
         // Caffeine
         reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true,
                 "com.github.benmanes.caffeine.cache.SSMSA",
                 "com.github.benmanes.caffeine.cache.PSWMS"));
-
-        // JWT
-        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, DefaultJwtBuilder.class));
-    }
-
-    @BuildStep
-    void jwtServiceProviderBuildItem(BuildProducer<ServiceProviderBuildItem> serviceProviders) {
-        serviceProviders.produce(new ServiceProviderBuildItem(Serializer.class.getName(), JacksonSerializer.class.getName()));
-        serviceProviders.produce(new ServiceProviderBuildItem(Deserializer.class.getName(), JacksonDeserializer.class.getName()));
     }
 
     @BuildStep
@@ -255,7 +213,8 @@ class GithubAppProcessor {
 
                 MethodParameterInfo annotatedParameter = eventSubscriberInstance.target().asMethodParameter();
                 MethodInfo methodInfo = annotatedParameter.method();
-                DotName annotatedParameterType = annotatedParameter.method().parameters().get(annotatedParameter.position()).name();
+                DotName annotatedParameterType = annotatedParameter.method().parameters().get(annotatedParameter.position())
+                        .name();
                 if (!eventDefinition.getPayloadType().equals(annotatedParameterType)) {
                     throw new IllegalStateException(
                             "Parameter subscribing to a GitHub '" + eventDefinition.getEvent()
@@ -337,7 +296,8 @@ class GithubAppProcessor {
         eventFieldCreator.addAnnotation(Inject.class);
         eventFieldCreator.setModifiers(Modifier.PROTECTED);
 
-        FieldCreator gitHubServiceFieldCreator = dispatcherClassCreator.getFieldCreator(GITHUB_SERVICE_FIELD, GitHubService.class);
+        FieldCreator gitHubServiceFieldCreator = dispatcherClassCreator.getFieldCreator(GITHUB_SERVICE_FIELD,
+                GitHubService.class);
         gitHubServiceFieldCreator.addAnnotation(Inject.class);
         gitHubServiceFieldCreator.setModifiers(Modifier.PROTECTED);
 
@@ -406,7 +366,8 @@ class GithubAppProcessor {
                 eventMatchesCreator.writeArrayValue(annotationLiteralArrayRh, 0, annotationLiteralRh);
 
                 if (Actions.ALL.equals(action)) {
-                    fireAsyncAction(eventMatchesCreator, dispatcherClassCreator.getClassName(), gitHubEventRh, payloadInstanceRh,
+                    fireAsyncAction(eventMatchesCreator, dispatcherClassCreator.getClassName(), gitHubEventRh,
+                            payloadInstanceRh,
                             annotationLiteralArrayRh);
                 } else {
                     BytecodeCreator actionMatchesCreator = eventMatchesCreator
@@ -414,15 +375,18 @@ class GithubAppProcessor {
                                     eventMatchesCreator.load(action), dispatchedActionRh))
                             .trueBranch();
 
-                    fireAsyncAction(actionMatchesCreator, dispatcherClassCreator.getClassName(), gitHubEventRh, payloadInstanceRh,
+                    fireAsyncAction(actionMatchesCreator, dispatcherClassCreator.getClassName(), gitHubEventRh,
+                            payloadInstanceRh,
                             annotationLiteralArrayRh);
                 }
             }
         }
 
         CatchBlockCreator catchBlockCreator = tryBlock.addCatch(Throwable.class);
-        catchBlockCreator.invokeVirtualMethod(MethodDescriptor.ofMethod(ErrorHandlerBridgeFunction.class, "apply", Void.class, Throwable.class),
-                catchBlockCreator.newInstance(MethodDescriptor.ofConstructor(ErrorHandlerBridgeFunction.class, GitHubEvent.class), gitHubEventRh),
+        catchBlockCreator.invokeVirtualMethod(
+                MethodDescriptor.ofMethod(ErrorHandlerBridgeFunction.class, "apply", Void.class, Throwable.class),
+                catchBlockCreator.newInstance(
+                        MethodDescriptor.ofConstructor(ErrorHandlerBridgeFunction.class, GitHubEvent.class), gitHubEventRh),
                 catchBlockCreator.getCaughtException());
 
         dispatchMethodCreator.returnValue(null);
@@ -480,7 +444,8 @@ class GithubAppProcessor {
             }
 
             for (MethodInfo originalConstructor : declaringClass.constructors()) {
-                MethodCreator constructorCreator = multiplexerClassCreator.getMethodCreator(MethodDescriptor.ofConstructor(multiplexerClassName,
+                MethodCreator constructorCreator = multiplexerClassCreator.getMethodCreator(MethodDescriptor.ofConstructor(
+                        multiplexerClassName,
                         originalConstructor.parameters().stream().map(t -> t.name().toString()).toArray(String[]::new)));
 
                 List<AnnotationInstance> originalMethodAnnotations = originalConstructor.annotations().stream()
@@ -489,7 +454,8 @@ class GithubAppProcessor {
                     constructorCreator.addAnnotation(originalMethodAnnotation);
                 }
 
-                Map<Short, List<AnnotationInstance>> originalConstructorParameterAnnotationMapping = originalConstructor.annotations().stream()
+                Map<Short, List<AnnotationInstance>> originalConstructorParameterAnnotationMapping = originalConstructor
+                        .annotations().stream()
                         .filter(ai -> ai.target().kind() == Kind.METHOD_PARAMETER)
                         .collect(Collectors.groupingBy(ai -> ai.target().asMethodParameter().position()));
 
@@ -505,14 +471,16 @@ class GithubAppProcessor {
                     }
                 }
 
-                constructorCreator.invokeSpecialMethod(MethodDescriptor.of(originalConstructor), constructorCreator.getThis(), parametersRh.toArray(ResultHandle[]::new));
+                constructorCreator.invokeSpecialMethod(MethodDescriptor.of(originalConstructor), constructorCreator.getThis(),
+                        parametersRh.toArray(ResultHandle[]::new));
                 constructorCreator.returnValue(null);
             }
 
             for (EventDispatchingMethod eventDispatchingMethod : eventDispatchingMethods) {
                 AnnotationInstance eventSubscriberInstance = eventDispatchingMethod.getEventSubscriberInstance();
                 MethodInfo originalMethod = eventDispatchingMethod.getMethod();
-                Map<Short, List<AnnotationInstance>> originalMethodParameterAnnotationMapping = originalMethod.annotations().stream()
+                Map<Short, List<AnnotationInstance>> originalMethodParameterAnnotationMapping = originalMethod.annotations()
+                        .stream()
                         .filter(ai -> ai.target().kind() == Kind.METHOD_PARAMETER)
                         .collect(Collectors.groupingBy(ai -> ai.target().asMethodParameter().position()));
 
@@ -594,7 +562,8 @@ class GithubAppProcessor {
                     }
                 }
 
-                ResultHandle returnValue = methodCreator.invokeVirtualMethod(originalMethod, methodCreator.getThis(), parameterValues);
+                ResultHandle returnValue = methodCreator.invokeVirtualMethod(originalMethod, methodCreator.getThis(),
+                        parameterValues);
                 methodCreator.returnValue(returnValue);
             }
 
