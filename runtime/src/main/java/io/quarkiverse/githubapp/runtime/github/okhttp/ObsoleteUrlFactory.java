@@ -128,7 +128,7 @@ public final class ObsoleteUrlFactory implements URLStreamHandlerFactory, Clonea
      * Instantiates a new Obsolete url factory.
      *
      * @param client
-     *            the client
+     *        the client
      */
     public ObsoleteUrlFactory(OkHttpClient client) {
         this.client = client;
@@ -147,7 +147,7 @@ public final class ObsoleteUrlFactory implements URLStreamHandlerFactory, Clonea
      * Sets client.
      *
      * @param client
-     *            the client
+     *        the client
      * @return the client
      */
     public ObsoleteUrlFactory setClient(OkHttpClient client) {
@@ -168,7 +168,7 @@ public final class ObsoleteUrlFactory implements URLStreamHandlerFactory, Clonea
      * Open http url connection.
      *
      * @param url
-     *            the url
+     *        the url
      * @return the http url connection
      */
     public HttpURLConnection open(URL url) {
@@ -857,7 +857,7 @@ public final class ObsoleteUrlFactory implements URLStreamHandlerFactory, Clonea
 
                 @Override
                 public void write(int b) throws IOException {
-                    write(new byte[]{ (byte) b }, 0, 1);
+                    write(new byte[] { (byte) b }, 0, 1);
                 }
 
                 @Override
@@ -913,10 +913,10 @@ public final class ObsoleteUrlFactory implements URLStreamHandlerFactory, Clonea
          * Prepare to send request request.
          *
          * @param request
-         *            the request
+         *        the request
          * @return the request
          * @throws IOException
-         *             the io exception
+         *         the io exception
          */
         public Request prepareToSendRequest(Request request) throws IOException {
             return request;

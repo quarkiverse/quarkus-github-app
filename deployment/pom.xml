@@ -6,7 +6,7 @@
     <parent>
         <groupId>io.quarkiverse.githubapp</groupId>
         <artifactId>quarkiverse-github-app-parent</artifactId>
-        <version>999-SNAPSHOT</version>
+        <version>0.0.1-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -33,6 +33,14 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-caffeine-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.githubapi</groupId>
+            <artifactId>quarkiverse-github-api-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.jjwtjackson</groupId>
+            <artifactId>quarkiverse-jjwt-jackson-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkiverse.githubapp</groupId>

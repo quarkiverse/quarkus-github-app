@@ -32,7 +32,8 @@ public final class PayloadHelper {
             return Optional.of(((GHEventPayload.PullRequestReview) eventPayload).getPullRequest().getHtmlUrl().toString());
         }
         if (eventPayload instanceof GHEventPayload.PullRequestReviewComment) {
-            return Optional.of(((GHEventPayload.PullRequestReviewComment) eventPayload).getPullRequest().getHtmlUrl().toString());
+            return Optional
+                    .of(((GHEventPayload.PullRequestReviewComment) eventPayload).getPullRequest().getHtmlUrl().toString());
         }
         if (eventPayload instanceof GHEventPayload.Issue) {
             return Optional.of(((GHEventPayload.Issue) eventPayload).getIssue().getHtmlUrl().toString());
@@ -53,7 +54,8 @@ public final class PayloadHelper {
             return Optional.of(((GHEventPayload.Deployment) eventPayload).getDeployment().getStatusesUrl().toString());
         }
         if (eventPayload instanceof GHEventPayload.DeploymentStatus) {
-            return Optional.of(((GHEventPayload.DeploymentStatus) eventPayload).getDeploymentStatus().getDeploymentUrl().toString());
+            return Optional
+                    .of(((GHEventPayload.DeploymentStatus) eventPayload).getDeploymentStatus().getDeploymentUrl().toString());
         }
         if (eventPayload instanceof GHEventPayload.Fork) {
             return Optional.of(((GHEventPayload.Fork) eventPayload).getForkee().getHtmlUrl().toString());

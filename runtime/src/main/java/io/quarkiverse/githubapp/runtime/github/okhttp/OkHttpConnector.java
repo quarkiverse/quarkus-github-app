@@ -1,16 +1,17 @@
 package io.quarkiverse.githubapp.runtime.github.okhttp;
 
-import okhttp3.CacheControl;
-import okhttp3.ConnectionSpec;
-import okhttp3.OkHttpClient;
-import org.kohsuke.github.HttpConnector;
-
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+
+import org.kohsuke.github.HttpConnector;
+
+import okhttp3.CacheControl;
+import okhttp3.ConnectionSpec;
+import okhttp3.OkHttpClient;
 
 /**
  * {@link HttpConnector} for {@link OkHttpClient}.
@@ -32,7 +33,7 @@ public class OkHttpConnector implements HttpConnector {
      * Instantiates a new Ok http connector.
      *
      * @param client
-     *            the client
+     *        the client
      */
     public OkHttpConnector(OkHttpClient client) {
         this(client, 0);
@@ -42,9 +43,9 @@ public class OkHttpConnector implements HttpConnector {
      * Instantiates a new Ok http connector.
      *
      * @param client
-     *            the client
+     *        the client
      * @param cacheMaxAge
-     *            the cache max age
+     *        the cache max age
      */
     public OkHttpConnector(OkHttpClient client, int cacheMaxAge) {
 

@@ -33,7 +33,8 @@ class DispatchingConfiguration {
     }
 
     public void addEventDispatchingMethod(EventDispatchingMethod eventDispatchingMethod) {
-        methods.computeIfAbsent(eventDispatchingMethod.getMethod().declaringClass().name(), k -> new TreeSet<>()).add(eventDispatchingMethod);
+        methods.computeIfAbsent(eventDispatchingMethod.getMethod().declaringClass().name(), k -> new TreeSet<>())
+                .add(eventDispatchingMethod);
     }
 
     static class EventDispatchingConfiguration {
@@ -186,7 +187,7 @@ class DispatchingConfiguration {
                 return classNameCompareTo;
             }
 
-            int methodNameComparator =  method.toString().compareTo(other.method.toString());
+            int methodNameComparator = method.toString().compareTo(other.method.toString());
             if (methodNameComparator != 0) {
                 return methodNameComparator;
             }
