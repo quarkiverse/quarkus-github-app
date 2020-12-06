@@ -84,9 +84,9 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
 import io.quarkus.runtime.util.HashUtil;
 
-class GithubAppProcessor {
+class GitHubAppProcessor {
 
-    private static final Logger LOG = Logger.getLogger(GithubAppProcessor.class);
+    private static final Logger LOG = Logger.getLogger(GitHubAppProcessor.class);
 
     private static final String FEATURE = "github-app";
 
@@ -117,7 +117,7 @@ class GithubAppProcessor {
             reflectiveHierarchies.produce(new ReflectiveHierarchyBuildItem.Builder()
                     .type(parameterType)
                     .index(combinedIndex.getIndex())
-                    .source(GithubAppProcessor.class.getSimpleName() + " > " + methodParameter.method().declaringClass() + "#"
+                    .source(GitHubAppProcessor.class.getSimpleName() + " > " + methodParameter.method().declaringClass() + "#"
                             + methodParameter.method())
                     .build());
         }
