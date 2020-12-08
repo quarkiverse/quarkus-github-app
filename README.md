@@ -3,7 +3,60 @@
 [![All Contributors](https://img.shields.io/badge/all_contributors-2-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
-Develop your GitHub Apps with Quarkus.
+**Develop your GitHub Apps in Java with Quarkus.**
+
+Quarkiverse GitHub App is a [Quarkus](https://quarkus.io) extension
+that allows to create GitHub Apps in Java with very little boilerplate.
+
+Think of it as [Probot](https://probot.github.io) for Java.
+
+And yes, it supports generating native executables with GraalVM or Mandrel.
+
+Your application will look like:
+
+```java
+class MyGitHubApp {
+
+	void onOpen(@Issue.Opened GHEventPayload.Issue issuePayload) throws IOException {
+		issuePayload.getIssue().comment("Hello from MyGitHubApp");
+	}
+}
+```
+
+And that's it.
+
+The code above listens to the `issues.opened` GitHub event and posts a comment in each opened issue.
+
+That's for the basics but it also supports YAML or JSON config files in your repository.
+
+Finally, it supports using a [Smee.io proxy](https://smee.io) during the development of the app.
+
+## How?
+
+The Quarkiverse GitHub App extension uses [the Hub4j GitHub API](https://github.com/hub4j/github-api)
+to parse the webhook payloads and handle the GitHub REST API calls.
+
+The rest of the extension is Quarkus magic - mostly code generation with [Gizmo](https://github.com/quarkusio/gizmo/) -
+to get everything wired.
+
+It also leverages [Reactive Routes](https://quarkus.io/guides/reactive-routes),
+[CDI events (both sync and async)](https://quarkus.io/guides/cdi#events-and-observers),
+and [Caffeine](https://quarkus.io/guides/cache).
+
+## Status
+
+The extension is still experimental but is already well polished and stable.
+
+Work is still needed on two fronts:
+
+* Documentation
+* Test infrastructure
+
+We are making steady progress on both of them.
+
+## License
+
+This project is licensed under the [Apache License Version 2.0](./LICENSE.txt).
 
 ## Contributors ✨
 
