@@ -1,0 +1,93 @@
+= Register a GitHub App
+
+The first step when working on a new GitHub App is to register it on GitHub.
+
+That is one of our main differences with Probot:
+we don't perform the magic to register your application when initializing it.
+
+For now, we think it is better that you understand what you are doing
+when registering your application,
+especially since you will need to do it again when pushing your app to production.
+
+[TIP]
+====
+We might revisit this decision at a later stage depending on your feedback.
+====
+
+== Step 1
+
+To register a new application, go to https://github.com/settings/apps/new.
+
+You can access this page by clicking on your profile picture at the top and then
+`Settings` > `Developer Settings` > `GitHub Apps` > `New GitHub App`.
+
+Fill in the following information.
+
+=== Application name
+
+When you are going to push your app to production, you will register a new GitHub App.
+
+So you might want to make it clear in the name that this app is for development/test.
+
+=== Homepage URL
+
+The homepage URL could be, for instance, the URL of your app's repository.
+
+=== Webhook URL
+
+There is a good chance your development box is not directly accessible from the Internet.
+
+To solve this issue, GitHub provides the Smee.io service which uses Server Side Events to distribute the events to your locally running app.
+
+Go to https://smee.io/ and click on `Start a new channel`.
+
+The URL in the `Webhook Proxy URL` field at the top will be your webhook URL.
+Keep it around, we will need it later.
+
+[TIP]
+====
+For now, you don't need to set up a webhook secret:
+secret signature checking is disabled when using Smee.io as it modifies the original payload.
+====
+
+=== Permissions
+
+Depending on what your application will do, you will need to set up the appropriate permissions.
+
+Just start with enabling the Issues and Pull requests `Read & write` Repository permissions.
+That is a good starting point to experiment.
+
+[NOTE]
+====
+You can add more permissions later but each installation of your GitHub App will need to validate the added permissions.
+
+That is not really a problem when developing your app so don't overthink it.
+====
+
+[TIP]
+====
+The GitHub documentation contains https://docs.github.com/en/free-pro-team@latest/rest/reference/permissions-required-for-github-apps[a good reference of the permissions required by each REST API call].
+====
+
+=== Subscribe to events
+
+If you don't subscribe to any event, your webhook URL will never be called.
+
+For experimenting, subscribe to `Issues`, `Issue comment` and `Pull request`.
+
+Now, you can click on `Create GitHub App`.
+
+== Step 2
+
+Now that you have registered your first GitHub App, there is one more thing you need to do:
+generate a private key.
+
+Scroll down, and in the `Private keys` section, click on `Generate a private key`.
+
+You will be asked to download the key, keep it around, we will need it later.
+
+== That's it
+
+OK, there is a lot more you can do in there and we will discuss more things in details later,
+but for now, you are done: you have registered your first GitHub App
+and you can start xref:create-github-app.adoc[experimenting with it].

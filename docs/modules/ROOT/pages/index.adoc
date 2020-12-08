@@ -1,0 +1,31 @@
+= Quarkiverse GitHub App
+
+When maintaining large projects on GitHub, GitHub Apps come handy:
+they allow you to automate most of the repetitive tasks.
+
+The principle is simple:
+for each event your application listens to,
+GitHub will call your webhook URL with a payload
+and from there, it is on you to handle the payload and do something with it.
+
+There are already a ton of existing GitHub Apps
+and they can improve the overall throughput of your project
+and avoid human errors.
+
+That being said,
+your project might also have specific requirements or workflows
+or you might be uncomfortable giving the keys of your repository
+to an external entity.
+
+We have some good news for you:
+**developing GitHub Apps is easy**.
+
+Until now, your best option was GitHub's own https://probot.github.io/[Probot],
+but if you prefer Java over JavaScript or TypeScript,
+you have come to the right place:
+**Quarkiverse GitHub App is designed to make developing GitHub Apps in Java
+easy and fun.**
+
+And with all the Quarkus goodness: developer joy, live reload and native executables.
+
+Eager to start? First step is to xref:register-github-app.adoc[register your GitHub App].
