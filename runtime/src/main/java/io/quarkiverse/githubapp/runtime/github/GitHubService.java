@@ -68,14 +68,37 @@ public class GitHubService {
     }
 
     public GitHub getInstallationClient(Long installationId) {
+        try {
+            return createInstallationClient(installationId);
+        } catch (IOException e1) {
+            synchronized (this) {
+                try {
+                    // retry in a synchronized in case the token is invalidated in another thread
+                    return createInstallationClient(installationId);
+                } catch (IOException e2) {
+                    try {
+                        // this time we invalidate the token entirely and go for a new token
+                        installationTokenCache.invalidate(installationId);
+                        return createInstallationClient(installationId);
+                    } catch (IOException e3) {
+                        throw new IllegalStateException(
+                                "Unable to create a GitHub client for the installation " + installationId, e3);
+                    }
+                }
+            }
+        }
+    }
+
+    private GitHub createInstallationClient(Long installationId) throws IOException {
         CachedInstallationToken installationToken = installationTokenCache.get(installationId);
 
-        try {
-            return new GitHubBuilder().withConnector(okhttpConnector)
-                    .withAppInstallationToken(installationToken.getToken()).build();
-        } catch (IOException e) {
-            throw new IllegalStateException("Unable to create a GitHub client for the installation " + installationId, e);
-        }
+        GitHub gitHub = new GitHubBuilder().withConnector(okhttpConnector)
+                .withAppInstallationToken(installationToken.getToken()).build();
+
+        // this call is not counted in the rate limit
+        gitHub.getRateLimit();
+
+        return gitHub;
     }
 
     // Using a lambda leads to a warning

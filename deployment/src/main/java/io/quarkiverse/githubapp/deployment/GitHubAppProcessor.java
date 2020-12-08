@@ -84,9 +84,9 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
 import io.quarkus.runtime.util.HashUtil;
 
-class GithubAppProcessor {
+class GitHubAppProcessor {
 
-    private static final Logger LOG = Logger.getLogger(GithubAppProcessor.class);
+    private static final Logger LOG = Logger.getLogger(GitHubAppProcessor.class);
 
     private static final String FEATURE = "github-app";
 
@@ -117,7 +117,7 @@ class GithubAppProcessor {
             reflectiveHierarchies.produce(new ReflectiveHierarchyBuildItem.Builder()
                     .type(parameterType)
                     .index(combinedIndex.getIndex())
-                    .source(GithubAppProcessor.class.getSimpleName() + " > " + methodParameter.method().declaringClass() + "#"
+                    .source(GitHubAppProcessor.class.getSimpleName() + " > " + methodParameter.method().declaringClass() + "#"
                             + methodParameter.method())
                     .build());
         }
@@ -278,6 +278,14 @@ class GithubAppProcessor {
         }
     }
 
+    /**
+     * The role of the dispatcher is to receive the CDI events emitted by the reactive route.
+     * <p>
+     * It parses the raw payload into the appropriate {@link GHEventPayload} and then emit
+     * an async CDI event with the payload instance.
+     * <p>
+     * It only generates code for the GitHub events actually listened to by the application.
+     */
     private static void generateDispatcher(ClassOutput beanClassOutput,
             CombinedIndexBuildItem combinedIndex,
             DispatchingConfiguration dispatchingConfiguration,
@@ -394,24 +402,20 @@ class GithubAppProcessor {
         dispatcherClassCreator.close();
     }
 
-    private static ResultHandle fireAsyncAction(BytecodeCreator bytecodeCreator, String className, ResultHandle gitHubEventRh,
-            ResultHandle payloadInstanceRh, ResultHandle annotationLiteralArrayRh) {
-        ResultHandle cdiEventRh = bytecodeCreator.invokeInterfaceMethod(EVENT_SELECT,
-                bytecodeCreator.readInstanceField(
-                        FieldDescriptor.of(className, EVENT_EMITTER_FIELD, Event.class),
-                        bytecodeCreator.getThis()),
-                annotationLiteralArrayRh);
-
-        ResultHandle fireAsyncCompletionStageRH = bytecodeCreator.invokeInterfaceMethod(EVENT_FIRE_ASYNC, cdiEventRh,
-                payloadInstanceRh);
-
-        return bytecodeCreator.invokeInterfaceMethod(COMPLETION_STAGE_EXCEPTIONALLY, fireAsyncCompletionStageRH,
-                bytecodeCreator.newInstance(
-                        MethodDescriptor.ofConstructor(ErrorHandlerBridgeFunction.class, GitHubEvent.class,
-                                GHEventPayload.class),
-                        gitHubEventRh, payloadInstanceRh));
-    }
-
+    /**
+     * Multiplexers listen to the async events emitted by the dispatcher.
+     * <p>
+     * They are subclasses of the application classes listening to GitHub events through our annotations.
+     * <p>
+     * They are useful for two purposes:
+     * <ul>
+     * <li>A single application method can listen to multiple event types: the event types are qualifiers and CDI wouldn't allow
+     * that (only events matching all the qualifiers would be received by the application method). That's why this class is
+     * called a multiplexer: it will generate one method per event type and each generated method will delegate to the original
+     * method.</li>
+     * <li>The multiplexer also handles the resolution of config files.</li>
+     * </ul>
+     */
     private static void generateMultiplexers(ClassOutput beanClassOutput,
             DispatchingConfiguration dispatchingConfiguration,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
@@ -569,6 +573,24 @@ class GithubAppProcessor {
 
             multiplexerClassCreator.close();
         }
+    }
+
+    private static ResultHandle fireAsyncAction(BytecodeCreator bytecodeCreator, String className, ResultHandle gitHubEventRh,
+            ResultHandle payloadInstanceRh, ResultHandle annotationLiteralArrayRh) {
+        ResultHandle cdiEventRh = bytecodeCreator.invokeInterfaceMethod(EVENT_SELECT,
+                bytecodeCreator.readInstanceField(
+                        FieldDescriptor.of(className, EVENT_EMITTER_FIELD, Event.class),
+                        bytecodeCreator.getThis()),
+                annotationLiteralArrayRh);
+
+        ResultHandle fireAsyncCompletionStageRH = bytecodeCreator.invokeInterfaceMethod(EVENT_FIRE_ASYNC, cdiEventRh,
+                payloadInstanceRh);
+
+        return bytecodeCreator.invokeInterfaceMethod(COMPLETION_STAGE_EXCEPTIONALLY, fireAsyncCompletionStageRH,
+                bytecodeCreator.newInstance(
+                        MethodDescriptor.ofConstructor(ErrorHandlerBridgeFunction.class, GitHubEvent.class,
+                                GHEventPayload.class),
+                        gitHubEventRh, payloadInstanceRh));
     }
 
     private static String getLiteralClassName(DotName annotationName) {
