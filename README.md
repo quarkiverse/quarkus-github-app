@@ -54,6 +54,74 @@ Work is still needed on two fronts:
 
 We are making steady progress on both of them.
 
+## Quick'n'dirty setup
+
+### Create a new Smee.io channel
+
+* Go to https://smee.io/
+* Click on `Start a new channel`
+* Save the provided URL
+
+### Create an application
+
+You need to create your own instance of the application.
+
+To create your application, go to: https://github.com/settings/apps/new and confirm your password.
+
+Please avoid using a name too generic.
+Using your GitHub username as a suffix is a good idea.
+
+`Homepage URL` is mandatory, it can be whatever you want.
+
+Put the Smee.io channel URL in `Webhook URL`.
+Generate a unique secret by typing random letters or output of something like: `ruby -rsecurerandom -e 'puts SecureRandom.hex(20)'`
+Take note of that secret, you will need it when running in production/from a jar.
+
+Define some sensible repository permissions for your tests.
+
+Typically having:
+
+* Issues - `Read & Write`
+* Pull Requests - `Read & Write`
+* Contents - `Read`
+
+makes sense for a start.
+You can adjust the permissions later.
+
+Once done, you will arrive on the application page settings.
+
+Take note of your numeric `App ID`, you will need it.
+
+Click on `Generate a private key` to generate a new private key.
+Your browser will download the new key.
+
+### Create a `.env` file
+
+At the root of the repository, create a `.env` file containing:
+
+[source]
+------
+QUARKUS_GITHUB_APP_APP_ID=<your numeric app id>
+QUARKUS_GITHUB_APP_WEBHOOK_SECRET=<entered secret>
+QUARKUS_GITHUB_APP_WEBHOOK_PROXY_URL=<your Smee.io channel URL>
+QUARKUS_GITHUB_APP_PRIVATE_KEY=-----BEGIN RSA PRIVATE KEY-----\
+                                                                \
+                        YOUR PRIVATE KEY                        \
+                                                                \
+-----END RSA PRIVATE KEY-----
+------
+
+Then you can start your application as usual with `./mvnw clean quarkus:dev`.
+
+It will connect to the Smee.io channel and redirect the requests received there to your local running application.
+
+### Redeliver payloads
+
+It might be quite practical to redeliver a payload when testing or even have a look at the generated payload.
+
+You can do that here: https://github.com/settings/apps/<your app name>/advanced .
+
+
 ## License
 
 This project is licensed under the [Apache License Version 2.0](./LICENSE.txt).
