@@ -22,8 +22,10 @@ public class GitHubEvent {
 
     private final JsonObject parsedPayload;
 
+    private final boolean replayed;
+
     public GitHubEvent(Long installationId, String appName, String deliveryId, String repository, String event, String action,
-            String payload, JsonObject parsedPayload) {
+            String payload, JsonObject parsedPayload, boolean replayed) {
         this.installationId = installationId;
         this.appName = Optional.ofNullable(appName);
         this.deliveryId = deliveryId;
@@ -32,6 +34,7 @@ public class GitHubEvent {
         this.action = action;
         this.payload = payload;
         this.parsedPayload = parsedPayload;
+        this.replayed = replayed;
     }
 
     public Long getInstallationId() {
@@ -58,6 +61,17 @@ public class GitHubEvent {
         return action;
     }
 
+    public String getEventAction() {
+        StringBuilder sb = new StringBuilder();
+        if (event != null && !event.isBlank()) {
+            sb.append(event);
+        }
+        if (action != null && !action.isBlank()) {
+            sb.append(".").append(action);
+        }
+        return sb.toString();
+    }
+
     public String getPayload() {
         return payload;
     }
@@ -66,9 +80,13 @@ public class GitHubEvent {
         return parsedPayload;
     }
 
+    public boolean isReplayed() {
+        return replayed;
+    }
+
     @Override
     public String toString() {
         return "GitHubEvent [installationId=" + installationId + ", deliveryId=" + deliveryId + ", repository=" + repository
-                + ", event=" + event + ", action=" + action + ", payload=" + payload + "]";
+                + ", event=" + event + ", action=" + action + ", payload=" + payload + ", replayed=" + replayed + "]";
     }
 }

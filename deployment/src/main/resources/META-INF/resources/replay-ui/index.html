@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	<title>Quarkiverse GitHub App - Replay</title>
+	<link rel="stylesheet" href="./css/semantic.min.css" />
+	<link rel="stylesheet" href="./css/main.css" />
+</head>
+<body>
+	<div class="ui inverted menu">
+		<span class="header item">
+			<img class="logo" src="https://quarkus.io/assets/images/quarkus_logo_horizontal_rgb_reverse.svg" alt="Quarkus logo" style="width:200px;">
+		</span>
+		<span class="header item">
+			Replay
+		</span>
+	</div>
+	<div class="main-content">
+		<div class="ui main container" id="github-events-app">
+			<div class="ui segment" v-show="waitForEvents">
+				<div class="ui active inverted dimmer">
+					<div class="ui text loader">Waiting for events...</div>
+				</div>
+				<p>&nbsp;</p>
+				<p>&nbsp;</p>
+				<p>&nbsp;</p>
+			</div>
+			<div v-show="!waitForEvents">
+				<div class="ui form">
+					<div class="three fields">
+						<div class="field">
+							<label>Event</label>
+							<div class="ui fluid search selection dropdown">
+								<input name="event" type="hidden">
+								<i class="dropdown icon"></i>
+								<div class="default text">Event</div>
+								<div class="menu">
+									<div class="item" v-for="eventAction in allEventActions" v-bind:data-value="eventAction">{{ eventAction }}</div>
+								</div>
+							</div>
+						</div>
+						<div class="field">
+							<label>Delivery ID</label>
+							<input type="text" placeholder="Delivery ID" v-model="searchDeliveryId">
+						</div>
+						<div class="field">
+							<label>Payload</label>
+							<input type="text" placeholder="Payload" v-model="searchPayload">
+						</div>
+					</div>
+				</div>
+				<div class="ui divider"></div>
+				<div class="ui segment" v-show="!searchResults.length">
+					<div style="text-align:center">
+						<div><i class="icon window close large orange"></i></div>
+						<div>No results</div>
+					</div>
+				</div>
+				<div class="ui divided items">
+					<div class="item" v-for="gitHubEvent in searchResults">
+						<div class="content">
+							<div class="header">
+								<code>{{ gitHubEvent.deliveryId }}</code>
+								<span class="ui tag blue label">{{ gitHubEvent.eventAction }}</span>
+								<span class="ui olive label" v-show="gitHubEvent.replayed"><i class="recycle icon"></i> Replayed</span>
+							</div>
+							<div class="meta">
+								<span>{{ gitHubEvent.repository }}</span>
+								<div class="ui right floated mini olive labeled icon button" v-on:click="replay(gitHubEvent.deliveryId)">
+									<i class="recycle icon"></i>
+									Replay
+								</div>
+								<div class="ui right floated mini labeled icon button" @click="gitHubEvent.showPayload = true" v-show="!gitHubEvent.showPayload">
+									<i class="file code icon"></i>
+									View payload
+								</div>
+								<div class="ui right floated mini labeled icon button" @click="gitHubEvent.showPayload = false" v-show="gitHubEvent.showPayload">
+									<i class="file code icon"></i>
+									Hide payload
+								</div>
+								<div style="clear: both"></div>
+							</div>
+							<div class="description" v-show="gitHubEvent.showPayload">
+								<pre>{{ gitHubEvent.parsedPayload }}</pre>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!-- Javascripts -->
+	<script src="./js/jquery.min.js"></script>
+	<script src="./js/semantic.min.js"></script>
+	<script src="./js/vue.js"></script>
+	<script>
+		let eventSource;
+
+		var gitHubEventsApp = new Vue({
+			el: '#github-events-app',
+			data: {
+				gitHubEvents: [],
+				gitHubEventsMap: new Map(),
+				waitForEvents: true,
+				searchEventAction: '',
+				searchDeliveryId: '',
+				searchPayload: ''
+			},
+			mounted: function() {
+				console.log("mounted");
+				eventSource = new EventSource("/replay/events");
+				eventSource.addEventListener("github-event", function(message) {
+					if (!message.data) {
+						return;
+					}
+					gitHubEventsApp.waitForEvents = false;
+
+					let gitHubEvent = JSON.parse(message.data);
+					gitHubEvent.showPayload = false;
+					gitHubEventsApp.gitHubEvents.push(gitHubEvent);
+					gitHubEventsApp.gitHubEventsMap.set(gitHubEvent.deliveryId, gitHubEvent);
+				});
+			},
+			updated: function () {
+				$('.ui.dropdown').dropdown({ clearable: true, fullTextSearch: true, onChange: function(value, text, $selected) { gitHubEventsApp.searchEventAction = value } });
+			},
+			beforeDestroy: function() {
+				eventSource.close();
+			},
+			computed: {
+				allEventActions: function() {
+					const allEventActionSet = new Set();
+					for (gitHubEvent of this.gitHubEvents) {
+						allEventActionSet.add(gitHubEvent.eventAction);
+					}
+					const allEventActions = [... allEventActionSet];
+					allEventActions.sort();
+					return allEventActions;
+				},
+				searchResults: function() {
+					let searchFilter = function(gitHubEvent) {
+						if (gitHubEventsApp.searchEventAction && gitHubEvent.eventAction != gitHubEventsApp.searchEventAction) {
+							return false;
+						}
+						if (gitHubEventsApp.searchDeliveryId && !gitHubEvent.deliveryId.includes(gitHubEventsApp.searchDeliveryId)) {
+							return false;
+						}
+						if (gitHubEventsApp.searchPayload && !gitHubEvent.payload.includes(gitHubEventsApp.searchPayload)) {
+							return false;
+						}
+						return true;
+					};
+
+					return this.gitHubEvents.filter(searchFilter).slice().reverse();
+				}
+			},
+			methods: {
+				replay: function (deliveryId) {
+					if (!gitHubEventsApp.gitHubEventsMap.has(deliveryId)) {
+						console.error('could not find event for ' + deliveryId);
+						return;
+					}
+
+					const gitHubEvent = gitHubEventsApp.gitHubEventsMap.get(deliveryId);
+					var xhr = new XMLHttpRequest();
+					xhr.open('POST', '/', true);
+					xhr.setRequestHeader('Content-type', 'application/json');
+					xhr.setRequestHeader('X-GitHub-Event', gitHubEvent.event);
+					xhr.setRequestHeader('X-GitHub-Delivery', this.createUUID());
+					xhr.setRequestHeader('X-Quarkiverse-GitHub-App-Original-Delivery', gitHubEvent.deliveryId);
+					xhr.setRequestHeader('X-Quarkiverse-GitHub-App-Replayed', 'true');
+					xhr.onload = function () {
+						console.log('sent replay event for ' + deliveryId);
+					};
+					xhr.send(gitHubEvent.payload);
+				},
+				createUUID: function() {
+					let dt = new Date().getTime();
+					const uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+						const r = (dt + Math.random()*16)%16 | 0;
+						dt = Math.floor(dt/16);
+						return (c=='x' ? r :(r&0x3|0x8)).toString(16);
+					});
+					return uuid;
+				}
+			}
+		});
+	</script>
+</body>
+</html>

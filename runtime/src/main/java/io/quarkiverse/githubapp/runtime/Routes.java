@@ -3,6 +3,7 @@ package io.quarkiverse.githubapp.runtime;
 import static io.quarkiverse.githubapp.runtime.Headers.X_GITHUB_DELIVERY;
 import static io.quarkiverse.githubapp.runtime.Headers.X_GITHUB_EVENT;
 import static io.quarkiverse.githubapp.runtime.Headers.X_HUB_SIGNATURE_256;
+import static io.quarkiverse.githubapp.runtime.Headers.X_QUARKIVERSE_GITHUB_APP_REPLAYED;
 import static io.quarkiverse.githubapp.runtime.Headers.X_REQUEST_ID;
 
 import java.io.IOException;
@@ -13,21 +14,27 @@ import java.time.format.DateTimeFormatter;
 
 import javax.enterprise.event.Event;
 import javax.enterprise.event.Observes;
+import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.jboss.logging.Logger;
 
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+
 import io.quarkiverse.githubapp.GitHubEvent;
 import io.quarkiverse.githubapp.runtime.config.GitHubAppRuntimeConfig;
+import io.quarkiverse.githubapp.runtime.replay.ReplayEventsRoute;
 import io.quarkiverse.githubapp.runtime.signing.PayloadSignatureChecker;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.StartupEvent;
+import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.web.Header;
 import io.quarkus.vertx.web.Route;
 import io.quarkus.vertx.web.Route.HandlerType;
 import io.quarkus.vertx.web.RoutingExchange;
 import io.vertx.core.http.HttpMethod;
+import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 
@@ -50,11 +57,20 @@ public class Routes {
     @Inject
     LaunchMode launchMode;
 
+    @Inject
+    Instance<ReplayEventsRoute> replayRouteInstance;
+
+    @Inject
+    HttpConfiguration httpConfig;
+
     Path tmpDirectory;
 
     public void init(@Observes StartupEvent startupEvent) throws IOException {
+        Json.mapper.registerModule(new Jdk8Module());
+        Json.prettyMapper.registerModule(new Jdk8Module());
+
         if (gitHubAppRuntimeConfig.webhookSecret.isPresent() && launchMode.isDevOrTest()) {
-            LOG.warn("Payload signature checking is disabled in dev and test modes.");
+            LOG.info("Payload signature checking is disabled in dev and test modes.");
         }
 
         if (gitHubAppRuntimeConfig.debug.payloadDirectory.isPresent()) {
@@ -70,7 +86,8 @@ public class Routes {
             @Header(X_REQUEST_ID) String requestId,
             @Header(X_HUB_SIGNATURE_256) String hubSignature,
             @Header(X_GITHUB_DELIVERY) String deliveryId,
-            @Header(X_GITHUB_EVENT) String event) throws IOException {
+            @Header(X_GITHUB_EVENT) String event,
+            @Header(X_QUARKIVERSE_GITHUB_APP_REPLAYED) String replayed) throws IOException {
 
         if (!launchMode.isDevOrTest() && (isBlank(deliveryId) || isBlank(hubSignature))) {
             routingExchange.response().setStatusCode(400).end();
@@ -93,6 +110,15 @@ public class Routes {
             Files.write(gitHubAppRuntimeConfig.debug.payloadDirectory.get().resolve(fileName), bodyBytes);
         }
 
+        Long installationId = extractInstallationId(body);
+        String repository = extractRepository(body);
+        GitHubEvent gitHubEvent = new GitHubEvent(installationId, gitHubAppRuntimeConfig.appName.orElse(null), deliveryId,
+                repository, event, action, routingContext.getBodyAsString(), body, "true".equals(replayed) ? true : false);
+
+        if (replayRouteInstance.isResolvable()) {
+            replayRouteInstance.get().pushEvent(gitHubEvent);
+        }
+
         if (gitHubAppRuntimeConfig.webhookSecret.isPresent() && !launchMode.isDevOrTest()) {
             if (!payloadSignatureChecker.matches(bodyBytes, hubSignature)) {
                 StringBuilder signatureError = new StringBuilder("Invalid signature for delivery: ").append(deliveryId)
@@ -104,11 +130,6 @@ public class Routes {
                 return;
             }
         }
-
-        Long installationId = extractInstallationId(body);
-        String repository = extractRepository(body);
-        GitHubEvent gitHubEvent = new GitHubEvent(installationId, gitHubAppRuntimeConfig.appName.orElse(null), deliveryId,
-                repository, event, action, routingContext.getBodyAsString(), body);
 
         gitHubEventEmitter.fire(gitHubEvent);
 
