@@ -31,6 +31,12 @@ That's for the basics but it also supports YAML or JSON config files in your rep
 
 Finally, it supports using a [Smee.io proxy](https://smee.io) during the development of the app.
 
+## Documentation
+
+To get you started (and more!), please refer to [the documentation](https://quarkiverse.github.io/quarkiverse-docs/quarkiverse-github-app/dev/index.html).
+
+Anything missing in the documentation? Please [open an issue](https://github.com/quarkiverse/quarkiverse-github-app/issues/new).
+
 ## How?
 
 The Quarkiverse GitHub App extension uses [the Hub4j GitHub API](https://github.com/hub4j/github-api)
@@ -45,14 +51,11 @@ and [Caffeine](https://quarkus.io/guides/cache).
 
 ## Status
 
-The extension is still experimental but is already well polished and stable.
+The extension is already well polished and stable.
 
-Work is still needed on two fronts:
+Work is still needed on the test infrastructure though.
 
-* Documentation
-* Test infrastructure
-
-We are making steady progress on both of them.
+We are making steady progress on it.
 
 ## License
 
