@@ -1,0 +1,148 @@
+= Create a GitHub App
+
+include::./includes/attributes.adoc[]
+
+== Initialize your Quarkus application
+
+A Quarkiverse GitHub App is a standard Quarkus application.
+
+You can create one including the Quarkiverse GitHub App extension with the following command:
+
+[source, bash, subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=my-github-app \
+    -Dextensions="io.quarkiverse.githubapp:quarkiverse-github-app:{quarkiverse-github-app-version}" \
+    -DnoExamples
+----
+
+[TIP]
+====
+Maven 3.6.2+ is required for this to work.
+====
+
+Once the project is created, go to the `my-github-app` directory.
+
+== Initialize the configuration
+
+As the configuration is environment-specific and you probably don't want to commit it in your repository,
+the best is to create a `.env` file.
+
+The content of your `.env` file should be as follows:
+
+[source,properties]
+------
+QUARKUS_GITHUB_APP_APP_ID=<the numeric app id>
+QUARKUS_GITHUB_APP_APP_NAME=<the name of your app>
+QUARKUS_GITHUB_APP_WEBHOOK_PROXY_URL=<your Smee.io channel URL>
+QUARKUS_GITHUB_APP_WEBHOOK_SECRET=<your webhook secret>
+QUARKUS_GITHUB_APP_PRIVATE_KEY=-----BEGIN RSA PRIVATE KEY-----\
+                  <your private key>                          \
+-----END RSA PRIVATE KEY-----
+------
+
+QUARKUS_GITHUB_APP_APP_ID:: The numeric app id appearing in the `App ID` field.
+QUARKUS_GITHUB_APP_APP_NAME:: The name of your app is the one appearing in the GitHub URL.
+It is only used to improve usability in dev mode.
+QUARKUS_GITHUB_APP_WEBHOOK_PROXY_URL:: The URL you obtained when you created your Smee.io channel.
+QUARKUS_GITHUB_APP_WEBHOOK_SECRET:: The webhook secret you created at the previous step.
+QUARKUS_GITHUB_APP_PRIVATE_KEY:: The content of the private key you generated and downloaded.
+
+[TIP]
+====
+Don't forget the backslashes at the lines of your private key.
+====
+
+Once you have created your `.env`, you are all set.
+
+== Start dev mode and enjoy
+
+If you are familiar with Quarkus, you already know the dev mode which improves productivity a lot.
+If you are not, the principle is that you start your application once and code:
+Quarkus will take care of reloading the application when it receives a request.
+
+Just execute the following command to start Quarkus in dev mode:
+
+[source]
+----
+./mvnw quarkus:dev
+----
+
+[TIP]
+====
+If you have a configuration error, it's probably because you did something wrong with the `.env` file.
+Check the instructions above carefully.
+====
+
+== Time to code
+
+From now on, you are done with the setup and you can code your GitHub App.
+Sky is the limit.
+
+For instance, you can create the following class:
+
+[source, java]
+----
+class CreateComment {
+
+	void onOpen(@Issue.Opened GHEventPayload.Issue issuePayload) throws IOException {
+		issuePayload.getIssue().comment("Hello from my GitHub App");
+	}
+}
+----
+
+From now on, every time you create an issue in your GitHub project, a comment will be added by your GitHub App.
+
+In details:
+
+* No need for `public` modifier, your classes and methods can be package protected.
+* We listen to the `@Issue.Opened` event i.e. this method will be called for each issue opened.
+* A payload of type `GHEventPayload.Issue` will be injected in our method automatically.
+  This class is provided by the https://github.com/hub4j/github-api[Hub4j GitHub API].
+
+== Compiling to a native executable
+
+One of the great benefits of Quarkus is that you can easily build a native executable from your Java applications.
+Native executables offer faster boot and lower memory footprint.
+
+Your GitHub App is no exception and you can build a native executable using GraalVM with:
+
+[source, bash]
+----
+./mvnw package -Dnative
+----
+
+[TIP]
+====
+For this to work, you will need GraalVM installed.
+See https://quarkus.io/guides/building-native-image[Building a native executable on the Quarkus website] for more information.
+====
+
+[TIP]
+====
+Building a native executable takes a while and is both CPU and memory intensive.
+====
+
+You can then start the native executable with:
+
+[source, bash]
+----
+./target/my-github-app-1.0.0-SNAPSHOT-runner
+----
+
+== And more
+
+You are done developing your first Quarkiverse GitHub App.
+
+Obviously the one we developed is not very useful but it is a good start and using this framework:
+
+* You can listen to all the events currently supported by the https://github.com/hub4j/github-api[Hub4j GitHub API].
+* You have the full power of Quarkus with live coding, easy configuration, dependency injection, native executables and more.
+* You have at your disposal the full ecosystem of Quarkus extensions and the broader Java ecosystem.
+
+Our xref:replay-ui.adoc[Replay UI] will come handy while developing your GitHub App.
+
+You can learn more about all the events you can listen to in our xref:developer-reference.adoc[Developer Reference].
+
+When you are done developing your application, please refer to xref:push-to-production.adoc[Push to Production].

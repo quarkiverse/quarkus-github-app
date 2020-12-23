@@ -14,9 +14,15 @@ especially since you will need to do it again when pushing your app to productio
 We might revisit this decision at a later stage depending on your feedback.
 ====
 
-== Step 1
+== Step 1 - Create a playground project
 
-To register a new application, go to https://github.com/settings/apps/new.
+https://github.com/new[Create a test repository] that will serve as a playground for experimenting.
+
+We will install our GitHub App in this repository.
+
+== Step 2 - Register the application
+
+To register a new application, go to https://github.com/settings/apps[GitHub Apps] and click `New GitHub App`.
 
 You can access this page by clicking on your profile picture at the top and then
 `Settings` > `Developer Settings` > `GitHub Apps` > `New GitHub App`.
@@ -50,6 +56,29 @@ For now, you don't need to set up a webhook secret:
 secret signature checking is disabled when using Smee.io as it modifies the original payload.
 ====
 
+=== Webhook secret
+
+When running in dev mode, we don't enforce signature checking
+(one big reason for this is that Smee.io doesn't pass the payloads as is).
+
+However it is good practice to define a webhook secret as it is enforced in production mode.
+
+To generate a webhook secret, you can use the method recommended by GitHub:
+
+[source, bash]
+----
+ruby -rsecurerandom -e 'puts SecureRandom.hex(20)'
+----
+
+You can also use `pwgen`:
+
+[source, bash]
+----
+pwgen -N 1 -s 40
+----
+
+This webhook secret will be required later so keep it around.
+
 === Permissions
 
 Depending on what your application will do, you will need to set up the appropriate permissions.
@@ -77,7 +106,7 @@ For experimenting, subscribe to `Issues`, `Issue comment` and `Pull request`.
 
 Now, you can click on `Create GitHub App`.
 
-== Step 2
+== Step 3 - Create a private key
 
 Now that you have registered your first GitHub App, there is one more thing you need to do:
 generate a private key.
@@ -85,6 +114,12 @@ generate a private key.
 Scroll down, and in the `Private keys` section, click on `Generate a private key`.
 
 You will be asked to download the key, keep it around, we will need it later.
+
+== Step 4 - Install your app
+
+Install the GitHub App in your playground project.
+
+This can be done from the `Install App` tab of the application's page (https://github.com/settings/apps then `Edit` and `Install App`).
 
 == That's it
 
