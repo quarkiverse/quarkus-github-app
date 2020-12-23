@@ -32,11 +32,7 @@ public class DefaultErrorHandler implements ErrorHandler {
         if (gitHubEvent.getRepository().isPresent()) {
             errorMessage.append("› Repository: " + gitHubEvent.getRepository().get() + "\n");
         }
-        errorMessage.append("› Event:      " + gitHubEvent.getEvent());
-        if (gitHubEvent.getAction() != null) {
-            errorMessage.append("." + gitHubEvent.getAction());
-        }
-        errorMessage.append("\n");
+        errorMessage.append("› Event:      " + gitHubEvent.getEventAction() + "\n");
 
         if (payload != null) {
             Optional<String> context = PayloadHelper.getContext(payload);
