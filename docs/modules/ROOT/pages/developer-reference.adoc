@@ -1,0 +1,216 @@
+= Developer Reference
+
+include::./includes/attributes.adoc[]
+
+:webhook-documentation-url: {github-reference-documentation-root-url}/webhooks-and-events/webhook-events-and-payloads
+
+== Useful links
+
+The following links will be useful to your GitHub App journey:
+
+ * link:{github-api-javadoc-root-url}/package-summary.html[GitHub API Javadoc] in particular the link:{github-api-javadoc-root-url}/GHEventPayload.html[`GHEventPayload` subclasses]
+ * link:{webhook-documentation-url}[Webhook events and payloads reference documentation]
+ * link:{github-reference-documentation-root-url}/apps[GitHub Apps reference documentation]
+ * https://quarkus.io/guides/config[Configuring your Quarkus application]
+ * https://quarkus.io/guides/cdi[Introduction to Quarkus dependency injection]
+
+== Events
+
+=== Listening to events
+
+To listen to an event, you need to create a method with one of the event annotations:
+
+[source,java]
+----
+class CreateComment {
+
+	void onOpen(@Issue.Opened GHEventPayload.Issue issuePayload) throws IOException {
+		issuePayload.getIssue().comment("Hello from my GitHub App");
+	}
+}
+----
+
+A few observations:
+
+* The method may either be package-protected or public.
+* Most of the GitHub API methods throw ``IOException``s so your methods need to propagate it. We have some nice error handling.
+* The payload type needs to be consistent with the event type.
+
+A method may listen to several events as long as they share the same payload type:
+
+[source,java]
+----
+class IssueListener {
+
+	void onOpenOrEdit(@Issue.Opened @Issue.Edited GHEventPayload.Issue issuePayload) {
+		// do something
+	}
+}
+----
+
+=== Event types
+
+Here are all the events currently supported, together with the type of the payload that will be injected.
+
+[cols=3*,options="header"]
+|===
+|GitHub Event Type
+|Events
+|Payload
+
+|link:{webhook-documentation-url}#check_run[`check_run`]
+|`@CheckRun.Completed`, `@CheckRun.Created`, `@CheckRun.RequestedAction`, `@CheckRun.Rerequested`
+|link:{github-api-javadoc-root-url}/GHEventPayload.CheckRun.html[`GHEventPayload.CheckRun`]
+
+|link:{webhook-documentation-url}#check_suite[`check_suite`]
+|`@CheckSuite.Completed`, `@CheckSuite.Created`, `@CheckSuite.Rerequested`
+|link:{github-api-javadoc-root-url}/GHEventPayload.CheckSuite.html[`GHEventPayload.CheckSuite`]
+
+|link:{webhook-documentation-url}#commit_comment[`commit_comment`]
+|`@CommitComment.Created`
+|link:{github-api-javadoc-root-url}/GHEventPayload..html[`GHEventPayload.`]
+
+|link:{webhook-documentation-url}#create[`create`]
+|`@Create`
+|link:{github-api-javadoc-root-url}/GHEventPayload.Create.html[`GHEventPayload.Create`]
+
+|link:{webhook-documentation-url}#delete[`delete`]
+|`@Delete`
+|link:{github-api-javadoc-root-url}/GHEventPayload.Delete.html[`GHEventPayload.Delete`]
+
+|link:{webhook-documentation-url}#deployment[`deployment`]
+|`@Deployment.Created`
+|link:{github-api-javadoc-root-url}/GHEventPayload.Deployment.html[`GHEventPayload.Deployment`]
+
+|link:{webhook-documentation-url}#deployment_status[`deployment_status`]
+|`@DeploymentStatus.Created`
+|link:{github-api-javadoc-root-url}/GHEventPayload.DeploymentStatus.html[`GHEventPayload.DeploymentStatus`]
+
+|link:{webhook-documentation-url}#fork[`fork`]
+|`@Fork`
+|link:{github-api-javadoc-root-url}/GHEventPayload.Fork.html[`GHEventPayload.Fork`]
+
+|link:{webhook-documentation-url}#installation[`installation`]
+|`@Installation.Created`, `@Installation.Deleted`, `@Installation.NewPermissionsAccepted`, `@Installation.Suspend`, `@Installation.Unsuspend`
+|link:{github-api-javadoc-root-url}/GHEventPayload.Installation.html[`GHEventPayload.Installation`]
+
+|link:{webhook-documentation-url}#installation_repositories[`installation_repositories`]
+|`@InstallationRepositories.Added`, `@InstallationRepositories.Removed`
+|link:{github-api-javadoc-root-url}/GHEventPayload.InstallationRepositories.html[`GHEventPayload.InstallationRepositories`]
+
+|link:{webhook-documentation-url}#issues[`issues`]
+|`@Issue.Assigned`, `@Issue.Closed`, `@Issue.Deleted`, `@Issue.Demilestoned`, `@Issue.Edited`, `@Issue.Labeled`, `@Issue.Locked`, `@Issue.Milestoned`, `@Issue.Opened`, `@Issue.Pinned`, `@Issue.Reopened`, `@Issue.Transferred`, `@Issue.Unassigned`, `@Issue.Unlabeled`, `@Issue.Unlocked`, `@Issue.Unpinned`
+|link:{github-api-javadoc-root-url}/GHEventPayload.Issue.html[`GHEventPayload.Issue`]
+
+|link:{webhook-documentation-url}#issue_comment[`issue_comment`]
+|`@IssueComment.Created`, `@IssueComment.Deleted`, `@IssueComment.Edited`
+|link:{github-api-javadoc-root-url}/GHEventPayload.IssueComment.html[`GHEventPayload.IssueComment`]
+
+|link:{webhook-documentation-url}#ping[`ping`]
+|`@Ping`
+|link:{github-api-javadoc-root-url}/GHEventPayload.Ping.html[`GHEventPayload.Ping`]
+
+|link:{webhook-documentation-url}#public[`public`]
+|`@Public`
+|link:{github-api-javadoc-root-url}/GHEventPayload.Public.html[`GHEventPayload.Public`]
+
+|link:{webhook-documentation-url}#pull_request[`pull_request`]
+|`@PullRequest.Assigned`, `@PullRequest.Closed`, `@PullRequest.Edited`, `@PullRequest.Labeled`, `@PullRequest.Locked`, `@PullRequest.Opened`, `@PullRequest.ReadyForReview`, `@PullRequest.Reopened`, `@PullRequest.ReviewRequested`, `@PullRequest.ReviewRequestRemoved`, `@PullRequest.Synchronize`, `@PullRequest.Unassigned`, `@PullRequest.Unlabeled`, `@PullRequest.Unlocked`
+|link:{github-api-javadoc-root-url}/GHEventPayload.PullRequest.html[`GHEventPayload.PullRequest`]
+
+|link:{webhook-documentation-url}#pull_request_review[`pull_request_review`]
+|`@PullRequestReview.Dismissed`, `@PullRequestReview.Edited`, `@PullRequestReview.Submitted`
+|link:{github-api-javadoc-root-url}/GHEventPayload..html[`GHEventPayload.PullRequestReview`]
+
+|link:{webhook-documentation-url}#pull_request_review_comment[`pull_request_review_comment`]
+|`@PullRequestReviewComment.Created`, `@PullRequestReviewComment.Deleted`, `@PullRequestReviewComment.Edited`
+|link:{github-api-javadoc-root-url}/GHEventPayload.PullRequestReviewComment.html[`GHEventPayload.PullRequestReviewComment`]
+
+|link:{webhook-documentation-url}#push[`push`]
+|`@Push`
+|link:{github-api-javadoc-root-url}/GHEventPayload.Push.html[`GHEventPayload.Push`]
+
+|link:{webhook-documentation-url}#release[`release`]
+|`@Release.Created`, `@Release.Deleted`, `@Release.Edited`, `@Release.Prereleased`, `@Release.Published`, `@Release.Released`, `@Release.Unpublished`
+|link:{github-api-javadoc-root-url}/GHEventPayload.Release.html[`GHEventPayload.Release`]
+
+|link:{webhook-documentation-url}#repository[`repository`]
+|`@Repository.Archived`, `@Repository.Created`, `@Repository.Deleted`, `@Repository.Edited`, `@Repository.Privatized`, `@Repository.Publicized`, `@Repository.Renamed`, `@Repository.Transferred`, `@Repository.Unarchived`
+|link:{github-api-javadoc-root-url}/GHEventPayload.Repository.html[`GHEventPayload.Repository`]
+
+|link:{webhook-documentation-url}#status[`status`]
+|`@Status`
+|link:{github-api-javadoc-root-url}/GHEventPayload.Status.html[`GHEventPayload.Status`]
+|===
+
+[TIP]
+====
+Miss an event type?
+
+It is easy to add support for a new one:
+
+* Contribute the `GHEventPayload` subclass to the https://github.com/hub4j/github-api[Hub4j GitHub API].
+* Create a new annotation in https://github.com/quarkiverse/quarkiverse-github-app/tree/master/runtime/src/main/java/io/quarkiverse/githubapp/event[Quarkiverse GitHub App].
+* The annotation will be automatically taken into account.
+====
+
+== Configuration file
+
+For some usage, you might need to include a configuration file that is repository-specific and versioned.
+
+The Quarkiverse GitHub App extension supports the following features:
+
+* Automatic injection of config files into your methods.
+* YAML, JSON or text config files.
+* Automatic deserialization of your YAML or JSON config files into Java POJOs using Jackson.
+
+Injecting a configuration file in your method is as simple as:
+
+[source, java]
+----
+class TriageIssue {
+
+    void triageIssue(@Issue.Opened GHEventPayload.Issue issuePayload,
+            @ConfigFile("quarkus-bot-java.yml") QuarkusBotConfigFile quarkusBotConfigFile) {
+        // do something
+    }
+}
+----
+
+The configuration file `.github/quarkus-bot-java.yml` present in the default branch of the repository
+for which the event has been triggered
+is parsed and deserialized to a `QuarkusBotConfigFile` instance using Jackson.
+
+If the file does not exist in the repository, `quarkusBotConfigFile` will be null.
+
+If you want to get the content of the configuration file as is, use a `String`.
+
+[TIP]
+====
+If your repository is private, reading configuration files requires your GitHub App to have the `Contents` `Read` permission.
+====
+
+[NOTE]
+====
+By default, the config file path is relative to the `.github/` directory.
+
+You can reference a file outside this directory by using an `/absolute/path`.
+====
+
+== Error handler
+
+The Quarkiverse GitHub App extension provides an error handler that will log errors with as many details as possible.
+
+You can customize the error handler by creating a CDI bean implementing `io.quarkiverse.githubapp.error.ErrorHandler`:
+
+[WARNING]
+====
+Some errors may be triggered before the payload has been parsed.
+In this case, the `payload` parameter passed to the `handleError()` method is `null`.
+====
+
+== Configuration Reference
+
+The Quarkiverse GitHub App extension exposes the following configuration properties:
+
+include::includes/quarkus-github-app.adoc[]

@@ -14,6 +14,7 @@
     <properties>
         <asciidoctorj.version>2.4.2</asciidoctorj.version>
         <asciidoctor-maven-plugin.version>2.1.0</asciidoctor-maven-plugin.version>
+        <yaml-properties-maven-plugin.version>1.1.3</yaml-properties-maven-plugin.version>
     </properties>
 
     <dependencies>
@@ -27,6 +28,24 @@
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>it.ozimov</groupId>
+                <artifactId>yaml-properties-maven-plugin</artifactId>
+                <version>${yaml-properties-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>read-project-properties</goal>
+                        </goals>
+                        <configuration>
+                            <files>
+                                <file>${project.basedir}/../.github/project.yml</file>
+                            </files>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <artifactId>maven-resources-plugin</artifactId>
                 <executions>
@@ -43,6 +62,11 @@
                                     <directory>${project.basedir}/../target/asciidoc/generated/config/</directory>
                                     <include>quarkus-github-app.adoc</include>
                                     <filtering>false</filtering>
+                                </resource>
+                                <resource>
+                                    <directory>${project.basedir}/templates/includes</directory>
+                                    <include>attributes.adoc</include>
+                                    <filtering>true</filtering>
                                 </resource>
                             </resources>
                         </configuration>

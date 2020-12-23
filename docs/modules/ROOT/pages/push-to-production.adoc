@@ -1,0 +1,19 @@
+= Push to Production
+
+== Register another GitHub App
+
+There is a good chance you will continue to develop your GitHub App to add features and fix issues.
+A good practice is to register a new GitHub App specific to production instead of reusing the one you created for development.
+
+To do so, please follow the instructions in xref:register-github-app.adoc[Register a GitHub App].
+
+== Production configuration
+
+For a production configuration:
+
+ * The webhook URL points to the root of your deployed GitHub App.
+ * You have to define a webhook secret.
+
+== Keep your secrets secret
+
+Be careful to not expose your private key or your webhook secret in any sort as your GitHub App is publicly available.

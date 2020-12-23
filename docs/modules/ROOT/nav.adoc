@@ -1,4 +1,6 @@
 * xref:index.adoc[Introduction]
 * xref:register-github-app.adoc[Register a GitHub App]
 * xref:create-github-app.adoc[Create a GitHub App]
+* xref:replay-ui.adoc[Replay UI]
+* xref:developer-reference.adoc[Developer Reference]
 * xref:push-to-production.adoc[Push to Production]

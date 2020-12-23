@@ -1,0 +1,14 @@
+= Replay UI
+
+When developing GitHub Apps, more often than not, being able to replay an event is useful.
+It can be cumbersome to trigger the events from the GitHub UI by creating issues, pull requests, commenting...
+
+GitHub offers a replay UI for this purpose in the `Advanced` tab of your application page.
+It is not very practical when developing though as you are not able to search and,
+sometimes, the details of the events are not available immediately.
+
+Quarkiverse GitHub App offers an integrated Replay UI when developing in dev mode.
+You can inspect the received payloads and replay events from there.
+It is available at http://localhost:8080/replay/.
+
+image::images/replay-ui.png[Replay UI]
