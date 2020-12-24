@@ -11,4 +11,4 @@ Quarkiverse GitHub App offers an integrated Replay UI when developing in dev mod
 You can inspect the received payloads and replay events from there.
 It is available at http://localhost:8080/replay/.
 
-image::images/replay-ui.png[Replay UI]
+image::replay-ui.png[Replay UI]
