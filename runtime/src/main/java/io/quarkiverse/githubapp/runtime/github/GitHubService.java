@@ -11,6 +11,7 @@ import javax.inject.Singleton;
 import org.kohsuke.github.GHAppInstallationToken;
 import org.kohsuke.github.GitHub;
 import org.kohsuke.github.GitHubBuilder;
+import org.kohsuke.github.extras.okhttp3.OkHttpConnector;
 
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -18,7 +19,6 @@ import com.github.benmanes.caffeine.cache.Expiry;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 
 import io.quarkiverse.githubapp.runtime.config.GitHubAppRuntimeConfig;
-import io.quarkiverse.githubapp.runtime.github.okhttp.OkHttpConnector;
 import io.quarkiverse.githubapp.runtime.signing.JwtTokenCreator;
 import okhttp3.OkHttpClient;
 

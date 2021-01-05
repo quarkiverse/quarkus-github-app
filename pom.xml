@@ -26,7 +26,7 @@
         <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
         <jandex-plugin.version>1.0.8</jandex-plugin.version>
 
-        <quarkiverse-github-api.version>0.0.1</quarkiverse-github-api.version>
+        <quarkiverse-github-api.version>0.0.2</quarkiverse-github-api.version>
         <quarkiverse-jjwt-jackson.version>0.0.2</quarkiverse-jjwt-jackson.version>
         <okhttp.version>4.9.0</okhttp.version>
         <okhttp-eventsource.version>2.3.1</okhttp-eventsource.version>
