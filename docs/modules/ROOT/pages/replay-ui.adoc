@@ -7,7 +7,7 @@ GitHub offers a replay UI for this purpose in the `Advanced` tab of your applica
 It is not very practical when developing though as you are not able to search and,
 sometimes, the details of the events are not available immediately.
 
-Quarkiverse GitHub App offers an integrated Replay UI when developing in dev mode.
+Quarkus GitHub App offers an integrated Replay UI when developing in dev mode.
 You can inspect the received payloads and replay events from there.
 It is available at http://localhost:8080/replay/.
 

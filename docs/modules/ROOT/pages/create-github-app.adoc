@@ -4,16 +4,16 @@ include::./includes/attributes.adoc[]
 
 == Initialize your Quarkus application
 
-A Quarkiverse GitHub App is a standard Quarkus application.
+A Quarkus GitHub App is a standard Quarkus application.
 
-You can create one including the Quarkiverse GitHub App extension with the following command:
+You can create one including the Quarkus GitHub App extension with the following command:
 
 [source, bash, subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=my-github-app \
-    -Dextensions="io.quarkiverse.githubapp:quarkiverse-github-app:{quarkiverse-github-app-version}" \
+    -Dextensions="io.quarkiverse.githubapp:quarkus-github-app:{quarkus-github-app-version}" \
     -DnoExamples
 ----
 
@@ -133,7 +133,7 @@ You can then start the native executable with:
 
 == And more
 
-You are done developing your first Quarkiverse GitHub App.
+You are done developing your first Quarkus GitHub App.
 
 Obviously the one we developed is not very useful but it is a good start and using this framework:
 

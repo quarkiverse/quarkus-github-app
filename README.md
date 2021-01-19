@@ -1,11 +1,13 @@
-# Quarkiverse GitHub App
+# Quarkus GitHub App
+
+[![Version](https://img.shields.io/maven-central/v/io.quarkiverse.githubapp/quarkus-github-app?logo=apache-maven&style=for-the-badge)](https://search.maven.org/artifact/io.quarkiverse.githubapp/quarkus-github-app)
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
 [![All Contributors](https://img.shields.io/badge/all_contributors-2-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 **Develop your GitHub Apps in Java with Quarkus.**
 
-Quarkiverse GitHub App is a [Quarkus](https://quarkus.io) extension
+Quarkus GitHub App is a [Quarkus](https://quarkus.io) extension
 that allows to create GitHub Apps in Java with very little boilerplate.
 
 Think of it as [Probot](https://probot.github.io) for Java.
@@ -33,13 +35,13 @@ Finally, it supports using a [Smee.io proxy](https://smee.io) during the develop
 
 ## Documentation
 
-To get you started (and more!), please refer to [the documentation](https://quarkiverse.github.io/quarkiverse-docs/quarkiverse-github-app/dev/index.html).
+To get you started (and more!), please refer to [the documentation](https://quarkiverse.github.io/quarkiverse-docs/quarkus-github-app/dev/index.html).
 
-Anything missing in the documentation? Please [open an issue](https://github.com/quarkiverse/quarkiverse-github-app/issues/new).
+Anything missing in the documentation? Please [open an issue](https://github.com/quarkiverse/quarkus-github-app/issues/new).
 
 ## How?
 
-The Quarkiverse GitHub App extension uses [the Hub4j GitHub API](https://github.com/hub4j/github-api)
+The Quarkus GitHub App extension uses [the Hub4j GitHub API](https://github.com/hub4j/github-api)
 to parse the webhook payloads and handle the GitHub REST API calls.
 
 The rest of the extension is Quarkus magic - mostly code generation with [Gizmo](https://github.com/quarkusio/gizmo/) -

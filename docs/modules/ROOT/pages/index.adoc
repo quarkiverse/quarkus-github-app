@@ -1,4 +1,4 @@
-= Quarkiverse GitHub App
+= Quarkus GitHub App
 
 When maintaining large projects on GitHub, GitHub Apps come handy:
 they allow you to automate most of the repetitive tasks.
@@ -23,7 +23,7 @@ We have some good news for you:
 Until now, your best option was GitHub's own https://probot.github.io/[Probot],
 but if you prefer Java over JavaScript or TypeScript,
 you have come to the right place:
-**Quarkiverse GitHub App is designed to make developing GitHub Apps in Java
+**Quarkus GitHub App is designed to make developing GitHub Apps in Java
 easy and fun.**
 
 And with all the Quarkus goodness: developer joy, live reload and native executables.
