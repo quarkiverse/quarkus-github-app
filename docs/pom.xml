@@ -3,13 +3,13 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>io.quarkiverse.githubapp</groupId>
-        <artifactId>quarkiverse-github-app-parent</artifactId>
+        <artifactId>quarkus-github-app-parent</artifactId>
         <version>0.0.2-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>quarkiverse-github-app-docs</artifactId>
-    <name>Quarkiverse - GitHub Application - Documentation</name>
+    <artifactId>quarkus-github-app-docs</artifactId>
+    <name>Quarkus - GitHub App - Documentation</name>
     
     <properties>
         <asciidoctorj.version>2.4.2</asciidoctorj.version>
@@ -21,7 +21,7 @@
         <!-- Make sure the doc is built after the other artifacts -->
         <dependency>
             <groupId>io.quarkiverse.githubapp</groupId>
-            <artifactId>quarkiverse-github-app-deployment</artifactId>
+            <artifactId>quarkus-github-app-deployment</artifactId>
             <version>${project.version}</version>
         </dependency>
     </dependencies>

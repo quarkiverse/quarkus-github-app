@@ -3,13 +3,13 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>io.quarkiverse.githubapp</groupId>
-        <artifactId>quarkiverse-github-app-parent</artifactId>
+        <artifactId>quarkus-github-app-parent</artifactId>
         <version>0.0.2-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>quarkiverse-github-app-deployment</artifactId>
-    <name>Quarkiverse - GitHub Application - Deployment</name>
+    <artifactId>quarkus-github-app-deployment</artifactId>
+    <name>Quarkus - GitHub App - Deployment</name>
 
     <dependencies>
         <dependency>
@@ -34,15 +34,15 @@
         </dependency>
         <dependency>
             <groupId>io.quarkiverse.githubapi</groupId>
-            <artifactId>quarkiverse-github-api-deployment</artifactId>
+            <artifactId>quarkus-github-api-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkiverse.jjwtjackson</groupId>
-            <artifactId>quarkiverse-jjwt-jackson-deployment</artifactId>
+            <artifactId>quarkus-jjwt-jackson-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkiverse.githubapp</groupId>
-            <artifactId>quarkiverse-github-app</artifactId>
+            <artifactId>quarkus-github-app</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

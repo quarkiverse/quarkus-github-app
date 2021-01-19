@@ -150,7 +150,7 @@ Miss an event type?
 It is easy to add support for a new one:
 
 * Contribute the `GHEventPayload` subclass to the https://github.com/hub4j/github-api[Hub4j GitHub API].
-* Create a new annotation in https://github.com/quarkiverse/quarkiverse-github-app/tree/master/runtime/src/main/java/io/quarkiverse/githubapp/event[Quarkiverse GitHub App].
+* Create a new annotation in https://github.com/quarkiverse/quarkus-github-app/tree/master/runtime/src/main/java/io/quarkiverse/githubapp/event[Quarkus GitHub App].
 * The annotation will be automatically taken into account.
 ====
 
@@ -158,7 +158,7 @@ It is easy to add support for a new one:
 
 For some usage, you might need to include a configuration file that is repository-specific and versioned.
 
-The Quarkiverse GitHub App extension supports the following features:
+The Quarkus GitHub App extension supports the following features:
 
 * Automatic injection of config files into your methods.
 * YAML, JSON or text config files.
@@ -199,7 +199,7 @@ You can reference a file outside this directory by using an `/absolute/path`.
 
 == Error handler
 
-The Quarkiverse GitHub App extension provides an error handler that will log errors with as many details as possible.
+The Quarkus GitHub App extension provides an error handler that will log errors with as many details as possible.
 
 You can customize the error handler by creating a CDI bean implementing `io.quarkiverse.githubapp.error.ErrorHandler`:
 
@@ -211,6 +211,6 @@ In this case, the `payload` parameter passed to the `handleError()` method is `n
 
 == Configuration Reference
 
-The Quarkiverse GitHub App extension exposes the following configuration properties:
+The Quarkus GitHub App extension exposes the following configuration properties:
 
 include::includes/quarkus-github-app.adoc[]

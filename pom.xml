@@ -8,9 +8,9 @@
     </parent>
 
     <groupId>io.quarkiverse.githubapp</groupId>
-    <artifactId>quarkiverse-github-app-parent</artifactId>
+    <artifactId>quarkus-github-app-parent</artifactId>
     <version>0.0.2-SNAPSHOT</version>
-    <name>Quarkiverse - GitHub Application - Parent</name>
+    <name>Quarkus - GitHub App - Parent</name>
 
     <packaging>pom</packaging>
 
@@ -26,8 +26,8 @@
         <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
         <jandex-plugin.version>1.0.8</jandex-plugin.version>
 
-        <quarkiverse-github-api.version>0.0.2</quarkiverse-github-api.version>
-        <quarkiverse-jjwt-jackson.version>0.0.2</quarkiverse-jjwt-jackson.version>
+        <quarkus-github-api.version>0.0.3</quarkus-github-api.version>
+        <quarkus-jjwt-jackson.version>0.0.3</quarkus-jjwt-jackson.version>
         <okhttp.version>4.9.0</okhttp.version>
         <okhttp-eventsource.version>2.3.1</okhttp-eventsource.version>
         <github-api.version>1.117</github-api.version>
@@ -51,23 +51,23 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkiverse.githubapi</groupId>
-                <artifactId>quarkiverse-github-api</artifactId>
-                <version>${quarkiverse-github-api.version}</version>
+                <artifactId>quarkus-github-api</artifactId>
+                <version>${quarkus-github-api.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkiverse.githubapi</groupId>
-                <artifactId>quarkiverse-github-api-deployment</artifactId>
-                <version>${quarkiverse-github-api.version}</version>
+                <artifactId>quarkus-github-api-deployment</artifactId>
+                <version>${quarkus-github-api.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkiverse.jjwtjackson</groupId>
-                <artifactId>quarkiverse-jjwt-jackson</artifactId>
-                <version>${quarkiverse-jjwt-jackson.version}</version>
+                <artifactId>quarkus-jjwt-jackson</artifactId>
+                <version>${quarkus-jjwt-jackson.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkiverse.jjwtjackson</groupId>
-                <artifactId>quarkiverse-jjwt-jackson-deployment</artifactId>
-                <version>${quarkiverse-jjwt-jackson.version}</version>
+                <artifactId>quarkus-jjwt-jackson-deployment</artifactId>
+                <version>${quarkus-jjwt-jackson.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.squareup.okhttp3</groupId>
@@ -139,14 +139,14 @@
     </developers>
 
     <scm>
-        <url>https://github.com/quarkiverse/quarkiverse-github-app</url>
-        <connection>scm:git:git@github.com:quarkiverse/quarkiverse-github-app.git</connection>
-        <developerConnection>scm:git:git@github.com:quarkiverse/quarkiverse-github-app.git</developerConnection>
+        <url>https://github.com/quarkiverse/quarkus-github-app</url>
+        <connection>scm:git:git@github.com:quarkiverse/quarkus-github-app.git</connection>
+        <developerConnection>scm:git:git@github.com:quarkiverse/quarkus-github-app.git</developerConnection>
         <tag>HEAD</tag>
     </scm>
 
     <issueManagement>
         <system>GitHub</system>
-        <url>https://github.com/quarkiverse/quarkiverse-github-app/issues/</url>
+        <url>https://github.com/quarkiverse/quarkus-github-app/issues/</url>
     </issueManagement>
 </project>
