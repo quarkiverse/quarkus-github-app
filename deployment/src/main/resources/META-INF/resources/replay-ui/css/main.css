@@ -1,10 +1,36 @@
-.ui.menu .item {
+.ui.menu.main-menu {
+	border-radius: 0;
+}
+
+.ui.main-menu .item {
 	font-size: 20px;
 }
 
+.ui.main-menu img {
+	border-right: 1px solid darkgrey;
+	padding-right: 10px;
+	margin-right: 15px !important;
+}
+
+.ui.inverted.menu .item:before {
+	background-color: inherit;
+}
+
+.ui.main-menu .item:first-child {
+	padding: 1em 1em 1em 0.5em;
+}
+
+.ui.main-menu .item {
+	padding: 1em;
+}
+
+.ui.main-menu .item a {
+	color: white;
+}
+
 .main-content {
-	margin-top: 4em;
-	margin-bottom: 5em;
+	padding-top: 4em;
+	padding-bottom: 5em;
 }
 
 .description pre {
