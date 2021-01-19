@@ -129,7 +129,7 @@ class GitHubAppProcessor {
             "exceptionally", CompletionStage.class, Function.class);
 
     private static final String QUARKIVERSE_GITHUB_APP_GROUP_ID = "io.quarkiverse.githubapp";
-    private static final String QUARKIVERSE_GITHUB_APP_ARTIFACT_ID = "quarkiverse-github-app-deployment";
+    private static final String QUARKIVERSE_GITHUB_APP_ARTIFACT_ID = "quarkus-github-app-deployment";
     private static final String REPLAY_UI_RESOURCES_PREFIX = "META-INF/resources/replay-ui/";
     private static final String REPLAY_UI_PATH = "/replay";
 
