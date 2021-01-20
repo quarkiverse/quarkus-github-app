@@ -3,25 +3,17 @@ package io.quarkiverse.githubapp.deployment;
 import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.CONFIG_FILE;
 import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.EVENT;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.Reader;
 import java.io.StringReader;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Modifier;
-import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,8 +21,6 @@ import java.util.Map.Entry;
 import java.util.TreeSet;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 
 import javax.enterprise.event.Event;
@@ -78,7 +68,6 @@ import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.MethodDescriptors;
 import io.quarkus.bootstrap.model.AppArtifact;
-import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -108,7 +97,6 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
-import io.smallrye.common.io.jar.JarFiles;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
@@ -219,12 +207,15 @@ class GitHubAppProcessor {
                 .setUnremovable()
                 .build());
 
-        Path deploymentPath = deployReplayUiResources(curateOutcomeBuildItem, REPLAY_UI_RESOURCES_PREFIX);
+        AppArtifact githubAppArtifact = WebJarUtil.getAppArtifact(curateOutcomeBuildItem, QUARKIVERSE_GITHUB_APP_GROUP_ID,
+                QUARKIVERSE_GITHUB_APP_ARTIFACT_ID);
+        Path deploymentPath = WebJarUtil.copyResourcesForDevOrTest(curateOutcomeBuildItem, launchMode, githubAppArtifact,
+                REPLAY_UI_RESOURCES_PREFIX);
 
         Handler<RoutingContext> handler = recorder.replayUiHandler(deploymentPath.toAbsolutePath().toString(),
                 REPLAY_UI_PATH, shutdownContext);
-        routes.produce(new RouteBuildItem(REPLAY_UI_PATH, handler));
-        routes.produce(new RouteBuildItem(REPLAY_UI_PATH + "/*", handler));
+        routes.produce(new RouteBuildItem.Builder().route(REPLAY_UI_PATH).handler(handler).build());
+        routes.produce(new RouteBuildItem.Builder().route(REPLAY_UI_PATH + "/*").handler(handler).build());
 
         displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(REPLAY_UI_PATH + "/"));
     }
@@ -665,58 +656,5 @@ class GitHubAppProcessor {
                 bytecodeCreator.readStaticField(FieldDescriptor.of(System.class, "out", PrintStream.class)),
                 bytecodeCreator.invokeVirtualMethod(MethodDescriptor.ofMethod(Object.class, "toString", String.class),
                         resultHandle));
-    }
-
-    private static Path deployReplayUiResources(CurateOutcomeBuildItem curateOutcomeBuildItem, String rootFolderInJar)
-            throws IOException {
-        AppArtifact githubAppArtifact = WebJarUtil.getAppArtifact(curateOutcomeBuildItem, QUARKIVERSE_GITHUB_APP_GROUP_ID,
-                QUARKIVERSE_GITHUB_APP_ARTIFACT_ID);
-        AppArtifact userApplication = curateOutcomeBuildItem.getEffectiveModel().getAppArtifact();
-
-        Path deploymentPath = Paths.get(System.getProperty("java.io.tmpdir"), "quarkus", userApplication.getArtifactId(),
-                githubAppArtifact.getGroupId(), githubAppArtifact.getArtifactId(),
-                githubAppArtifact.getVersion());
-        IoUtils.createOrEmptyDir(deploymentPath);
-
-        for (Path p : githubAppArtifact.getPaths()) {
-            File artifactFile = p.toFile();
-            try (JarFile jarFile = JarFiles.create(artifactFile)) {
-                Enumeration<JarEntry> entries = jarFile.entries();
-                while (entries.hasMoreElements()) {
-                    JarEntry entry = entries.nextElement();
-                    if (entry.getName().startsWith(rootFolderInJar)) {
-                        Path filename = deploymentPath.resolve(entry.getName().replace(rootFolderInJar, ""));
-                        if (entry.isDirectory()) {
-                            Files.createDirectories(filename);
-                        } else {
-                            try (InputStream inputStream = jarFile.getInputStream(entry)) {
-                                createFile(inputStream, filename);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        return deploymentPath;
-    }
-
-    private static void createFile(InputStream source, Path targetFile) throws IOException {
-        FileLock lock = null;
-        FileOutputStream fos = null;
-        try {
-            fos = new FileOutputStream(targetFile.toString());
-            FileChannel channel = fos.getChannel();
-            lock = channel.tryLock();
-            if (lock != null) {
-                IoUtils.copy(fos, source);
-            }
-        } finally {
-            if (lock != null) {
-                lock.release();
-            }
-            if (fos != null) {
-                fos.close();
-            }
-        }
     }
 }
