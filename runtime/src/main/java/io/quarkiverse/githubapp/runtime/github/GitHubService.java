@@ -5,8 +5,8 @@ import java.security.GeneralSecurityException;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeUnit;
 
+import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
-import javax.inject.Singleton;
 
 import org.kohsuke.github.GHAppInstallationToken;
 import org.kohsuke.github.GitHub;
@@ -22,7 +22,7 @@ import io.quarkiverse.githubapp.runtime.config.GitHubAppRuntimeConfig;
 import io.quarkiverse.githubapp.runtime.signing.JwtTokenCreator;
 import okhttp3.OkHttpClient;
 
-@Singleton
+@ApplicationScoped
 public class GitHubService {
 
     private final GitHubAppRuntimeConfig gitHubAppRuntimeConfig;
