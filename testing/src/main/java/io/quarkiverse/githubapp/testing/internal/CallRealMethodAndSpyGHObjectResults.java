@@ -27,6 +27,7 @@ final class CallRealMethodAndSpyGHObjectResults implements Answer<Object>, Seria
         Class<? extends GHObject> type = castOriginal.getClass();
         DefaultableMocking<? extends GHObject> mocking = mocks.ghObjectMocking(castOriginal);
         return Mockito.mock(type, withSettings().stubOnly()
+                .withoutAnnotations()
                 .spiedInstance(original)
                 .defaultAnswer(new CallMockedMethodOrCallRealMethodAndSpyGHObjectResults(this, mocking)));
     }
