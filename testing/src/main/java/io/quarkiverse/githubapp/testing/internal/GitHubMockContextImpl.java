@@ -51,6 +51,7 @@ public final class GitHubMockContextImpl implements GitHubMockContext, GitHubMoc
                 when(newClient.parseEventPayload(any(), any())).thenAnswer(invocation -> {
                     Object original = invocation.callRealMethod();
                     return Mockito.mock(original.getClass(), withSettings().spiedInstance(original)
+                            .withoutAnnotations()
                             .defaultAnswer(new CallRealMethodAndSpyGHObjectResults(this)));
                 });
             } catch (IOException e) {

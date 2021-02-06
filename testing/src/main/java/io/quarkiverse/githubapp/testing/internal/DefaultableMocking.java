@@ -15,7 +15,10 @@ final class DefaultableMocking<M> {
     static <M> DefaultableMocking<M> create(Class<M> clazz, Object id) {
         StubDetectingInvocationListener listener = new StubDetectingInvocationListener();
         M mock = Mockito.mock(clazz,
-                Mockito.withSettings().name(clazz.getSimpleName() + "#" + id).invocationListeners(listener));
+                Mockito.withSettings()
+                        .name(clazz.getSimpleName() + "#" + id)
+                        .withoutAnnotations()
+                        .invocationListeners(listener));
         return new DefaultableMocking<>(mock, listener);
     }
 
