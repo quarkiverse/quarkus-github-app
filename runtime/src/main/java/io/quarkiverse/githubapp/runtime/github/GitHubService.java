@@ -114,7 +114,7 @@ public class GitHubService {
 
                 return new CachedInstallationToken(installationToken.getToken(), installationToken.getExpiresAt());
             } catch (IOException e) {
-                throw new IllegalStateException("Unable to create a GitHub client for the installation " + installationId, e);
+                throw new IllegalStateException("Unable to create a GitHub token for the installation " + installationId, e);
             }
         }
     }
