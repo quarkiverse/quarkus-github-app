@@ -79,12 +79,17 @@ public final class GitHubMockContextImpl implements GitHubMockContext, GitHubMoc
 
     @Override
     public GHIssue issue(long id) {
-        return nonRepositoryMockMap(GHIssue.class).getOrCreate(id).mock();
+        return ghObject(GHIssue.class, id);
     }
 
     @Override
     public GHPullRequest pullRequest(long id) {
-        return nonRepositoryMockMap(GHPullRequest.class).getOrCreate(id).mock();
+        return ghObject(GHPullRequest.class, id);
+    }
+
+    @Override
+    public <T extends GHObject> T ghObject(Class<T> type, long id) {
+        return nonRepositoryMockMap(type).getOrCreate(id).mock();
     }
 
     @Override
