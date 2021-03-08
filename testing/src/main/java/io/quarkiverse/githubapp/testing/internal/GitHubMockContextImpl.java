@@ -62,12 +62,12 @@ public final class GitHubMockContextImpl implements GitHubMockContext, GitHubMoc
     }
 
     @Override
-    public <T> void configFileFromClasspath(String pathInRepository, String pathInClassPath) throws IOException {
+    public void configFileFromClasspath(String pathInRepository, String pathInClassPath) throws IOException {
         configFileFromString(pathInRepository, GitHubAppTestingContext.get().getFromClasspath(pathInClassPath));
     }
 
     @Override
-    public <T> void configFileFromString(String pathInRepository, String configFile) {
+    public void configFileFromString(String pathInRepository, String configFile) {
         when(fileDownloader.getFileContent(any(), eq(getGitHubFilePath(pathInRepository))))
                 .thenReturn(Optional.of(configFile));
     }
