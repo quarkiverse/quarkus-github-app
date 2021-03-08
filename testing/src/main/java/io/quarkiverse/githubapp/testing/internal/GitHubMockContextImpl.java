@@ -62,12 +62,12 @@ public final class GitHubMockContextImpl implements GitHubMockContext, GitHubMoc
     }
 
     @Override
-    public <T> void configFileFromClasspath(String pathInRepository, String pathInClassPath) throws IOException {
+    public void configFileFromClasspath(String pathInRepository, String pathInClassPath) throws IOException {
         configFileFromString(pathInRepository, GitHubAppTestingContext.get().getFromClasspath(pathInClassPath));
     }
 
     @Override
-    public <T> void configFileFromString(String pathInRepository, String configFile) {
+    public void configFileFromString(String pathInRepository, String configFile) {
         when(fileDownloader.getFileContent(any(), eq(getGitHubFilePath(pathInRepository))))
                 .thenReturn(Optional.of(configFile));
     }
@@ -79,12 +79,17 @@ public final class GitHubMockContextImpl implements GitHubMockContext, GitHubMoc
 
     @Override
     public GHIssue issue(long id) {
-        return nonRepositoryMockMap(GHIssue.class).getOrCreate(id).mock();
+        return ghObject(GHIssue.class, id);
     }
 
     @Override
     public GHPullRequest pullRequest(long id) {
-        return nonRepositoryMockMap(GHPullRequest.class).getOrCreate(id).mock();
+        return ghObject(GHPullRequest.class, id);
+    }
+
+    @Override
+    public <T extends GHObject> T ghObject(Class<T> type, long id) {
+        return nonRepositoryMockMap(type).getOrCreate(id).mock();
     }
 
     @Override
