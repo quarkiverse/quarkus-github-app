@@ -28,13 +28,13 @@ public @interface CheckSuite {
         String NAME = Actions.COMPLETED;
     }
 
-    @CheckSuite(Created.NAME)
+    @CheckSuite(Requested.NAME)
     @Target(PARAMETER)
     @Retention(RUNTIME)
     @Qualifier
-    public @interface Created {
+    public @interface Requested {
 
-        String NAME = Actions.CREATED;
+        String NAME = Actions.REQUESTED;
     }
 
     @CheckSuite(Rerequested.NAME)
