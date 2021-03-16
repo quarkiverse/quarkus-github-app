@@ -31,6 +31,7 @@ public final class Actions {
     public static final String RENAMED = "renamed";
     public static final String REOPENED = "reopened";
     public static final String REQUESTED_ACTION = "requested_action";
+    public static final String REQUESTED = "requested";
     public static final String REREQUESTED = "rerequested";
     public static final String REVIEW_REQUESTED = "review_requested";
     public static final String REVIEW_REQUEST_REMOVED = "review_request_removed";
