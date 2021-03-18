@@ -48,6 +48,7 @@ It is only used to improve usability in dev mode.
 QUARKUS_GITHUB_APP_WEBHOOK_PROXY_URL:: The URL you obtained when you created your Smee.io channel.
 QUARKUS_GITHUB_APP_WEBHOOK_SECRET:: The webhook secret you created at the previous step.
 QUARKUS_GITHUB_APP_PRIVATE_KEY:: The content of the private key you generated and downloaded.
+Open the key file with a text editor as key viewers usually only show fingerprints.
 
 [TIP]
 ====
