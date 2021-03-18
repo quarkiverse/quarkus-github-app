@@ -51,7 +51,8 @@ QUARKUS_GITHUB_APP_PRIVATE_KEY:: The content of the private key you generated an
 
 [TIP]
 ====
-Don't forget the backslashes at the lines of your private key.
+Don't forget to add backslashes at the end of the lines of your private key (except the last one).
+In a property file, that is how a multi-line value is considered one value.
 ====
 
 Once you have created your `.env`, you are all set.
