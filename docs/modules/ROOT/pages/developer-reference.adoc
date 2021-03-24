@@ -151,6 +151,7 @@ It is easy to add support for a new one:
 
 * Contribute the `GHEventPayload` subclass to the https://github.com/hub4j/github-api[Hub4j GitHub API].
 * Create a new annotation in https://github.com/quarkiverse/quarkus-github-app/tree/main/runtime/src/main/java/io/quarkiverse/githubapp/event[Quarkus GitHub App].
+* Add the appropriate documentation in the https://github.com/quarkiverse/quarkus-github-app/blob/main/docs/modules/ROOT/pages/developer-reference.adoc#event-types[Developer reference page]
 * The annotation will be automatically taken into account.
 ====
 
