@@ -63,7 +63,7 @@ Here are all the events currently supported, together with the type of the paylo
 |link:{github-api-javadoc-root-url}/GHEventPayload.CheckRun.html[`GHEventPayload.CheckRun`]
 
 |link:{webhook-documentation-url}#check_suite[`check_suite`]
-|`@CheckSuite.Completed`, `@CheckSuite.Created`, `@CheckSuite.Rerequested`
+|`@CheckSuite.Completed`, `@CheckSuite.Requested`, `@CheckSuite.Rerequested`
 |link:{github-api-javadoc-root-url}/GHEventPayload.CheckSuite.html[`GHEventPayload.CheckSuite`]
 
 |link:{webhook-documentation-url}#commit_comment[`commit_comment`]
