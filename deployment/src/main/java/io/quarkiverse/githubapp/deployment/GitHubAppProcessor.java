@@ -78,6 +78,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
@@ -96,6 +97,7 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.util.HashUtil;
+import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.vertx.core.Handler;
@@ -198,7 +200,9 @@ class GitHubAppProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     void replayUi(GitHubAppRecorder recorder,
             LaunchModeBuildItem launchMode,
+            LiveReloadBuildItem liveReloadBuildItem,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
+            HttpRootPathBuildItem httpRootPathBuildItem,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<RouteBuildItem> routes,
             BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints,
@@ -215,13 +219,13 @@ class GitHubAppProcessor {
 
         AppArtifact githubAppArtifact = WebJarUtil.getAppArtifact(curateOutcomeBuildItem, QUARKIVERSE_GITHUB_APP_GROUP_ID,
                 QUARKIVERSE_GITHUB_APP_ARTIFACT_ID);
-        Path deploymentPath = WebJarUtil.copyResourcesForDevOrTest(curateOutcomeBuildItem, launchMode, githubAppArtifact,
-                REPLAY_UI_RESOURCES_PREFIX);
+        Path deploymentPath = WebJarUtil.copyResourcesForDevOrTest(liveReloadBuildItem, curateOutcomeBuildItem, launchMode,
+                githubAppArtifact, REPLAY_UI_RESOURCES_PREFIX);
 
         Handler<RoutingContext> handler = recorder.replayUiHandler(deploymentPath.toAbsolutePath().toString(),
                 REPLAY_UI_PATH, shutdownContext);
-        routes.produce(new RouteBuildItem.Builder().route(REPLAY_UI_PATH).handler(handler).build());
-        routes.produce(new RouteBuildItem.Builder().route(REPLAY_UI_PATH + "/*").handler(handler).build());
+        routes.produce(httpRootPathBuildItem.routeBuilder().route(REPLAY_UI_PATH).handler(handler).build());
+        routes.produce(httpRootPathBuildItem.routeBuilder().route(REPLAY_UI_PATH + "/*").handler(handler).build());
 
         displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(REPLAY_UI_PATH + "/"));
     }
