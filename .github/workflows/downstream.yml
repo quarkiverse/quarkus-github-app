@@ -65,11 +65,24 @@ jobs:
         repository: quarkusio/quarkus-bot
         path: quarkus-bot
 
-    - name: Update quarkus-github-app version
+    - name: Update quarkus-github-app version in quarkus-bot
       run: mvn -B versions:set-property -Dproperty=quarkus-github-app.version -DnewVersion=${{ steps.get-version.outputs.version }}
       working-directory: quarkus-bot
 
     - name: Run quarkus-bot tests
       run: mvn -B install
       working-directory: quarkus-bot
+
+    - uses: actions/checkout@v2
+      with:
+        repository: hibernate/hibernate-github-bot
+        path: hibernate-github-bot
+
+    - name: Update quarkus-github-app version in hibernate-github-bot
+      run: mvn -B versions:set-property -Dproperty=quarkus-github-app.version -DnewVersion=${{ steps.get-version.outputs.version }}
+      working-directory: hibernate-github-bot
+
+    - name: Run hibernate-github-bot build (and tests, if any)
+      run: mvn -B install
+      working-directory: hibernate-github-bot
 
