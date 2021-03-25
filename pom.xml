@@ -9,7 +9,7 @@
 
     <groupId>io.quarkiverse.githubapp</groupId>
     <artifactId>quarkus-github-app-parent</artifactId>
-    <version>0.0.8-SNAPSHOT</version>
+    <version>0.0.9-SNAPSHOT</version>
     <name>Quarkus - GitHub App - Parent</name>
 
     <packaging>pom</packaging>
