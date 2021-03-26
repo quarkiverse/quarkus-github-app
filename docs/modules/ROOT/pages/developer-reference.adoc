@@ -63,7 +63,7 @@ Here are all the events currently supported, together with the type of the paylo
 |link:{github-api-javadoc-root-url}/GHEventPayload.CheckRun.html[`GHEventPayload.CheckRun`]
 
 |link:{webhook-documentation-url}#check_suite[`check_suite`]
-|`@CheckSuite.Completed`, `@CheckSuite.Created`, `@CheckSuite.Rerequested`
+|`@CheckSuite.Completed`, `@CheckSuite.Requested`, `@CheckSuite.Rerequested`
 |link:{github-api-javadoc-root-url}/GHEventPayload.CheckSuite.html[`GHEventPayload.CheckSuite`]
 
 |link:{webhook-documentation-url}#commit_comment[`commit_comment`]
@@ -141,6 +141,14 @@ Here are all the events currently supported, together with the type of the paylo
 |link:{webhook-documentation-url}#status[`status`]
 |`@Status`
 |link:{github-api-javadoc-root-url}/GHEventPayload.Status.html[`GHEventPayload.Status`]
+
+|link:{webhook-documentation-url}#workflow_dispatch[`workflow_dispatch`]
+|`@WorkflowDispatch`
+|link:{github-api-javadoc-root-url}/GHEventPayload.WorkflowDispatch.html[`GHEventPayload.WorkflowDispatch`]
+
+|link:{webhook-documentation-url}#workflow_run[`workflow_run`]
+|`@WorkflowRun.Completed`, `@WorkflowRun.Requested`
+|link:{github-api-javadoc-root-url}/GHEventPayload.WorkflowRun.html[`GHEventPayload.WorkflowRun`]
 |===
 
 [TIP]
