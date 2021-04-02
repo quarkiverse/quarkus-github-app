@@ -51,6 +51,7 @@ import io.quarkiverse.githubapp.deployment.DispatchingConfiguration.EventDispatc
 import io.quarkiverse.githubapp.event.Actions;
 import io.quarkiverse.githubapp.runtime.ConfigFileReader;
 import io.quarkiverse.githubapp.runtime.GitHubAppRecorder;
+import io.quarkiverse.githubapp.runtime.Multiplexer;
 import io.quarkiverse.githubapp.runtime.Routes;
 import io.quarkiverse.githubapp.runtime.UtilsProducer;
 import io.quarkiverse.githubapp.runtime.error.DefaultErrorHandler;
@@ -62,6 +63,7 @@ import io.quarkiverse.githubapp.runtime.signing.JwtTokenCreator;
 import io.quarkiverse.githubapp.runtime.signing.PayloadSignatureChecker;
 import io.quarkiverse.githubapp.runtime.smee.SmeeIoForwarder;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
@@ -177,8 +179,14 @@ class GitHubAppProcessor {
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer) {
         Collection<EventDefinition> allEventDefinitions = getAllEventDefinitions(combinedIndex.getIndex());
+
+        // Add @Vetoed to all the user-defined event listening classes
+        annotationsTransformer
+                .produce(new AnnotationsTransformerBuildItem(new VetoUserDefinedEventListeningClassesAnnotationsTransformer(
+                        allEventDefinitions.stream().map(d -> d.getAnnotation()).collect(Collectors.toSet()))));
 
         // Add the qualifiers as beans
         String[] subscriberAnnotations = allEventDefinitions.stream().map(d -> d.getAnnotation().toString())
@@ -491,12 +499,6 @@ class GitHubAppProcessor {
 
             reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, declaringClassName.toString()));
 
-            if (BuiltinScope.isDeclaredOn(declaringClass)) {
-                LOG.warn(
-                        "Classes listening to GitHub events may not be annotated with CDI scopes annotations. Offending class: "
-                                + declaringClass.name());
-            }
-
             String multiplexerClassName = declaringClassName + "_Multiplexer";
             reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, multiplexerClassName));
 
@@ -505,7 +507,11 @@ class GitHubAppProcessor {
                     .superClass(declaringClassName.toString())
                     .build();
 
-            multiplexerClassCreator.addAnnotation(Singleton.class);
+            multiplexerClassCreator.addAnnotation(Multiplexer.class);
+
+            if (!BuiltinScope.isDeclaredOn(declaringClass)) {
+                multiplexerClassCreator.addAnnotation(Singleton.class);
+            }
 
             for (AnnotationInstance classAnnotation : declaringClass.classAnnotations()) {
                 multiplexerClassCreator.addAnnotation(classAnnotation);
