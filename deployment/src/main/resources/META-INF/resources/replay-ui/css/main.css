@@ -12,6 +12,12 @@
 	margin-right: 15px !important;
 }
 
+.ui.main-menu .eventsource-status {
+	padding-right: 15px;
+	padding-top: 5px;
+	padding-bottom: 5px;
+}
+
 .ui.inverted.menu .item:before {
 	background-color: inherit;
 }
