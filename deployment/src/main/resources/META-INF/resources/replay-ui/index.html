@@ -9,79 +9,84 @@
 	<link rel="stylesheet" href="./css/main.css" />
 </head>
 <body>
-	<div class="ui inverted menu main-menu">
-		<span class="header item">
-			<img class="logo" src="./images/quarkus_icon_rgb_reverse.svg" alt="Quarkus logo" width="40" height="30">
-			GitHup App &rsaquo; Replay UI
-		</span>
-	</div>
-	<div class="main-content">
-		<div class="ui main container" id="github-events-app">
-			<div class="ui segment" v-show="waitForEvents">
-				<div class="ui active inverted dimmer">
-					<div class="ui text loader">Waiting for events...</div>
-				</div>
-				<p>&nbsp;</p>
-				<p>&nbsp;</p>
-				<p>&nbsp;</p>
+	<div id="github-events-app">
+		<div class="ui inverted menu main-menu">
+			<span class="header item">
+				<img class="logo" src="./images/quarkus_icon_rgb_reverse.svg" alt="Quarkus logo" width="40" height="30">
+				GitHup App &rsaquo; Replay UI
+			</span>
+			<div class="right item eventsource-status" id="eventsource-status">
+				<div :class="eventSourceStatusColor"><i :class="eventSourceStatusIcon"></i> Connection status</div>
 			</div>
-			<div v-show="!waitForEvents">
-				<div class="ui form">
-					<div class="three fields">
-						<div class="field">
-							<label>Event</label>
-							<div class="ui fluid search selection dropdown">
-								<input name="event" type="hidden">
-								<i class="dropdown icon"></i>
-								<div class="default text">Event</div>
-								<div class="menu">
-									<div class="item" v-for="eventAction in allEventActions" v-bind:data-value="eventAction">{{ eventAction }}</div>
+		</div>
+		<div class="main-content">
+			<div class="ui main container">
+				<div class="ui segment" v-show="waitForEvents">
+					<div class="ui active inverted dimmer">
+						<div class="ui text loader">Waiting for events...</div>
+					</div>
+					<p>&nbsp;</p>
+					<p>&nbsp;</p>
+					<p>&nbsp;</p>
+				</div>
+				<div v-show="!waitForEvents">
+					<div class="ui form">
+						<div class="three fields">
+							<div class="field">
+								<label>Event</label>
+								<div class="ui fluid search selection dropdown">
+									<input name="event" type="hidden">
+									<i class="dropdown icon"></i>
+									<div class="default text">Event</div>
+									<div class="menu">
+										<div class="item" v-for="eventAction in allEventActions" v-bind:data-value="eventAction">{{ eventAction }}</div>
+									</div>
 								</div>
 							</div>
-						</div>
-						<div class="field">
-							<label>Delivery ID</label>
-							<input type="text" placeholder="Delivery ID" v-model="searchDeliveryId">
-						</div>
-						<div class="field">
-							<label>Payload</label>
-							<input type="text" placeholder="Payload" v-model="searchPayload">
+							<div class="field">
+								<label>Delivery ID</label>
+								<input type="text" placeholder="Delivery ID" v-model="searchDeliveryId">
+							</div>
+							<div class="field">
+								<label>Payload</label>
+								<input type="text" placeholder="Payload" v-model="searchPayload">
+							</div>
 						</div>
 					</div>
-				</div>
-				<div class="ui divider"></div>
-				<div class="ui segment" v-show="!searchResults.length">
-					<div style="text-align:center">
-						<div><i class="icon window close large orange"></i></div>
-						<div>No results</div>
+					<div class="ui divider"></div>
+					<div class="ui segment" v-show="!searchResults.length">
+						<div style="text-align:center">
+							<div><i class="icon window close large orange"></i></div>
+							<div>No results</div>
+						</div>
 					</div>
-				</div>
-				<div class="ui divided items">
-					<div class="item" v-for="gitHubEvent in searchResults">
-						<div class="content">
-							<div class="header">
-								<code>{{ gitHubEvent.deliveryId }}</code>
-								<span class="ui tag blue label">{{ gitHubEvent.eventAction }}</span>
-								<span class="ui olive label" v-show="gitHubEvent.replayed"><i class="recycle icon"></i> Replayed</span>
-							</div>
-							<div class="meta">
-								<span>{{ gitHubEvent.repository }}</span>
-								<div class="ui right floated mini olive labeled icon button" v-on:click="replay(gitHubEvent.deliveryId)">
-									<i class="recycle icon"></i>
-									Replay
+					<div class="ui divided items">
+						<div class="item" v-for="gitHubEvent in searchResults">
+							<div class="content">
+								<div class="header">
+									<code>{{ gitHubEvent.deliveryId }}</code>
+									<span class="ui tag blue label">{{ gitHubEvent.eventAction }}</span>
+									<span class="ui olive label" v-show="gitHubEvent.replayed"><i class="recycle icon"></i> Replayed</span>
 								</div>
-								<div class="ui right floated mini labeled icon button" @click="gitHubEvent.showPayload = true" v-show="!gitHubEvent.showPayload">
-									<i class="file code icon"></i>
-									View payload
+								<div class="meta">
+									<span>{{ gitHubEvent.repository }}</span>
+									<div class="ui right floated mini olive labeled icon button" v-on:click="replay(gitHubEvent.deliveryId)">
+										<i class="recycle icon"></i>
+										Replay
+									</div>
+									<div class="ui right floated mini labeled icon button" @click="gitHubEvent.showPayload = true" v-show="!gitHubEvent.showPayload">
+										<i class="file code icon"></i>
+										View payload
+									</div>
+									<div class="ui right floated mini labeled icon button" @click="gitHubEvent.showPayload = false" v-show="gitHubEvent.showPayload">
+										<i class="file code icon"></i>
+										Hide payload
+									</div>
+									<div style="clear: both"></div>
 								</div>
-								<div class="ui right floated mini labeled icon button" @click="gitHubEvent.showPayload = false" v-show="gitHubEvent.showPayload">
-									<i class="file code icon"></i>
-									Hide payload
+								<div class="description" v-show="gitHubEvent.showPayload">
+									<pre>{{ gitHubEvent.parsedPayload }}</pre>
 								</div>
-								<div style="clear: both"></div>
-							</div>
-							<div class="description" v-show="gitHubEvent.showPayload">
-								<pre>{{ gitHubEvent.parsedPayload }}</pre>
 							</div>
 						</div>
 					</div>
@@ -104,27 +109,23 @@
 				waitForEvents: true,
 				searchEventAction: '',
 				searchDeliveryId: '',
-				searchPayload: ''
+				searchPayload: '',
+				eventSourceStatusUpdateTimer: '',
+				eventSourceStatusReconnectTimer: '',
+				eventSourceStatusColor: 'ui grey button small',
+				eventSourceStatusIcon: 'notched circle loading icon'
 			},
 			mounted: function() {
-				console.log("mounted");
-				eventSource = new EventSource("/replay/events");
-				eventSource.addEventListener("github-event", function(message) {
-					if (!message.data) {
-						return;
-					}
-					gitHubEventsApp.waitForEvents = false;
-
-					let gitHubEvent = JSON.parse(message.data);
-					gitHubEvent.showPayload = false;
-					gitHubEventsApp.gitHubEvents.push(gitHubEvent);
-					gitHubEventsApp.gitHubEventsMap.set(gitHubEvent.deliveryId, gitHubEvent);
-				});
+				eventSource = this.initializeEventSource();
+				this.updateEventSourceStatus();
+				this.eventSourceStatusUpdateTimer = setInterval(this.updateEventSourceStatus, 1000);
+				this.eventSourceStatusReconnectTimer = setInterval(this.reconnectEventSource, 2000);
 			},
 			updated: function () {
 				$('.ui.dropdown').dropdown({ clearable: true, fullTextSearch: true, onChange: function(value, text, $selected) { gitHubEventsApp.searchEventAction = value } });
 			},
 			beforeDestroy: function() {
+				clearInterval(this.eventSourceStatusUpdateTimer)
 				eventSource.close();
 			},
 			computed: {
@@ -155,11 +156,50 @@
 				}
 			},
 			methods: {
+				initializeEventSource: function () {
+					let localEventSource = new EventSource("/replay/events");
+					localEventSource.addEventListener("github-event", function(message) {
+							if (!message.data) {
+								return;
+							}
+							gitHubEventsApp.waitForEvents = false;
+		
+							let gitHubEvent = JSON.parse(message.data);
+							gitHubEvent.showPayload = false;
+							gitHubEventsApp.gitHubEvents.push(gitHubEvent);
+							gitHubEventsApp.gitHubEventsMap.set(gitHubEvent.deliveryId, gitHubEvent);
+						});
+
+					return localEventSource;
+				},
+				reconnectEventSource: function () {
+					if (eventSource.readyState == 2) {
+						eventSource.close();
+						eventSource = this.initializeEventSource();
+						this.updateEventSourceStatus();
+					}
+				},
+				updateEventSourceStatus: function () {
+					localGitHubEventsApp = gitHubEventsApp ? gitHubEventsApp : this;
+					
+					if (eventSource.readyState == 0) {
+						localGitHubEventsApp.eventSourceStatusColor = 'ui grey button small';
+						localGitHubEventsApp.eventSourceStatusIcon = 'notched circle loading icon';
+					} else if (eventSource.readyState == 1) {
+						localGitHubEventsApp.eventSourceStatusColor = 'ui green button small';
+						localGitHubEventsApp.eventSourceStatusIcon = 'check icon';
+					} else {
+						localGitHubEventsApp.eventSourceStatusColor = 'ui red button small';
+						localGitHubEventsApp.eventSourceStatusIcon = 'exclamation circle icon';
+					}
+				},
 				replay: function (deliveryId) {
 					if (!gitHubEventsApp.gitHubEventsMap.has(deliveryId)) {
 						console.error('could not find event for ' + deliveryId);
 						return;
 					}
+					
+					this.reconnectEventSource();
 
 					const gitHubEvent = gitHubEventsApp.gitHubEventsMap.get(deliveryId);
 					var xhr = new XMLHttpRequest();
