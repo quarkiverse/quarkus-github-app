@@ -26,7 +26,7 @@
         <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
         <jandex-plugin.version>1.0.8</jandex-plugin.version>
 
-        <quarkus-github-api.version>1.127.0</quarkus-github-api.version>
+        <quarkus-github-api.version>1.127.1</quarkus-github-api.version>
         <quarkus-jjwt-jackson.version>0.0.3</quarkus-jjwt-jackson.version>
         <okhttp.version>4.9.1</okhttp.version>
         <okhttp-eventsource.version>2.3.1</okhttp-eventsource.version>
@@ -150,3 +150,4 @@
         <url>https://github.com/quarkiverse/quarkus-github-app/issues/</url>
     </issueManagement>
 </project>
+
