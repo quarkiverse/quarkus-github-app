@@ -1,5 +1,6 @@
 package io.quarkiverse.githubapp.runtime.replay;
 
+import java.time.Duration;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import io.quarkiverse.githubapp.GitHubEvent;
@@ -23,7 +24,9 @@ public class ReplayEventsRoute {
         return ReactiveRoutes.asEventStream(Multi.createBy()
                 .merging().streams(
                         Multi.createFrom().iterable(recordedEvents),
-                        broadcastProcessor.onOverflow().drop()));
+                        broadcastProcessor.onOverflow().drop(),
+                        Multi.createFrom().ticks().every(Duration.ofMillis(100)).onOverflow()
+                                .drop().map(x -> ReplayEvent.PING)));
     }
 
     public void pushEvent(GitHubEvent gitHubEvent) {
