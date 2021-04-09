@@ -1,0 +1,12 @@
+---
+name: "Quarkus GitHub App"
+metadata:
+  keywords:
+  - "github"
+  - "github-app"
+  - "github app"
+  - "bot"
+  guide: "https://quarkiverse.github.io/quarkiverse-docs/quarkus-github-app/dev/index.html"
+  categories:
+    - "business-automation"
+  status: "stable"
