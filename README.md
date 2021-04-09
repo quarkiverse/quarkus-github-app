@@ -5,6 +5,8 @@
 [![All Contributors](https://img.shields.io/badge/all_contributors-2-orange.svg?style=for-the-badge)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
+<p align="center"><img src="https://design.jboss.org/quarkus/bot/final/images/quarkusbot_full_128px.png" width="128" height="128" /></p>
+
 **Develop your GitHub Apps in Java with Quarkus.**
 
 Quarkus GitHub App is a [Quarkus](https://quarkus.io) extension
@@ -31,7 +33,11 @@ The code above listens to the `issues.opened` GitHub event and posts a comment i
 
 That's for the basics but it also supports YAML or JSON config files in your repository.
 
-Finally, it supports using a [Smee.io proxy](https://smee.io) during the development of the app.
+It also supports using a [Smee.io proxy](https://smee.io) during the development of the app so that GitHub events are redirected to your local instance with no hassle.
+
+Finally, it comes with a nice and searchable Replay UI:
+
+> ![Replay UI](/docs/modules/ROOT/assets/images/replay-ui.png?raw=true "Replay UI")
 
 ## Documentation
 
