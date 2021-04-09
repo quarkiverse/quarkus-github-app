@@ -5,6 +5,8 @@ import io.quarkus.vertx.web.ReactiveRoutes;
 
 public class ReplayEvent implements ReactiveRoutes.ServerSentEvent<GitHubEvent> {
 
+    static final ReplayEvent PING = new ReplayEvent();
+
     private final String event;
     private final GitHubEvent gitHubEvent;
 
