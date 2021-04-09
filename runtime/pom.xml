@@ -10,6 +10,7 @@
 
     <artifactId>quarkus-github-app</artifactId>
     <name>Quarkus - GitHub App - Runtime</name>
+    <description>Automate GitHub tasks with a GitHub App</description>
 
     <dependencies>
         <dependency>
