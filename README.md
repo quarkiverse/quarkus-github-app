@@ -5,7 +5,7 @@
 [![All Contributors](https://img.shields.io/badge/all_contributors-2-orange.svg?style=for-the-badge)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
-<p align="center"><img src="https://design.jboss.org/quarkus/bot/final/images/quarkusbot_full_128px.png" width="128" height="128" /></p>
+<p align="center"><img src="https://design.jboss.org/quarkus/bot/final/images/quarkusbot_full.svg" width="128" height="128" /></p>
 
 **Develop your GitHub Apps in Java with Quarkus.**
 
