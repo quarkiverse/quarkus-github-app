@@ -22,7 +22,7 @@ public class PayloadSignatureCheckerTest {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClass(PayloadUtil.class)
                     .addAsResource(PAYLOAD))
-            .withConfigurationResource("application-payload-signature-checker.properties");
+            .withConfigurationResource("application.properties");
 
     @Inject
     PayloadSignatureChecker payloadSignatureChecker;

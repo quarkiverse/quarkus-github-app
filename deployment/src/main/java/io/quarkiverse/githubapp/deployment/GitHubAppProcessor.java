@@ -58,7 +58,6 @@ import io.quarkiverse.githubapp.runtime.error.DefaultErrorHandler;
 import io.quarkiverse.githubapp.runtime.error.ErrorHandlerBridgeFunction;
 import io.quarkiverse.githubapp.runtime.github.GitHubService;
 import io.quarkiverse.githubapp.runtime.github.PayloadHelper;
-import io.quarkiverse.githubapp.runtime.replay.ReplayEventsRoute;
 import io.quarkiverse.githubapp.runtime.signing.JwtTokenCreator;
 import io.quarkiverse.githubapp.runtime.signing.PayloadSignatureChecker;
 import io.quarkiverse.githubapp.runtime.smee.SmeeIoForwarder;
@@ -211,7 +210,7 @@ class GitHubAppProcessor {
             LiveReloadBuildItem liveReloadBuildItem,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             HttpRootPathBuildItem httpRootPathBuildItem,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+            BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformers,
             BuildProducer<RouteBuildItem> routes,
             BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints,
             ShutdownContextBuildItem shutdownContext) throws IOException {
@@ -219,11 +218,8 @@ class GitHubAppProcessor {
             return;
         }
 
-        additionalBeans.produce(new AdditionalBeanBuildItem.Builder()
-                .addBeanClass(ReplayEventsRoute.class)
-                .setDefaultScope(DotNames.SINGLETON)
-                .setUnremovable()
-                .build());
+        annotationsTransformers
+                .produce(new AnnotationsTransformerBuildItem(EnableReplayEventsRouteAnnotationsTransformer.INSTANCE));
 
         AppArtifact githubAppArtifact = WebJarUtil.getAppArtifact(curateOutcomeBuildItem, QUARKIVERSE_GITHUB_APP_GROUP_ID,
                 QUARKIVERSE_GITHUB_APP_ARTIFACT_ID);
