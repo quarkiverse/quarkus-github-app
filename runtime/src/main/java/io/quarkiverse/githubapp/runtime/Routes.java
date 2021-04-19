@@ -14,7 +14,6 @@ import java.time.format.DateTimeFormatter;
 
 import javax.enterprise.event.Event;
 import javax.enterprise.event.Observes;
-import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -58,7 +57,7 @@ public class Routes {
     LaunchMode launchMode;
 
     @Inject
-    Instance<ReplayEventsRoute> replayRouteInstance;
+    ReplayEventsRoute replayEventsRoute;
 
     @Inject
     HttpConfiguration httpConfig;
@@ -115,8 +114,8 @@ public class Routes {
         GitHubEvent gitHubEvent = new GitHubEvent(installationId, gitHubAppRuntimeConfig.appName.orElse(null), deliveryId,
                 repository, event, action, routingContext.getBodyAsString(), body, "true".equals(replayed) ? true : false);
 
-        if (replayRouteInstance.isResolvable()) {
-            replayRouteInstance.get().pushEvent(gitHubEvent);
+        if (launchMode == LaunchMode.DEVELOPMENT) {
+            replayEventsRoute.pushEvent(gitHubEvent);
         }
 
         if (gitHubAppRuntimeConfig.webhookSecret.isPresent() && !launchMode.isDevOrTest()) {
