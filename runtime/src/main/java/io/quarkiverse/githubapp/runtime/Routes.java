@@ -115,7 +115,7 @@ public class Routes {
         GitHubEvent gitHubEvent = new GitHubEvent(installationId, gitHubAppRuntimeConfig.appName.orElse(null), deliveryId,
                 repository, event, action, routingContext.getBodyAsString(), body, "true".equals(replayed) ? true : false);
 
-        if (replayRouteInstance.isResolvable()) {
+        if (launchMode == LaunchMode.DEVELOPMENT && replayRouteInstance.isResolvable()) {
             replayRouteInstance.get().pushEvent(gitHubEvent);
         }
 

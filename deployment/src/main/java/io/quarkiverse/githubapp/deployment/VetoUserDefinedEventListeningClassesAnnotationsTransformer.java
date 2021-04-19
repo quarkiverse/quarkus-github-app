@@ -8,14 +8,15 @@ import org.jboss.jandex.DotName;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.DotNames;
 
-public class VetoUserDefinedEventListeningClassesAnnotationsTransformer implements AnnotationsTransformer {
+class VetoUserDefinedEventListeningClassesAnnotationsTransformer implements AnnotationsTransformer {
 
     private final Set<DotName> eventDefinitionAnnotations;
 
-    public VetoUserDefinedEventListeningClassesAnnotationsTransformer(Set<DotName> eventDefinitionAnnotations) {
+    VetoUserDefinedEventListeningClassesAnnotationsTransformer(Set<DotName> eventDefinitionAnnotations) {
         this.eventDefinitionAnnotations = eventDefinitionAnnotations;
     }
 
+    @Override
     public boolean appliesTo(Kind kind) {
         return Kind.CLASS.equals(kind);
     }
