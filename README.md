@@ -45,6 +45,11 @@ To get you started (and more!), please refer to [the documentation](https://quar
 
 Anything missing in the documentation? Please [open an issue](https://github.com/quarkiverse/quarkus-github-app/issues/new).
 
+## Examples
+
+* The [Quarkus Bot](https://github.com/quarkusio/quarkus-bot)
+* The [Hibernate GitHub Bot](https://github.com/hibernate/hibernate-github-bot)
+
 ## How?
 
 The Quarkus GitHub App extension uses [the Hub4j GitHub API](https://github.com/hub4j/github-api)
@@ -59,11 +64,7 @@ and [Caffeine](https://quarkus.io/guides/cache).
 
 ## Status
 
-The extension is already well polished and stable.
-
-Work is still needed on the test infrastructure though.
-
-We are making steady progress on it.
+The extension is considered stable.
 
 ## License
 
