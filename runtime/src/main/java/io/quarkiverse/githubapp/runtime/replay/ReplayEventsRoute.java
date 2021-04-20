@@ -3,10 +3,10 @@ package io.quarkiverse.githubapp.runtime.replay;
 import java.time.Duration;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import javax.enterprise.inject.Vetoed;
 import javax.inject.Singleton;
 
 import io.quarkiverse.githubapp.GitHubEvent;
+import io.quarkus.arc.profile.IfBuildProfile;
 import io.quarkus.vertx.web.ReactiveRoutes;
 import io.quarkus.vertx.web.Route;
 import io.smallrye.mutiny.Multi;
@@ -14,7 +14,7 @@ import io.smallrye.mutiny.operators.multi.processors.BroadcastProcessor;
 import io.vertx.ext.web.RoutingContext;
 
 @Singleton
-@Vetoed
+@IfBuildProfile("dev")
 public class ReplayEventsRoute {
 
     /**

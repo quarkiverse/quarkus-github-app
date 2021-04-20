@@ -210,16 +210,12 @@ class GitHubAppProcessor {
             LiveReloadBuildItem liveReloadBuildItem,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             HttpRootPathBuildItem httpRootPathBuildItem,
-            BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformers,
             BuildProducer<RouteBuildItem> routes,
             BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints,
             ShutdownContextBuildItem shutdownContext) throws IOException {
         if (launchMode.getLaunchMode() != LaunchMode.DEVELOPMENT) {
             return;
         }
-
-        annotationsTransformers
-                .produce(new AnnotationsTransformerBuildItem(EnableReplayEventsRouteAnnotationsTransformer.INSTANCE));
 
         AppArtifact githubAppArtifact = WebJarUtil.getAppArtifact(curateOutcomeBuildItem, QUARKIVERSE_GITHUB_APP_GROUP_ID,
                 QUARKIVERSE_GITHUB_APP_ARTIFACT_ID);
