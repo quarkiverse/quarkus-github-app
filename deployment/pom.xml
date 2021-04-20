@@ -152,6 +152,7 @@
                                         </org.codehaus.plexus.components.io.filemappers.RegExpFileMapper>
                                     </fileMappers>
                                 </artifactItem>
+                                <!-- favico.js is a version coming from the master branch of https://github.com/ejci/favico.js/ -->
                             </artifactItems>
                         </configuration>
                     </execution>
