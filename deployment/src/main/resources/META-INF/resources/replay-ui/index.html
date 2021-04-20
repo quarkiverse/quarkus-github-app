@@ -66,6 +66,7 @@
 								<div class="header">
 									<code>{{ gitHubEvent.deliveryId }}</code>
 									<span class="ui tag blue label">{{ gitHubEvent.eventAction }}</span>
+									<span class="ui tag orange label" v-show="gitHubEvent.new">New</span>
 									<span class="ui olive label" v-show="gitHubEvent.replayed"><i class="recycle icon"></i> Replayed</span>
 								</div>
 								<div class="meta">
@@ -104,8 +105,21 @@
 	<script src="./js/jquery.min.js"></script>
 	<script src="./js/semantic.min.js"></script>
 	<script src="./js/vue.min.js"></script>
+	<script src="./js/favico.js"></script>
 	<script>
 		let eventSource;
+		var favicon = new Favico({
+			position : 'up'
+		});
+
+		function handleVisibilityChange() {
+			if (document["hidden"]) {
+				gitHubEventsApp.markInvisible();
+			} else {
+				gitHubEventsApp.markVisible();
+			}
+		}
+		document.addEventListener("visibilitychange", handleVisibilityChange, false);
 
 		var gitHubEventsApp = new Vue({
 			el: '#github-events-app',
@@ -119,7 +133,9 @@
 				eventSourceStatusUpdateTimer: '',
 				eventSourceStatusReconnectTimer: '',
 				eventSourceStatusColor: 'ui grey button small',
-				eventSourceStatusIcon: 'notched circle loading icon'
+				eventSourceStatusIcon: 'notched circle loading icon',
+				visible: true,
+				badge: 0
 			},
 			mounted: function() {
 				eventSource = this.initializeEventSource();
@@ -171,6 +187,11 @@
 							gitHubEventsApp.waitForEvents = false;
 		
 							let gitHubEvent = JSON.parse(message.data);
+							if (!gitHubEventsApp.visible) {
+								gitHubEvent.new = true;
+								gitHubEventsApp.badge ++;
+								favicon.badge(gitHubEventsApp.badge);
+							}
 							gitHubEvent.showPayload = false;
 							gitHubEventsApp.gitHubEvents.push(gitHubEvent);
 							gitHubEventsApp.gitHubEventsMap.set(gitHubEvent.deliveryId, gitHubEvent);
@@ -237,6 +258,18 @@
 
 					const gitHubEvent = gitHubEventsApp.gitHubEventsMap.get(deliveryId);
 					navigator.clipboard.writeText(JSON.stringify(gitHubEvent.parsedPayload, null, 4));
+				},
+				markInvisible: function() {
+					gitHubEventsApp.visible = false;
+					gitHubEventsApp.badge = 0;
+					for (gitHubEvent of gitHubEventsApp.gitHubEvents) {
+						gitHubEvent.new = false;
+					}
+				},
+				markVisible: function() {
+					console.error("reset");
+					favicon.reset();
+					gitHubEventsApp.visible = true;
 				}
 			}
 		});
