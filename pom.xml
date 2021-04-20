@@ -23,6 +23,7 @@
         <quarkus.version>1.13.2.Final</quarkus.version>
         <compiler-plugin.version>3.8.1</compiler-plugin.version>
         <resource-plugin.version>3.2.0</resource-plugin.version>
+        <dependency-plugin.version>3.1.2</dependency-plugin.version>
         <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
         <jandex-plugin.version>1.0.8</jandex-plugin.version>
 
@@ -31,6 +32,10 @@
         <okhttp.version>4.9.1</okhttp.version>
         <okhttp-eventsource.version>2.3.1</okhttp-eventsource.version>
         <jjwt.version>0.11.2</jjwt.version>
+
+        <webjar.fomantic-ui.version>2.8.7</webjar.fomantic-ui.version>
+        <webjar.vue.version>2.6.12</webjar.vue.version>
+        <webjar.jquery.version>3.6.0</webjar.jquery.version>
     </properties>
 
     <modules>
@@ -102,6 +107,10 @@
                             <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                         </systemPropertyVariables>
                     </configuration>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-dependency-plugin</artifactId>
+                    <version>${dependency-plugin.version}</version>
                 </plugin>
                 <plugin>
                     <groupId>org.jboss.jandex</groupId>
