@@ -74,13 +74,19 @@
 										<i class="recycle icon"></i>
 										Replay
 									</div>
-									<div class="ui right floated mini labeled icon button" @click="gitHubEvent.showPayload = true" v-show="!gitHubEvent.showPayload">
-										<i class="file code icon"></i>
-										View payload
-									</div>
-									<div class="ui right floated mini labeled icon button" @click="gitHubEvent.showPayload = false" v-show="gitHubEvent.showPayload">
-										<i class="file code icon"></i>
-										Hide payload
+									<div class="ui icon buttons right floated">
+										<div class="ui mini labeled icon button" @click="gitHubEvent.showPayload = true" v-show="!gitHubEvent.showPayload">
+											<i class="file code icon"></i>
+											View payload
+										</div>
+										<div class="ui mini labeled icon button" @click="gitHubEvent.showPayload = false" v-show="gitHubEvent.showPayload">
+											<i class="file code icon"></i>
+											Hide payload
+										</div>
+										<div class="ui mini labeled icon button" v-on:click="copyToClipboard(gitHubEvent.deliveryId)">
+											<i class="clipboard outline icon"></i>
+											Copy
+										</div>
 									</div>
 									<div style="clear: both"></div>
 								</div>
@@ -222,6 +228,15 @@
 						return (c=='x' ? r :(r&0x3|0x8)).toString(16);
 					});
 					return uuid;
+				},
+				copyToClipboard: function(deliveryId) {
+					if (!gitHubEventsApp.gitHubEventsMap.has(deliveryId)) {
+						console.error('could not find event for ' + deliveryId);
+						return;
+					}
+
+					const gitHubEvent = gitHubEventsApp.gitHubEventsMap.get(deliveryId);
+					navigator.clipboard.writeText(JSON.stringify(gitHubEvent.parsedPayload, null, 4));
 				}
 			}
 		});
