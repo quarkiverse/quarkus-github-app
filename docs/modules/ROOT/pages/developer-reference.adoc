@@ -68,7 +68,7 @@ Here are all the events currently supported, together with the type of the paylo
 
 |link:{webhook-documentation-url}#commit_comment[`commit_comment`]
 |`@CommitComment.Created`
-|link:{github-api-javadoc-root-url}/GHEventPayload..html[`GHEventPayload.`]
+|link:{github-api-javadoc-root-url}/GHEventPayload.CommitComment.html[`GHEventPayload.CommitComment`]
 
 |link:{webhook-documentation-url}#create[`create`]
 |`@Create`
