@@ -106,6 +106,10 @@ Here are all the events currently supported, together with the type of the paylo
 |`@IssueComment.Created`, `@IssueComment.Deleted`, `@IssueComment.Edited`
 |link:{github-api-javadoc-root-url}/GHEventPayload.IssueComment.html[`GHEventPayload.IssueComment`]
 
+|link:{webhook-documentation-url}#label[`label`]
+|`@Label.Created`, `@Label.Deleted`, `@Label.Edited`
+|link:{github-api-javadoc-root-url}/GHEventPayload.Label.html[`GHEventPayload.Label`]
+
 |link:{webhook-documentation-url}#ping[`ping`]
 |`@Ping`
 |link:{github-api-javadoc-root-url}/GHEventPayload.Ping.html[`GHEventPayload.Ping`]
