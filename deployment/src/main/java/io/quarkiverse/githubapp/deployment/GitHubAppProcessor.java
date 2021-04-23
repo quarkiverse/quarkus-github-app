@@ -595,13 +595,37 @@ class GitHubAppProcessor {
                     }
                 }
 
+                // copy annotations except for @ConfigFile
                 for (short i = 0; i < originalMethodParameterTypes.size(); i++) {
                     List<AnnotationInstance> parameterAnnotations = originalMethodParameterAnnotationMapping.getOrDefault(i,
                             Collections.emptyList());
-                    AnnotatedElement generatedParameterAnnotations = methodCreator.getParameterAnnotations(i);
+                    if (parameterAnnotations.isEmpty()) {
+                        continue;
+                    }
+
+                    // @ConfigFile elements are not in the mapping
+                    Short generatedParameterIndex = parameterMapping.get(i);
+                    if (generatedParameterIndex == null) {
+                        continue;
+                    }
+
+                    AnnotatedElement generatedParameterAnnotations = methodCreator
+                            .getParameterAnnotations(generatedParameterIndex);
                     if (parameterAnnotations.stream().anyMatch(ai -> ai.name().equals(eventSubscriberInstance.name()))) {
                         generatedParameterAnnotations.addAnnotation(DotNames.OBSERVES_ASYNC.toString());
                         generatedParameterAnnotations.addAnnotation(eventSubscriberInstance);
+                    } else {
+                        for (AnnotationInstance annotationInstance : parameterAnnotations) {
+                            generatedParameterAnnotations.addAnnotation(annotationInstance);
+                        }
+                    }
+                }
+
+                // generate the code of the method
+                for (short i = 0; i < originalMethodParameterTypes.size(); i++) {
+                    List<AnnotationInstance> parameterAnnotations = originalMethodParameterAnnotationMapping.getOrDefault(i,
+                            Collections.emptyList());
+                    if (parameterAnnotations.stream().anyMatch(ai -> ai.name().equals(eventSubscriberInstance.name()))) {
                         parameterValues[i] = methodCreator.getMethodParam(parameterMapping.get(i));
                     } else if (parameterAnnotations.stream().anyMatch(ai -> ai.name().equals(CONFIG_FILE))) {
                         AnnotationInstance configFileAnnotationInstance = parameterAnnotations.stream()
@@ -621,9 +645,6 @@ class GitHubAppProcessor {
                                 methodCreator.loadClass(configObjectType));
                         parameterValues[i] = methodCreator.checkCast(configObject, configObjectType);
                     } else {
-                        for (AnnotationInstance annotationInstance : parameterAnnotations) {
-                            generatedParameterAnnotations.addAnnotation(annotationInstance);
-                        }
                         parameterValues[i] = methodCreator.getMethodParam(parameterMapping.get(i));
                     }
                 }
