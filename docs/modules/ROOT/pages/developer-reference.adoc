@@ -198,6 +198,8 @@ If the file does not exist in the repository, `quarkusBotConfigFile` will be nul
 
 If you want to get the content of the configuration file as is, use a `String`.
 
+Note that `@ConfigFile` injection supports using `Optional<YourConfigType>`.
+
 [TIP]
 ====
 If your repository is private, reading configuration files requires your GitHub App to have the `Contents` `Read` permission.

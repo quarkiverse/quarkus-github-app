@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -509,6 +510,7 @@ class GitHubAppProcessor {
                 multiplexerClassCreator.addAnnotation(classAnnotation);
             }
 
+            // Copy the constructors
             for (MethodInfo originalConstructor : declaringClass.constructors()) {
                 MethodCreator constructorCreator = multiplexerClassCreator.getMethodCreator(MethodDescriptor.ofConstructor(
                         multiplexerClassName,
@@ -542,6 +544,7 @@ class GitHubAppProcessor {
                 constructorCreator.returnValue(null);
             }
 
+            // Generate the multiplexed event dispatching methods
             for (EventDispatchingMethod eventDispatchingMethod : eventDispatchingMethods) {
                 AnnotationInstance eventSubscriberInstance = eventDispatchingMethod.getEventSubscriberInstance();
                 MethodInfo originalMethod = eventDispatchingMethod.getMethod();
@@ -631,11 +634,23 @@ class GitHubAppProcessor {
                         AnnotationInstance configFileAnnotationInstance = parameterAnnotations.stream()
                                 .filter(ai -> ai.name().equals(CONFIG_FILE)).findFirst().get();
                         String configObjectType = originalMethodParameterTypes.get(i).name().toString();
+
+                        boolean isOptional = false;
+                        if (Optional.class.getName().equals(configObjectType)) {
+                            if (originalMethodParameterTypes.get(i).kind() != Type.Kind.PARAMETERIZED_TYPE) {
+                                throw new IllegalStateException("Optional is used but not parameterized for method " +
+                                        originalMethod.declaringClass().name() + "#" + originalMethod);
+                            }
+                            isOptional = true;
+                            configObjectType = originalMethodParameterTypes.get(i).asParameterizedType().arguments().get(0)
+                                    .name().toString();
+                        }
+
                         // it's a config file, we will use the ConfigFileReader (last parameter of the method) and inject the result
                         ResultHandle configFileReaderRh = methodCreator.getMethodParam(parameterTypes.size() - 1);
                         ResultHandle ghRepositoryRh = methodCreator.invokeStaticMethod(MethodDescriptor
                                 .ofMethod(PayloadHelper.class, "getRepository", GHRepository.class, GHEventPayload.class),
-                                methodCreator.getMethodParam(payloadParameterPosition));
+                                methodCreator.getMethodParam(parameterMapping.get(payloadParameterPosition)));
                         ResultHandle configObject = methodCreator.invokeVirtualMethod(
                                 MethodDescriptor.ofMethod(ConfigFileReader.class, "getConfigObject", Object.class,
                                         GHRepository.class, String.class, Class.class),
@@ -643,7 +658,15 @@ class GitHubAppProcessor {
                                 ghRepositoryRh,
                                 methodCreator.load(configFileAnnotationInstance.value().asString()),
                                 methodCreator.loadClass(configObjectType));
-                        parameterValues[i] = methodCreator.checkCast(configObject, configObjectType);
+                        configObject = methodCreator.checkCast(configObject, configObjectType);
+
+                        if (isOptional) {
+                            configObject = methodCreator.invokeStaticMethod(
+                                    MethodDescriptor.ofMethod(Optional.class, "ofNullable", Optional.class, Object.class),
+                                    configObject);
+                        }
+
+                        parameterValues[i] = configObject;
                     } else {
                         parameterValues[i] = methodCreator.getMethodParam(parameterMapping.get(i));
                     }
