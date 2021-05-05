@@ -11,6 +11,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.Test;
 import org.kohsuke.github.GHEvent;
+import org.kohsuke.github.ReactionContent;
 import org.mockito.Mockito;
 
 import io.quarkiverse.githubapp.testing.GitHubAppTestingResource;
@@ -94,6 +95,23 @@ public class TestingFrameworkTest {
                         "GHIssue#750705278.addLabels(\n" +
                         "    \"valueFromConfigFile\"\n" +
                         ");");
+    }
+
+    @Test
+    void missingMock() {
+        IssueEventListener.behavior = (payload, configFile) -> {
+            payload.getIssue().getComments().get(0).createReaction(ReactionContent.EYES);
+        };
+        assertThatThrownBy(() -> when().payloadFromClasspath("/issue-opened.json")
+                .event(GHEvent.ISSUES)
+                .then().github(mocks -> {
+                    verify(mocks.issue(750705278))
+                            .addLabels("someValue");
+                    verifyNoMoreInteractions(mocks.ghObjects());
+                }))
+                        .hasMessageContaining("The event handler threw an exception: null")
+                        .hasStackTraceContaining("at org.kohsuke.github.GHIssue.getComments")
+                        .hasStackTraceContaining("at io.quarkiverse.githubapp.it.testingframework.IssueEventListener.onEvent");
     }
 
 }
