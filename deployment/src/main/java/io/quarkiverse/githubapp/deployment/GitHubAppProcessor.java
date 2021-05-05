@@ -169,7 +169,7 @@ class GitHubAppProcessor {
                 UtilsProducer.class,
                 DefaultErrorHandler.class)
                 .setUnremovable()
-                .setDefaultScope(DotNames.SINGLETON)
+                .setDefaultScope(DotNames.APPLICATION_SCOPED)
                 .build());
     }
 

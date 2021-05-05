@@ -2,6 +2,7 @@ package io.quarkiverse.githubapp.testing.internal;
 
 import java.util.Map;
 
+import io.quarkiverse.githubapp.error.ErrorHandler;
 import io.quarkiverse.githubapp.runtime.github.GitHubFileDownloader;
 import io.quarkiverse.githubapp.runtime.github.GitHubService;
 import io.quarkus.test.junit.QuarkusMock;
@@ -27,8 +28,10 @@ public final class GitHubAppTestingCallback
             return;
         }
         GitHubAppTestingContext.set(testInstance);
-        GitHubMockContextImpl mocks = GitHubAppTestingContext.get().mocks;
+        GitHubAppTestingContext context = GitHubAppTestingContext.get();
+        GitHubMockContextImpl mocks = context.mocks;
         QuarkusMock.installMockForType(mocks.service, GitHubService.class);
         QuarkusMock.installMockForType(mocks.fileDownloader, GitHubFileDownloader.class);
+        QuarkusMock.installMockForType(context.errorHandler, ErrorHandler.class);
     }
 }

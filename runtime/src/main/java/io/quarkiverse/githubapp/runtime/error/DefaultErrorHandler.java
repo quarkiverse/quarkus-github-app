@@ -2,8 +2,8 @@ package io.quarkiverse.githubapp.runtime.error;
 
 import java.util.Optional;
 
+import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
-import javax.inject.Singleton;
 
 import org.jboss.logging.Logger;
 import org.kohsuke.github.GHEventPayload;
@@ -14,7 +14,7 @@ import io.quarkiverse.githubapp.runtime.github.PayloadHelper;
 import io.quarkus.arc.DefaultBean;
 import io.quarkus.runtime.LaunchMode;
 
-@Singleton
+@ApplicationScoped
 @DefaultBean
 public class DefaultErrorHandler implements ErrorHandler {
 
