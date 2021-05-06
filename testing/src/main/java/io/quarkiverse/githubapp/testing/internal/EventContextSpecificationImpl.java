@@ -8,6 +8,8 @@ public final class EventContextSpecificationImpl implements EventContextSpecific
 
     public EventContextSpecificationImpl(GitHubAppTestingContext testingContext) {
         this.testingContext = testingContext;
+        // Support multiple assertions in the same test method
+        testingContext.mocks.init();
     }
 
     @Override

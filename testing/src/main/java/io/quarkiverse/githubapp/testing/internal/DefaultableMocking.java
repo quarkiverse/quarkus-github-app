@@ -3,7 +3,9 @@ package io.quarkiverse.githubapp.testing.internal;
 import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.util.function.Consumer;
 
+import org.mockito.MockSettings;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.listeners.InvocationListener;
@@ -12,13 +14,13 @@ import org.mockito.stubbing.Answer;
 
 final class DefaultableMocking<M> {
 
-    static <M> DefaultableMocking<M> create(Class<M> clazz, Object id) {
+    static <M> DefaultableMocking<M> create(Class<M> clazz, Object id, Consumer<MockSettings> mockSettingsContributor) {
         StubDetectingInvocationListener listener = new StubDetectingInvocationListener();
-        M mock = Mockito.mock(clazz,
-                Mockito.withSettings()
-                        .name(clazz.getSimpleName() + "#" + id)
-                        .withoutAnnotations()
-                        .invocationListeners(listener));
+        MockSettings mockSettings = Mockito.withSettings().name(clazz.getSimpleName() + "#" + id)
+                .withoutAnnotations()
+                .invocationListeners(listener);
+        mockSettingsContributor.accept(mockSettings);
+        M mock = Mockito.mock(clazz, mockSettings);
         return new DefaultableMocking<>(mock, listener);
     }
 

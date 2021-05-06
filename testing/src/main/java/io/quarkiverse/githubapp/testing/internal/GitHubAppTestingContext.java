@@ -9,7 +9,7 @@ import com.google.common.base.Charsets;
 
 public final class GitHubAppTestingContext {
 
-    private static GitHubAppTestingContext instance;
+    private static GitHubAppTestingContext instance;;
 
     public static void set(Object testInstance) {
         instance = new GitHubAppTestingContext(testInstance, new GitHubMockContextImpl());
@@ -25,6 +25,7 @@ public final class GitHubAppTestingContext {
 
     public final Object testInstance;
     public final GitHubMockContextImpl mocks;
+    public final CapturingErrorHandler errorHandler = new CapturingErrorHandler();
 
     private GitHubAppTestingContext(Object testInstance, GitHubMockContextImpl mocks) {
         this.testInstance = testInstance;

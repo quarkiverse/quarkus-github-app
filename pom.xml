@@ -42,6 +42,7 @@
         <module>deployment</module>
         <module>runtime</module>
         <module>testing</module>
+        <module>integration-tests</module>
         <module>docs</module>
     </modules>
 
