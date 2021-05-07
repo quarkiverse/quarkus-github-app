@@ -53,15 +53,10 @@ import io.quarkiverse.githubapp.event.Actions;
 import io.quarkiverse.githubapp.runtime.ConfigFileReader;
 import io.quarkiverse.githubapp.runtime.GitHubAppRecorder;
 import io.quarkiverse.githubapp.runtime.Multiplexer;
-import io.quarkiverse.githubapp.runtime.Routes;
-import io.quarkiverse.githubapp.runtime.UtilsProducer;
 import io.quarkiverse.githubapp.runtime.error.DefaultErrorHandler;
 import io.quarkiverse.githubapp.runtime.error.ErrorHandlerBridgeFunction;
 import io.quarkiverse.githubapp.runtime.github.GitHubService;
 import io.quarkiverse.githubapp.runtime.github.PayloadHelper;
-import io.quarkiverse.githubapp.runtime.signing.JwtTokenCreator;
-import io.quarkiverse.githubapp.runtime.signing.PayloadSignatureChecker;
-import io.quarkiverse.githubapp.runtime.smee.SmeeIoForwarder;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
@@ -160,17 +155,18 @@ class GitHubAppProcessor {
     }
 
     @BuildStep
-    void additionalBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
-        additionalBeans.produce(new AdditionalBeanBuildItem.Builder().addBeanClasses(JwtTokenCreator.class,
-                PayloadSignatureChecker.class,
+    void additionalBeans(CombinedIndexBuildItem index, BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        AdditionalBeanBuildItem.Builder additionalBeanBuildItemBuilder = new AdditionalBeanBuildItem.Builder().addBeanClasses(
                 GitHubService.class,
-                SmeeIoForwarder.class,
-                Routes.class,
-                UtilsProducer.class,
                 DefaultErrorHandler.class)
                 .setUnremovable()
-                .setDefaultScope(DotNames.APPLICATION_SCOPED)
-                .build());
+                .setDefaultScope(DotNames.SINGLETON);
+
+        for (ClassInfo errorHandler : index.getIndex().getAllKnownImplementors(GitHubAppDotNames.ERROR_HANDLER)) {
+            additionalBeanBuildItemBuilder.addBeanClass(errorHandler.name().toString());
+        }
+
+        additionalBeans.produce(additionalBeanBuildItemBuilder.build());
     }
 
     @BuildStep
