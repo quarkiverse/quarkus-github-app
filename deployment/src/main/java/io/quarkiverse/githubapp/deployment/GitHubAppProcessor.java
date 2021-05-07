@@ -625,24 +625,31 @@ class GitHubAppProcessor {
                 }
 
                 // generate the code of the method
-                for (short i = 0; i < originalMethodParameterTypes.size(); i++) {
-                    List<AnnotationInstance> parameterAnnotations = originalMethodParameterAnnotationMapping.getOrDefault(i,
+                for (short originalMethodParameterIndex = 0; originalMethodParameterIndex < originalMethodParameterTypes
+                        .size(); originalMethodParameterIndex++) {
+                    List<AnnotationInstance> parameterAnnotations = originalMethodParameterAnnotationMapping.getOrDefault(
+                            originalMethodParameterIndex,
                             Collections.emptyList());
+                    Short multiplexerMethodParameterIndex = parameterMapping.get(originalMethodParameterIndex);
                     if (parameterAnnotations.stream().anyMatch(ai -> ai.name().equals(eventSubscriberInstance.name()))) {
-                        parameterValues[i] = methodCreator.getMethodParam(parameterMapping.get(i));
+                        parameterValues[originalMethodParameterIndex] = methodCreator
+                                .getMethodParam(multiplexerMethodParameterIndex);
                     } else if (parameterAnnotations.stream().anyMatch(ai -> ai.name().equals(CONFIG_FILE))) {
                         AnnotationInstance configFileAnnotationInstance = parameterAnnotations.stream()
                                 .filter(ai -> ai.name().equals(CONFIG_FILE)).findFirst().get();
-                        String configObjectType = originalMethodParameterTypes.get(i).name().toString();
+                        String configObjectType = originalMethodParameterTypes.get(originalMethodParameterIndex).name()
+                                .toString();
 
                         boolean isOptional = false;
                         if (Optional.class.getName().equals(configObjectType)) {
-                            if (originalMethodParameterTypes.get(i).kind() != Type.Kind.PARAMETERIZED_TYPE) {
+                            if (originalMethodParameterTypes.get(originalMethodParameterIndex)
+                                    .kind() != Type.Kind.PARAMETERIZED_TYPE) {
                                 throw new IllegalStateException("Optional is used but not parameterized for method " +
                                         originalMethod.declaringClass().name() + "#" + originalMethod);
                             }
                             isOptional = true;
-                            configObjectType = originalMethodParameterTypes.get(i).asParameterizedType().arguments().get(0)
+                            configObjectType = originalMethodParameterTypes.get(originalMethodParameterIndex)
+                                    .asParameterizedType().arguments().get(0)
                                     .name().toString();
                         }
 
@@ -666,9 +673,10 @@ class GitHubAppProcessor {
                                     configObject);
                         }
 
-                        parameterValues[i] = configObject;
+                        parameterValues[originalMethodParameterIndex] = configObject;
                     } else {
-                        parameterValues[i] = methodCreator.getMethodParam(parameterMapping.get(i));
+                        parameterValues[originalMethodParameterIndex] = methodCreator
+                                .getMethodParam(multiplexerMethodParameterIndex);
                     }
                 }
 
