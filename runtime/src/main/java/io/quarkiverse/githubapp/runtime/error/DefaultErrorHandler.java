@@ -52,6 +52,8 @@ public class DefaultErrorHandler implements ErrorHandler {
                     .append("----\n");
         }
 
+        errorMessage.append("Exception");
+
         LOG.error(errorMessage.toString(), t);
     }
 

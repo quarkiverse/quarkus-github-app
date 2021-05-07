@@ -585,6 +585,10 @@ class GitHubAppProcessor {
                         originalMethod.returnType().name().toString(),
                         parameterTypes.toArray());
 
+                for (Type exceptionType : originalMethod.exceptions()) {
+                    methodCreator.addException(exceptionType.name().toString());
+                }
+
                 ResultHandle[] parameterValues = new ResultHandle[originalMethod.parameters().size()];
 
                 // detect the parameter that is a payload
