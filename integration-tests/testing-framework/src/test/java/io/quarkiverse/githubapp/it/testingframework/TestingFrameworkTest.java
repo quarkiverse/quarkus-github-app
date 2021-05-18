@@ -8,18 +8,20 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
+import java.io.IOException;
+
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.Test;
 import org.kohsuke.github.GHEvent;
+import org.kohsuke.github.GHRepository;
 import org.kohsuke.github.ReactionContent;
 import org.mockito.Mockito;
 
-import io.quarkiverse.githubapp.testing.GitHubAppTestingResource;
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkiverse.githubapp.testing.GithubAppTest;
 import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
-@QuarkusTestResource(GitHubAppTestingResource.class)
+@GithubAppTest
 public class TestingFrameworkTest {
 
     @Test
@@ -112,6 +114,18 @@ public class TestingFrameworkTest {
                         .hasMessageContaining("The event handler threw an exception: null")
                         .hasStackTraceContaining("at org.kohsuke.github.GHIssue.getComments")
                         .hasStackTraceContaining("at io.quarkiverse.githubapp.it.testingframework.IssueEventListener.onEvent");
+    }
+
+    @Test
+    void noDeepStubMock() throws IOException {
+        IssueEventListener.behavior = (payload, configFile) -> {
+            GHRepository repo = payload.getIssue().getRepository();
+            repo.createContent().content("dummy").commit();
+        };
+        assertThatCode(() -> when().payloadFromClasspath("/issue-opened.json")
+                .event(GHEvent.ISSUES)
+                .then().github(mocks -> {
+                })).hasCauseInstanceOf(NullPointerException.class);
     }
 
 }

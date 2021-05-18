@@ -4,15 +4,23 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import org.apache.commons.io.IOUtils;
+import org.mockito.Answers;
 
 import com.google.common.base.Charsets;
+
+import io.quarkiverse.githubapp.testing.GithubAppTest;
 
 public final class GitHubAppTestingContext {
 
     private static GitHubAppTestingContext instance;;
 
     public static void set(Object testInstance) {
-        instance = new GitHubAppTestingContext(testInstance, new GitHubMockContextImpl());
+        GithubAppTest annotation = testInstance.getClass().getAnnotation(GithubAppTest.class);
+        Answers defaultAnswer = Answers.RETURNS_DEFAULTS;
+        if (annotation != null) {
+            defaultAnswer = annotation.defaultAnswers();
+        }
+        instance = new GitHubAppTestingContext(testInstance, new GitHubMockContextImpl(defaultAnswer));
     }
 
     public static GitHubAppTestingContext get() {
