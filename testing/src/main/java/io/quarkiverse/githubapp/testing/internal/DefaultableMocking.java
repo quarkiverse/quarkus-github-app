@@ -5,6 +5,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.function.Consumer;
 
+import org.mockito.Answers;
 import org.mockito.MockSettings;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
@@ -14,10 +15,12 @@ import org.mockito.stubbing.Answer;
 
 final class DefaultableMocking<M> {
 
-    static <M> DefaultableMocking<M> create(Class<M> clazz, Object id, Consumer<MockSettings> mockSettingsContributor) {
+    static <M> DefaultableMocking<M> create(Class<M> clazz, Object id, Consumer<MockSettings> mockSettingsContributor,
+            Answers defaultAnswer) {
         StubDetectingInvocationListener listener = new StubDetectingInvocationListener();
         MockSettings mockSettings = Mockito.withSettings().name(clazz.getSimpleName() + "#" + id)
                 .withoutAnnotations()
+                .defaultAnswer(defaultAnswer)
                 .invocationListeners(listener);
         mockSettingsContributor.accept(mockSettings);
         M mock = Mockito.mock(clazz, mockSettings);

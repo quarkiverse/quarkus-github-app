@@ -23,6 +23,7 @@ import org.kohsuke.github.GitHub;
 import org.kohsuke.github.HttpConnector;
 import org.kohsuke.github.RateLimitHandler;
 import org.kohsuke.github.authorization.AuthorizationProvider;
+import org.mockito.Answers;
 import org.mockito.MockSettings;
 import org.mockito.Mockito;
 
@@ -38,16 +39,21 @@ public final class GitHubMockContextImpl implements GitHubMockContext, GitHubMoc
     final GitHubFileDownloader fileDownloader;
 
     private final List<MockMap<?, ?>> allMockMaps = new ArrayList<>();
-    private final MockMap<Long, GitHub> clients = new MockMap<>(GitHub.class,
-            // Configure the client mocks to be offline, because we don't want to send HTTP requests.
-            settings -> settings.useConstructor("https://api.github.invalid", HttpConnector.OFFLINE, RateLimitHandler.WAIT,
-                    AbuseLimitHandler.WAIT, null, AuthorizationProvider.ANONYMOUS));
-    private final MockMap<String, GHRepository> repositories = new MockMap<>(GHRepository.class);
+    private final MockMap<Long, GitHub> clients;
+    private final MockMap<String, GHRepository> repositories;
     private final Map<Class<?>, MockMap<Long, ? extends GHObject>> nonRepositoryGHObjectMockMaps = new LinkedHashMap<>();
+    private final Answers defaultAnswers;
 
-    GitHubMockContextImpl() {
+    GitHubMockContextImpl(Answers defaultAnswers) {
+        this.defaultAnswers = defaultAnswers;
         fileDownloader = Mockito.mock(GitHubFileDownloader.class);
         service = Mockito.mock(GitHubService.class);
+        repositories = new MockMap<>(GHRepository.class, mockSettings -> {
+        });
+        clients = new MockMap<>(GitHub.class,
+                // Configure the client mocks to be offline, because we don't want to send HTTP requests.
+                settings -> settings.useConstructor("https://api.github.invalid", HttpConnector.OFFLINE, RateLimitHandler.WAIT,
+                        AbuseLimitHandler.WAIT, null, AuthorizationProvider.ANONYMOUS));
     }
 
     @Override
@@ -152,7 +158,9 @@ public final class GitHubMockContextImpl implements GitHubMockContext, GitHubMoc
         if (GHRepository.class.equals(type)) {
             throw new IllegalArgumentException("Type must not be GHRepository -- there is a bug in the testing helper.");
         }
-        return (MockMap<Long, T>) nonRepositoryGHObjectMockMaps.computeIfAbsent(type, clazz -> new MockMap<>(type));
+        return (MockMap<Long, T>) nonRepositoryGHObjectMockMaps.computeIfAbsent(type,
+                clazz -> new MockMap<>(type, mockSettings -> {
+                }));
     }
 
     private final class MockMap<ID, T> {
@@ -160,11 +168,6 @@ public final class GitHubMockContextImpl implements GitHubMockContext, GitHubMoc
         private final Class<T> clazz;
         private final Consumer<MockSettings> mockSettingsContributor;
         private final Map<ID, DefaultableMocking<T>> map = new LinkedHashMap<>();
-
-        private MockMap(Class<T> clazz) {
-            this(clazz, ignored -> {
-            });
-        }
 
         private MockMap(Class<T> clazz, Consumer<MockSettings> mockSettingsContributor) {
             this.clazz = clazz;
@@ -185,7 +188,7 @@ public final class GitHubMockContextImpl implements GitHubMockContext, GitHubMoc
         }
 
         private DefaultableMocking<T> create(Object id) {
-            return DefaultableMocking.create(clazz, id, mockSettingsContributor);
+            return DefaultableMocking.create(clazz, id, mockSettingsContributor, defaultAnswers);
         }
     }
 }
