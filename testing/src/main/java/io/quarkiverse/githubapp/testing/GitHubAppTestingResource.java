@@ -10,9 +10,9 @@ public final class GitHubAppTestingResource implements QuarkusTestResourceLifecy
 
     @Override
     public Map<String, String> start() {
-        Map<String, String> systemProperties = new HashMap<>();
-        GitHubAppTestingCallback.enable(systemProperties);
-        return systemProperties;
+        Map<String, String> configProperties = new HashMap<>();
+        GitHubAppTestingCallback.enable(configProperties);
+        return configProperties;
     }
 
     @Override
