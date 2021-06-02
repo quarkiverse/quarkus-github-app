@@ -20,8 +20,6 @@ import javax.inject.Singleton;
 
 import org.jboss.logging.Logger;
 
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
-
 import io.quarkiverse.githubapp.GitHubEvent;
 import io.quarkiverse.githubapp.runtime.config.GitHubAppRuntimeConfig;
 import io.quarkiverse.githubapp.runtime.replay.ReplayEventsRoute;
@@ -32,9 +30,8 @@ import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.web.Header;
 import io.quarkus.vertx.web.Route;
 import io.quarkus.vertx.web.Route.HandlerType;
+import io.quarkus.vertx.web.Route.HttpMethod;
 import io.quarkus.vertx.web.RoutingExchange;
-import io.vertx.core.http.HttpMethod;
-import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 
@@ -66,9 +63,6 @@ public class Routes {
     Path tmpDirectory;
 
     public void init(@Observes StartupEvent startupEvent) throws IOException {
-        Json.mapper.registerModule(new Jdk8Module());
-        Json.prettyMapper.registerModule(new Jdk8Module());
-
         if (gitHubAppRuntimeConfig.webhookSecret.isPresent() && launchMode.isDevOrTest()) {
             LOG.info("Payload signature checking is disabled in dev and test modes.");
         }

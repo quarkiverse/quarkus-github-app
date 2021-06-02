@@ -112,8 +112,7 @@ public class TestingFrameworkTest {
                     verifyNoMoreInteractions(mocks.ghObjects());
                 }))
                         .hasMessageContaining("The event handler threw an exception: null")
-                        .hasStackTraceContaining("at org.kohsuke.github.GHIssue.getComments")
-                        .hasStackTraceContaining("at io.quarkiverse.githubapp.it.testingframework.IssueEventListener.onEvent");
+                        .hasStackTraceContaining("at org.kohsuke.github.GHIssue.getComments");
     }
 
     @Test

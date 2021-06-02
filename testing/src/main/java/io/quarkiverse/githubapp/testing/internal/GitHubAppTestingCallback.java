@@ -2,6 +2,8 @@ package io.quarkiverse.githubapp.testing.internal;
 
 import java.util.Map;
 
+import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
+
 import io.quarkiverse.githubapp.error.ErrorHandler;
 import io.quarkiverse.githubapp.runtime.github.GitHubFileDownloader;
 import io.quarkiverse.githubapp.runtime.github.GitHubService;
@@ -13,12 +15,12 @@ public final class GitHubAppTestingCallback
 
     private static final String ENABLED_KEY = "quarkiverse-github-app-testing.enabled";
 
-    public static void enable(Map<String, String> systemProperties) {
-        systemProperties.put(ENABLED_KEY, "true");
+    public static void enable(Map<String, String> configProperties) {
+        configProperties.put(ENABLED_KEY, "true");
     }
 
     static boolean isEnabled() {
-        return Boolean.getBoolean(ENABLED_KEY);
+        return ConfigProviderResolver.instance().getConfig().getValue(ENABLED_KEY, Boolean.class);
     }
 
     @Override

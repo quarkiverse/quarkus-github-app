@@ -12,7 +12,7 @@ import io.quarkiverse.githubapp.testing.GithubAppTest;
 
 public final class GitHubAppTestingContext {
 
-    private static GitHubAppTestingContext instance;;
+    private static GitHubAppTestingContext instance;
 
     public static void set(Object testInstance) {
         GithubAppTest annotation = testInstance.getClass().getAnnotation(GithubAppTest.class);
