@@ -23,7 +23,7 @@
         <quarkus.version>2.0.0.CR3</quarkus.version>
         <compiler-plugin.version>3.8.1</compiler-plugin.version>
         <resource-plugin.version>3.2.0</resource-plugin.version>
-        <dependency-plugin.version>3.1.2</dependency-plugin.version>
+        <dependency-plugin.version>3.2.0</dependency-plugin.version>
         <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
         <jandex-plugin.version>1.1.0</jandex-plugin.version>
 
