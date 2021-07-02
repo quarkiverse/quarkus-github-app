@@ -17,14 +17,20 @@ final class DefaultableMocking<M> {
 
     static <M> DefaultableMocking<M> create(Class<M> clazz, Object id, Consumer<MockSettings> mockSettingsContributor,
             Answers defaultAnswer) {
-        StubDetectingInvocationListener listener = new StubDetectingInvocationListener();
-        MockSettings mockSettings = Mockito.withSettings().name(clazz.getSimpleName() + "#" + id)
-                .withoutAnnotations()
-                .defaultAnswer(defaultAnswer)
-                .invocationListeners(listener);
-        mockSettingsContributor.accept(mockSettings);
-        M mock = Mockito.mock(clazz, mockSettings);
-        return new DefaultableMocking<>(mock, listener);
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
+        try {
+            Thread.currentThread().setContextClassLoader(clazz.getClassLoader());
+            StubDetectingInvocationListener listener = new StubDetectingInvocationListener();
+            MockSettings mockSettings = Mockito.withSettings().name(clazz.getSimpleName() + "#" + id)
+                    .withoutAnnotations()
+                    .defaultAnswer(defaultAnswer)
+                    .invocationListeners(listener);
+            mockSettingsContributor.accept(mockSettings);
+            M mock = Mockito.mock(clazz, mockSettings);
+            return new DefaultableMocking<>(mock, listener);
+        } finally {
+            Thread.currentThread().setContextClassLoader(old);
+        }
     }
 
     private final M mock;
