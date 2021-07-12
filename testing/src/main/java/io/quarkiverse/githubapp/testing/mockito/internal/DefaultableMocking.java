@@ -8,12 +8,20 @@ import java.util.function.Consumer;
 import org.mockito.Answers;
 import org.mockito.MockSettings;
 import org.mockito.Mockito;
+import org.mockito.internal.configuration.plugins.Plugins;
+import org.mockito.internal.invocation.DefaultInvocationFactory;
+import org.mockito.internal.invocation.RealMethod;
+import org.mockito.invocation.Invocation;
 import org.mockito.invocation.InvocationOnMock;
+import org.mockito.invocation.MockHandler;
 import org.mockito.listeners.InvocationListener;
 import org.mockito.listeners.MethodInvocationReport;
+import org.mockito.plugins.MockMaker;
 import org.mockito.stubbing.Answer;
 
 public final class DefaultableMocking<M> {
+
+    private static final MockMaker mockMaker = Plugins.getMockMaker();
 
     public static <M> DefaultableMocking<M> create(Class<M> clazz, Object id, Consumer<MockSettings> mockSettingsContributor,
             Answers defaultAnswer) {
@@ -45,27 +53,47 @@ public final class DefaultableMocking<M> {
         return mock;
     }
 
-    Object callMock(InvocationOnMock invocation) throws Throwable {
-        return call(mock, invocation);
+    Object callMock(InvocationOnMock invocationOnMockProxy) throws Throwable {
+        Object[] argumentsForJava = unexpandArguments(invocationOnMockProxy);
+        MockHandler<?> handler = mockMaker.getHandler(mock);
+        // Ideally we should use Mockito.framework().getInvocationFactory().createInvocation(...),
+        // which is API and not an internal method like the one below,
+        // but unfortunately that method doesn't allow us to set the location explicitly,
+        // and we need to in order for the outer mock call to be ignored in Mockito error messages.
+        Invocation invocationOnMock = DefaultInvocationFactory.createInvocation(mock, invocationOnMockProxy.getMethod(),
+                argumentsForJava,
+                new RealMethod() {
+                    @Override
+                    public boolean isInvokable() {
+                        return true;
+                    }
+
+                    @Override
+                    public Object invoke() throws Throwable {
+                        return invocationOnMockProxy.callRealMethod();
+                    }
+                },
+                handler.getMockSettings(), ((Invocation) invocationOnMockProxy).getLocation());
+        return handler.handle(invocationOnMock);
     }
 
-    Object callMockOrDefault(InvocationOnMock invocation, Answer<?> defaultAnswer) throws Throwable {
-        Object result = callMock(invocation);
+    Object callMockOrDefault(InvocationOnMock invocationOnMockProxy, Answer<?> defaultAnswer) throws Throwable {
+        Object result = callMock(invocationOnMockProxy);
         if (listener.lastInvocationWasMocked) {
             return result;
         } else {
-            call(Mockito.verify(mock, Mockito.atLeastOnce()), invocation);
-            return defaultAnswer.answer(invocation);
+            call(Mockito.verify(mock, Mockito.atLeastOnce()), invocationOnMockProxy);
+            return defaultAnswer.answer(invocationOnMockProxy);
         }
     }
 
-    Object call(Object self, InvocationOnMock invocation) throws Throwable {
+    private static Object call(Object self, InvocationOnMock invocation) throws Throwable {
         Object[] argumentsForJava = unexpandArguments(invocation);
         return invocation.getMethod().invoke(self, argumentsForJava);
     }
 
     // invocation.getArguments() expands varargs, so we need to put them back into an array
-    private Object[] unexpandArguments(InvocationOnMock invocation) {
+    private static Object[] unexpandArguments(InvocationOnMock invocation) {
         Method method = invocation.getMethod();
         Parameter[] parameters = method.getParameters();
         Object[] unexpandedArguments = new Object[parameters.length];
