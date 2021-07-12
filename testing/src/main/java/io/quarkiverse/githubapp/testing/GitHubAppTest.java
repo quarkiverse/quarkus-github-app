@@ -9,6 +9,7 @@ import javax.enterprise.inject.Stereotype;
 
 import org.mockito.Answers;
 
+import io.quarkiverse.githubapp.testing.internal.GitHubAppTestingResource;
 import io.quarkus.test.common.QuarkusTestResource;
 
 @Retention(RetentionPolicy.RUNTIME)
