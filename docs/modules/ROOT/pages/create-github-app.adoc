@@ -137,10 +137,11 @@ You can then start the native executable with:
 
 You are done developing your first Quarkus GitHub App.
 
-Obviously the one we developed is not very useful but it is a good start and using this framework:
+Obviously the one we developed is not very useful, but it is a good start and using this framework:
 
 * You can listen to all the events currently supported by the https://github.com/hub4j/github-api[Hub4j GitHub API].
 * You have the full power of Quarkus with live coding, easy configuration, dependency injection, native executables and more.
+* You can write xref:testing.adoc[automated tests that simulate GitHub events] and assert the behavior of your application.
 * You have at your disposal the full ecosystem of Quarkus extensions and the broader Java ecosystem.
 
 Our xref:replay-ui.adoc[Replay UI] will come handy while developing your GitHub App.
