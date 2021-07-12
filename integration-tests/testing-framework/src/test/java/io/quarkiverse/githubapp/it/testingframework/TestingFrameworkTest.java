@@ -49,7 +49,6 @@ public class TestingFrameworkTest {
                 .then().github(mocks -> {
                     verify(mocks.issue(750705278))
                             .addLabels("someValue");
-                    verifyNoMoreInteractions(mocks.ghObjects());
                 });
 
         // Success
@@ -66,6 +65,35 @@ public class TestingFrameworkTest {
                 .isInstanceOf(AssertionError.class)
                 .hasMessageContaining("Actual invocations have different arguments:\n" +
                         "GHIssue#750705278.addLabels(\"otherValue\");");
+    }
+
+    @Test
+    void ghObjectVerifyNoMoreInteractions() {
+        ThrowingCallable assertion = () -> when().payloadFromClasspath("/issue-opened.json")
+                .event(GHEvent.ISSUES)
+                .then().github(mocks -> {
+                    verify(mocks.issue(750705278))
+                            .addLabels("someValue");
+                    verifyNoMoreInteractions(mocks.ghObjects());
+                });
+
+        // Success
+        IssueEventListener.behavior = (payload, configFile) -> {
+            payload.getIssue().addLabels("someValue");
+        };
+        assertThatCode(assertion).doesNotThrowAnyException();
+
+        // Failure
+        IssueEventListener.behavior = (payload, configFile) -> {
+            payload.getIssue().addLabels("someValue");
+            payload.getIssue().addLabels("otherValue");
+        };
+        assertThatThrownBy(assertion)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContainingAll("No interactions wanted here:",
+                        "-> at io.quarkiverse.githubapp.it.testingframework.TestingFrameworkTest.lambda$ghObjectVerifyNoMoreInteractions$",
+                        "But found this interaction on mock 'GHIssue#750705278':",
+                        "-> at io.quarkiverse.githubapp.it.testingframework.TestingFrameworkTest.lambda$ghObjectVerifyNoMoreInteractions$");
     }
 
     @Test
