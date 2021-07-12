@@ -1,4 +1,4 @@
-package io.quarkiverse.githubapp.testing.internal;
+package io.quarkiverse.githubapp.testing.mockito.internal;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Method;
@@ -13,9 +13,9 @@ import org.mockito.listeners.InvocationListener;
 import org.mockito.listeners.MethodInvocationReport;
 import org.mockito.stubbing.Answer;
 
-final class DefaultableMocking<M> {
+public final class DefaultableMocking<M> {
 
-    static <M> DefaultableMocking<M> create(Class<M> clazz, Object id, Consumer<MockSettings> mockSettingsContributor,
+    public static <M> DefaultableMocking<M> create(Class<M> clazz, Object id, Consumer<MockSettings> mockSettingsContributor,
             Answers defaultAnswer) {
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         try {
@@ -41,7 +41,7 @@ final class DefaultableMocking<M> {
         this.listener = listener;
     }
 
-    M mock() {
+    public M mock() {
         return mock;
     }
 

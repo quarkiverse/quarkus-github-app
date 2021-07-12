@@ -1,4 +1,4 @@
-package io.quarkiverse.githubapp.testing.internal;
+package io.quarkiverse.githubapp.testing.mockito.internal;
 
 import java.io.Serializable;
 
@@ -6,7 +6,7 @@ import org.kohsuke.github.GHObject;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-final class CallMockedMethodOrCallRealMethodAndSpyGHObjectResults implements Answer<Object>, Serializable {
+public final class CallMockedMethodOrCallRealMethodAndSpyGHObjectResults implements Answer<Object>, Serializable {
 
     private final CallRealMethodAndSpyGHObjectResults callRealMethodAndSpy;
     private final DefaultableMocking<? extends GHObject> ghObjectMocking;
