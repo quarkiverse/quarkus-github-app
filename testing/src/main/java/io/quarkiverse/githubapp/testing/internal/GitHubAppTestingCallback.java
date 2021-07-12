@@ -20,7 +20,8 @@ public final class GitHubAppTestingCallback
     }
 
     static boolean isEnabled() {
-        return ConfigProviderResolver.instance().getConfig().getValue(ENABLED_KEY, Boolean.class);
+        return ConfigProviderResolver.instance().getConfig().getOptionalValue(ENABLED_KEY, Boolean.class)
+                .orElse(false);
     }
 
     @Override
