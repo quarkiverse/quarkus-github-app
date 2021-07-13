@@ -9,15 +9,14 @@ import javax.enterprise.inject.Stereotype;
 
 import org.mockito.Answers;
 
-/**
- * @deprecated Use {@link GitHubAppTest} instead.
- */
+import io.quarkiverse.githubapp.testing.internal.GitHubAppTestingResource;
+import io.quarkus.test.common.QuarkusTestResource;
+
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
-@GitHubAppTest
+@QuarkusTestResource(GitHubAppTestingResource.class)
 @Stereotype
-@Deprecated
-public @interface GithubAppTest {
+public @interface GitHubAppTest {
 
     Answers defaultAnswers() default Answers.RETURNS_DEFAULTS;
 }

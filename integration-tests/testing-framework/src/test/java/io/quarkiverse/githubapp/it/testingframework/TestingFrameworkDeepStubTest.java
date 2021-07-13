@@ -8,11 +8,11 @@ import org.kohsuke.github.GHEvent;
 import org.kohsuke.github.GHRepository;
 import org.mockito.Answers;
 
-import io.quarkiverse.githubapp.testing.GithubAppTest;
+import io.quarkiverse.githubapp.testing.GitHubAppTest;
 import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
-@GithubAppTest(defaultAnswers = Answers.RETURNS_DEEP_STUBS)
+@GitHubAppTest(defaultAnswers = Answers.RETURNS_DEEP_STUBS)
 public class TestingFrameworkDeepStubTest {
 
     @Test

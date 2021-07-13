@@ -8,14 +8,14 @@ import org.mockito.Answers;
 
 import com.google.common.base.Charsets;
 
-import io.quarkiverse.githubapp.testing.GithubAppTest;
+import io.quarkiverse.githubapp.testing.GitHubAppTest;
 
 public final class GitHubAppTestingContext {
 
     private static GitHubAppTestingContext instance;
 
     public static void set(Object testInstance) {
-        GithubAppTest annotation = testInstance.getClass().getAnnotation(GithubAppTest.class);
+        GitHubAppTest annotation = testInstance.getClass().getAnnotation(GitHubAppTest.class);
         Answers defaultAnswer = Answers.RETURNS_DEFAULTS;
         if (annotation != null) {
             defaultAnswer = annotation.defaultAnswers();

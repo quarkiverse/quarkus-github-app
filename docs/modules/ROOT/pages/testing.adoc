@@ -1,0 +1,160 @@
+= Testing
+
+include::./includes/attributes.adoc[]
+
+[[manual-vs-automated]]
+== Manual testing vs. automated testing
+
+The easiest way to start testing your GitHub application is probably
+to create a playground project on GitHub and to run the application locally through Smee.io,
+as explained in xref:register-github-app.adoc[Register a GitHub App].
+
+This will let you play around on your playground repository,
+manually triggering events (by opening issues, pull requests, etc.),
+then check in the application logs that these events were consumed by the application.
+
+That's enough to get started, but once you start using the application on real repositories,
+you will want to make sure that changes to your code won't break existing features.
+Doing that manually on every change will get exhausting very quickly.
+
+To automate tests, you will of course https://quarkus.io/guides/getting-started-testing[rely on JUnit as with any Quarkus application],
+but there is an additional challenge: the application needs a GitHub repository to work on,
+and needs to be fed GitHub events to react to.
+
+Fortunately, the GitHub App extension provides tools to help you simulate events and mock a GitHub repository.
+
+== Add the `testing` dependency
+
+Add the following dependency to your `deployment` module:
+
+[source, xml, subs=attributes+]
+----
+<dependency>
+    <groupId>io.quarkiverse.githubapp</groupId>
+    <artifactId>quarkus-github-app-testing</artifactId>
+    <version>{quarkus-github-app-version}</version>
+    <scope>test</scope>
+</dependency>
+----
+
+== Configure the application for tests
+
+Add a fake application ID and private key to your `application.properties`, just for tests:
+
+[source,properties]
+------
+%test.quarkus.github-app.app-id=0
+%test.quarkus.github-app.private-key=-----BEGIN RSA PRIVATE KEY-----\
+MIIEogIBAAKCAQEA30YvyuZAd+kGDT0nm/XAa93CqsDvC/iYOc4KsKsfBQs1MWjH\
+royuVDfQj2fJvueFnOgZApM3viaCz188D/j3tUMNByIKOfMLiEm/R1tqe7Q6xRRn\
+uwpfT+wv+/x4cNvPxTscwo43LVR9Pno71UfZZywnYN03GS71ttNCiiBKXwCSnHez\
+/t79iAmMnym7ViNsKzA0aS5EwAw9A3GeTnxpRef0y0vDNE2aXBNCe+f1ZnFq1Fhe\
+PJIlKs/qlM136A2co+WRaPghacZJMuwQr1vajuMSBjMEroIPOfSG3x3Oitvnukjp\
+EwuhXjmZeaLc+60rYaMRwf+bje8KmaAVOMWkHQIDAQABAoIBAA+d8SnYARpiCjJS\
+3Lpj7hmdYUhgRlgoAz3H06eX0IuhxQ63rX/gBzGM1eGx+MKJnybidR1g/r0mJHAs\
+0R6s42aiUf71upFjFqNpxR9QnZoZeSLf0oGasB/+/Tw65JHATkAVamWRXPqmtjvw\
+gM7iP6qfxAFad8gjKLyo+jZ/G7SZTCMwnp+sRynirNpycxaAn/xK6Pe43+nyQVWT\
+E0J8bvCzrFD47CM5zZaBQlLWTMjY4Rr3U6BMTGwQWJzGkeGn+2JsHVUch0k7+NRa\
+e3FKjT+57dZqQTnGPVSpBFWEXVO9KLEuLBLyRx0348TZBHzIM9IigN4QS2AaWTJw\
+1kp3VWECgYEA/3P/nsL+RL/yqYvENZ7XqEkXRNH6YHOe8h/lFoYHStCl9y0T8O+z\
+ooJq9hEq7QcYs2bHvBWj8B9he7+bZ5ZOMAM6oIgrgB5FzSvL7JzXhEdONxe/j2TI\
+GbQuC+NxdJtx4Y6yF9Lrb1UyKX+HzR4de+v6b5hER7x8x4gQn1sCYmsCgYEA38CN\
+bTtE3RKY98m33a1Cd6hNXHSyy5GOK5/XGDn0XoGfFe5YJnnh2lia2V4xqUH9d1Mu\
+bB0bEUhfbac5SX5SIW+NBVxzehqfMkrZj/rzN8Wd7TrYAHSldSMhkPTuwuuzfnHL\
+sJLe2gyoqq+sooeE7eCH2fpPIN0wg5U+jc60hZcCgYBHtmrGSPtUlYYr7p6wZt0n\
+0w0DNudQ+GRgmG+ZeRrG9/f/gdodQ01si6w3U+53CAz5IBtmQ7T4Dfcx5EJePCXK\
++L0Wn+OGXfk+ddMTo5wk+FeOw831FVfPT3O1xq3tDE5WAdchNQb/BC3G1JRtEs04\
+IrD1bwuMD+//m8T+12+97QKBgDko0XhEGdV3+MfkKiphJoe24Pxre3lxl6YhUSuJ\
+Mpop9t/9YVuC62WCGRzKaVlZ2ExxXXyU+uMxX999Rq81q/mKq7Xg5kcdIeoRIP8d\
+FqD6xNtjmuaS5enErcCAMbZtzA7TNzvGaVO+xB/GfQ2QHS8/mrTesvQsTUZwC+ji\
+E0/FAoGATJvuAfgy9uiKR7za7MigYVacE0u4aD1sF7v6D4AFqBOGquPQQhePSdz9\
+G/UUwySoo+AQ+rd2EPhyexjqXBhRGe+EDGFVFivaQzTT8/5bt/VddbTcw2IpmXYj\
+LW6V8BbcP5MRhd2JQSRh16nWwSQJ2BdpUZFwayEEQ6UcrMfqvA0=\
+-----END RSA PRIVATE KEY-----
+------
+
+== Add event payloads to the test resources
+
+When you <<manual-vs-automated,tested your application manually>>,
+GitHub sent events (HTTP requests) to your application.
+Those events can be inspected using the xref:replay-ui.adoc[replay UI] at http://localhost:8080/replay/.
+
+In order to simulate events in automated tests,
+you need to copy the payload of those events to resource files.
+
+Let's continue with the example from xref:create-github-app.adoc[Create a GitHub App]:
+open an issue in your playground repository,
+go to the replay UI to copy the event payload,
+then put that payload in a file in your project: `src/test/resources/issue-opened.json`.
+
+== Create a test class
+
+Add the following class to `src/test/java`, in a package of your choosing:
+
+[source, java]
+----
+@QuarkusTest
+@GitHubAppTest
+class CreateCommentTest {
+    @Test
+    void testIssueOpened() {
+        GitHubAppTesting.when() // <1>
+                .payloadFromClasspath("/issue-opened.json") // <2>
+                .event(GHEvent.ISSUES) // <3>
+                .then().github(mocks -> { // <4>
+                    Mockito.verify(mocks.issue(750705278)) // <5>
+                            .comment("Hello from my GitHub App"); // <6>
+                });
+    }
+}
+----
+<1> Use `GitHubAppTesting.when()` to start simulating an event.
+<2> Define the payload of the simulated event by pointing to a file in the classpath.
+<3> Define the type of the simulated event.
+<4> Use `.then().github(mocks -> ...)` to perform assertions on GitHub objects involved in the event handling.
+<5> The given `mocks` object gives access to mocks of GitHub objects, indexed by their identifier.
+See the payload of your event for the identifiers of relevant objects (issue, repository, ...).
+You can use `.issue(long)`, `.pullRequest(long)`, or even `.ghObject(Class<? extends GHObject>, long)`.
+See the `GitHubMockContext` interface for a detailed list of methods.
+<6> Assertions are performed as usual with Mockito.
+
+== Run your tests
+
+Just run `./mvnw test` from the commandline.
+
+== Mockito features
+
+You can use most Mockito features on the GitHub object mocks;
+that includes defining their behavior before the event is simulated:
+
+[source, java]
+----
+@QuarkusTest
+@GitHubAppTest
+class CreateCommentTest {
+    @Test
+    void testIssueOpened() {
+        GitHubAppTesting.given() // <1>
+                .github(mocks -> { // <2>
+                    Mockito.doThrow(new RuntimeException()) // <3>
+                            .when(mocks.issue(750705278))
+                            .comment(Mockito.any());
+                })
+                .when().payloadFromClasspath("/issue-opened.json")
+                .event(GHEvent.ISSUES)
+                .then().github(mocks -> {
+                    Mockito.verify(mocks.issue(750705278))
+                            .comment("Hello from my GitHub App");
+                });
+    }
+}
+----
+<1> Use given().github(...) to configure mocks.
+<2> The given `mocks` object gives access to mocks of GitHub objects, indexed by their identifier,
+    just like in `.then().github(...)`.
+<3> Here we're configuring the mock to throw an exception when the application tries to comment on the issue.
+
+== Limitations
+
+* The testing tools can be used exclusively with Mockito.
+* The testing tools cannot be used to test an application running in native mode.

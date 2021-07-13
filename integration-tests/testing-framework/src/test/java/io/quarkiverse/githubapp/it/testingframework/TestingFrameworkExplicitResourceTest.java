@@ -8,21 +8,20 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-import java.io.IOException;
-
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.Test;
 import org.kohsuke.github.GHEvent;
-import org.kohsuke.github.GHRepository;
 import org.kohsuke.github.ReactionContent;
 import org.mockito.Mockito;
 
-import io.quarkiverse.githubapp.testing.GitHubAppTest;
+import io.quarkiverse.githubapp.testing.GitHubAppTestingResource;
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 
+@SuppressWarnings("deprecation")
 @QuarkusTest
-@GitHubAppTest
-public class TestingFrameworkTest {
+@QuarkusTestResource(GitHubAppTestingResource.class) // Using the explicit resource and not @GitHubAppTest on purpose
+public class TestingFrameworkExplicitResourceTest {
 
     @Test
     void ghObjectMocking() {
@@ -91,9 +90,9 @@ public class TestingFrameworkTest {
         assertThatThrownBy(assertion)
                 .isInstanceOf(AssertionError.class)
                 .hasMessageContainingAll("No interactions wanted here:",
-                        "-> at io.quarkiverse.githubapp.it.testingframework.TestingFrameworkTest.lambda$ghObjectVerifyNoMoreInteractions$",
+                        "-> at io.quarkiverse.githubapp.it.testingframework.TestingFrameworkExplicitResourceTest.lambda$ghObjectVerifyNoMoreInteractions$",
                         "But found this interaction on mock 'GHIssue#750705278':",
-                        "-> at io.quarkiverse.githubapp.it.testingframework.TestingFrameworkTest.lambda$ghObjectVerifyNoMoreInteractions$");
+                        "-> at io.quarkiverse.githubapp.it.testingframework.TestingFrameworkExplicitResourceTest.lambda$ghObjectVerifyNoMoreInteractions$");
     }
 
     @Test
@@ -141,18 +140,6 @@ public class TestingFrameworkTest {
                 }))
                         .hasMessageContaining("The event handler threw an exception: null")
                         .hasStackTraceContaining("at org.kohsuke.github.GHIssue.getComments");
-    }
-
-    @Test
-    void noDeepStubMock() throws IOException {
-        IssueEventListener.behavior = (payload, configFile) -> {
-            GHRepository repo = payload.getIssue().getRepository();
-            repo.createContent().content("dummy").commit();
-        };
-        assertThatCode(() -> when().payloadFromClasspath("/issue-opened.json")
-                .event(GHEvent.ISSUES)
-                .then().github(mocks -> {
-                })).hasCauseInstanceOf(NullPointerException.class);
     }
 
 }

@@ -3,4 +3,5 @@
 * xref:create-github-app.adoc[Create a GitHub App]
 * xref:replay-ui.adoc[Replay UI]
 * xref:developer-reference.adoc[Developer Reference]
+* xref:testing.adoc[Testing]
 * xref:push-to-production.adoc[Push to Production]
