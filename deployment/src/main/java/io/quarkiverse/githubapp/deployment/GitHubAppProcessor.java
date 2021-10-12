@@ -65,7 +65,6 @@ import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.MethodDescriptors;
-import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -92,6 +91,7 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
+import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
@@ -214,7 +214,8 @@ class GitHubAppProcessor {
             return;
         }
 
-        AppArtifact githubAppArtifact = WebJarUtil.getAppArtifact(curateOutcomeBuildItem, QUARKIVERSE_GITHUB_APP_GROUP_ID,
+        ResolvedDependency githubAppArtifact = WebJarUtil.getAppArtifact(curateOutcomeBuildItem,
+                QUARKIVERSE_GITHUB_APP_GROUP_ID,
                 QUARKIVERSE_GITHUB_APP_ARTIFACT_ID);
         Path deploymentPath = WebJarUtil.copyResourcesForDevOrTest(liveReloadBuildItem, curateOutcomeBuildItem, launchMode,
                 githubAppArtifact, REPLAY_UI_RESOURCES_PREFIX);
