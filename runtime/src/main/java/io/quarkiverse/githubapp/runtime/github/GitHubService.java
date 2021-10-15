@@ -135,7 +135,11 @@ public class GitHubService {
         }
 
         try {
-            return new GitHubBuilder().withConnector(okhttpConnector).withJwtToken(jwtToken).build();
+            final GitHubBuilder gitHubBuilder = new GitHubBuilder().withConnector(okhttpConnector).withJwtToken(jwtToken);
+
+            gitHubAppRuntimeConfig.instanceEndpoint.ifPresent(gitHubBuilder::withEndpoint);
+
+            return gitHubBuilder.build();
         } catch (IOException e) {
             throw new IllegalStateException("Unable to create a GitHub client for the application", e);
         }
