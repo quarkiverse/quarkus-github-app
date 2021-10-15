@@ -92,8 +92,12 @@ public class GitHubService {
     private GitHub createInstallationClient(Long installationId) throws IOException {
         CachedInstallationToken installationToken = installationTokenCache.get(installationId);
 
-        GitHub gitHub = new GitHubBuilder().withConnector(okhttpConnector)
-                .withAppInstallationToken(installationToken.getToken()).build();
+        final GitHubBuilder gitHubBuilder = new GitHubBuilder().withConnector(okhttpConnector)
+                .withAppInstallationToken(installationToken.getToken());
+
+        gitHubAppRuntimeConfig.instanceEndpoint.ifPresent(gitHubBuilder::withEndpoint);
+
+        GitHub gitHub = gitHubBuilder.build();
 
         // this call is not counted in the rate limit
         gitHub.getRateLimit();
