@@ -1,5 +1,5 @@
 :quarkus-version: 2.4.0.CR1
-:quarkus-github-app-version: 1.1.3
+:quarkus-github-app-version: 1.1.4
 
 :github-api-javadoc-root-url: https://github-api.kohsuke.org/apidocs/org/kohsuke/github
 :github-reference-documentation-root-url: https://docs.github.com/en/free-pro-team@latest/developers
