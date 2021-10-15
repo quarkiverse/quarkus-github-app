@@ -47,7 +47,7 @@ Anything missing in the documentation? Please [open an issue](https://github.com
 
 ## Examples
 
-* The [Quarkus Bot](https://github.com/quarkusio/quarkus-bot)
+* The [Quarkus GitHub Bot](https://github.com/quarkusio/quarkus-github-bot)
 * The [Hibernate GitHub Bot](https://github.com/hibernate/hibernate-github-bot)
 
 ## How?
