@@ -47,7 +47,9 @@ public class GitHubAppRuntimeConfig {
     public Optional<String> webhookProxyUrl;
 
     /**
-     * The github instance endpoint.
+     * The GitHub instance endpoint.
+     * <p>
+     * If not specified, defaults to the public github.com instance.
      */
     @ConfigItem
     public Optional<String> instanceEndpoint;

@@ -92,7 +92,7 @@ public class GitHubService {
     private GitHub createInstallationClient(Long installationId) throws IOException {
         CachedInstallationToken installationToken = installationTokenCache.get(installationId);
 
-        final var gitHubBuilder = new GitHubBuilder().withConnector(okhttpConnector)
+        final GitHubBuilder gitHubBuilder = new GitHubBuilder().withConnector(okhttpConnector)
                 .withAppInstallationToken(installationToken.getToken());
 
         gitHubAppRuntimeConfig.instanceEndpoint.ifPresent(gitHubBuilder::withEndpoint);

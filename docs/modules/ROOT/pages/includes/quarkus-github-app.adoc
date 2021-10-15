@@ -55,6 +55,16 @@ The Smee.io proxy URL used when testing locally.
 |
 
 
+a| [[quarkus-github-app_quarkus.github-app.instance-endpoint]]`link:#quarkus-github-app_quarkus.github-app.instance-endpoint[quarkus.github-app.instance-endpoint]`
+
+[.description]
+--
+The GitHub instance endpoint. 
+ If not specified, defaults to the public github.com instance.
+--|string 
+|
+
+
 a| [[quarkus-github-app_quarkus.github-app.debug.payload-directory]]`link:#quarkus-github-app_quarkus.github-app.debug.payload-directory[quarkus.github-app.debug.payload-directory]`
 
 [.description]
