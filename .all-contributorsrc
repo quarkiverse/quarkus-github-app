@@ -33,6 +33,15 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "joelmarty",
+      "name": "Joël Marty",
+      "avatar_url": "https://avatars.githubusercontent.com/u/134835?v=4",
+      "profile": "https://github.com/joelmarty",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "contributorsPerLine": 7,
