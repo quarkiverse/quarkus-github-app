@@ -14,7 +14,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=my-github-app \
     -Dextensions="io.quarkiverse.githubapp:quarkus-github-app:{quarkus-github-app-version}" \
-    -DnoExamples
+    -DnoCode
 ----
 
 [TIP]
