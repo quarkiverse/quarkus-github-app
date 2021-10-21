@@ -138,7 +138,8 @@ public class TestingFrameworkExplicitResourceTest {
                             .addLabels("someValue");
                     verifyNoMoreInteractions(mocks.ghObjects());
                 }))
-                        .hasMessageContaining("The event handler threw an exception: null")
+                        .hasMessageContaining("The event handler threw an exception:")
+                        .hasMessageEndingWith("null")
                         .hasStackTraceContaining("at org.kohsuke.github.GHIssue.getComments");
     }
 
