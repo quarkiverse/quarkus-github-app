@@ -6,8 +6,10 @@ public final class Actions {
 
     // Please respect the alphabetical order
     public static final String ADDED = "added";
+    public static final String ANSWERED = "answered";
     public static final String ARCHIVED = "archived";
     public static final String ASSIGNED = "assigned";
+    public static final String CATEGORY_CHANGED = "category_changed";
     public static final String COMPLETED = "completed";
     public static final String CREATED = "created";
     public static final String CLOSED = "closed";
@@ -39,6 +41,7 @@ public final class Actions {
     public static final String SUSPEND = "suspend";
     public static final String SYNCHRONIZE = "synchronize";
     public static final String TRANSFERRED = "transferred";
+    public static final String UNANSWERED = "unanswered";
     public static final String UNARCHIVED = "unarchived";
     public static final String UNASSIGNED = "unassigned";
     public static final String UNLABELED = "unlabeled";
