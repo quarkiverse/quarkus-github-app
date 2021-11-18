@@ -49,10 +49,10 @@ public class GitHubAppRuntimeConfig {
     /**
      * The GitHub instance endpoint.
      * <p>
-     * If not specified, defaults to the public github.com instance.
+     * Defaults to the public github.com instance.
      */
-    @ConfigItem
-    public Optional<String> instanceEndpoint;
+    @ConfigItem(defaultValue = "https://api.github.com")
+    public String instanceEndpoint;
 
     /**
      * Debug configuration.

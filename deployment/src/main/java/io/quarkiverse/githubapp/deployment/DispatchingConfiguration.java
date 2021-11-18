@@ -1,5 +1,7 @@
 package io.quarkiverse.githubapp.deployment;
 
+import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.DYNAMIC_GRAPHQL_CLIENT;
+
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +37,17 @@ class DispatchingConfiguration {
     public void addEventDispatchingMethod(EventDispatchingMethod eventDispatchingMethod) {
         methods.computeIfAbsent(eventDispatchingMethod.getMethod().declaringClass().name(), k -> new TreeSet<>())
                 .add(eventDispatchingMethod);
+    }
+
+    public boolean requiresGraphQLClient() {
+        for (EventDispatchingMethod eventDispatchingMethod : methods.values().stream().flatMap(Set::stream)
+                .collect(Collectors.toList())) {
+            if (eventDispatchingMethod.requiresGraphQLClient()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     static class EventDispatchingConfiguration {
@@ -178,6 +191,10 @@ class DispatchingConfiguration {
 
         public MethodInfo getMethod() {
             return method;
+        }
+
+        public boolean requiresGraphQLClient() {
+            return method.parameters().stream().map(t -> t.name()).anyMatch(n -> DYNAMIC_GRAPHQL_CLIENT.equals(n));
         }
 
         @Override

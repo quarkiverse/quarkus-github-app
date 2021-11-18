@@ -60,9 +60,9 @@ a| [[quarkus-github-app_quarkus.github-app.instance-endpoint]]`link:#quarkus-git
 [.description]
 --
 The GitHub instance endpoint. 
- If not specified, defaults to the public github.com instance.
+ Defaults to the public github.com instance.
 --|string 
-|
+|`https://api.github.com`
 
 
 a| [[quarkus-github-app_quarkus.github-app.debug.payload-directory]]`link:#quarkus-github-app_quarkus.github-app.debug.payload-directory[quarkus.github-app.debug.payload-directory]`

@@ -224,6 +224,43 @@ Some errors may be triggered before the payload has been parsed.
 In this case, the `payload` parameter passed to the `handleError()` method is `null`.
 ====
 
+== Injecting a GitHub instance
+
+When you need to access the authenticated `GitHub` instance, for instance to call `GitHub#getMyself()`,
+simply inject it into your method:
+
+[source, java]
+----
+class TriageIssue {
+
+    void triageIssue(@Issue.Opened GHEventPayload.Issue issuePayload, GitHub gitHub) {
+        gitHub.getMyself();
+    }
+}
+----
+
+The injected `GitHub` instance is authenticated as an installation.
+
+== Injecting a GraphQL client
+
+For some purposes, using the GitHub GraphQL API might get handy (typically to access the Discussions API that is only available in the GraphQL API).
+In the same way you can inject an authenticated `GitHub` instance, you can inject an authenticated `DynamicGraphQLClient` as follows:
+
+[source, java]
+----
+class TriageIssue {
+
+    void triageIssue(@Issue.Opened GHEventPayload.Issue issuePayload, DynamicGraphQLClient gitHubGraphQLClient) {
+        // do something GraphQLy with gitHubGraphQLClient
+    }
+}
+----
+
+The injected `DynamicGraphQLClient` instance is authenticated as an installation.
+
+`DynamicGraphQLClient` is a dynamic SmallRye GraphQL client.
+You can find more information about the SmallRye GraphQL client https://quarkus.io/guides/smallrye-graphql-client[here] and https://github.com/smallrye/smallrye-graphql[here].
+
 == Configuration Reference
 
 The Quarkus GitHub App extension exposes the following configuration properties:
