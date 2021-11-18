@@ -3,6 +3,7 @@ package io.quarkiverse.githubapp.runtime.github;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.time.temporal.ChronoUnit;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -20,10 +21,15 @@ import com.github.benmanes.caffeine.cache.LoadingCache;
 
 import io.quarkiverse.githubapp.runtime.config.GitHubAppRuntimeConfig;
 import io.quarkiverse.githubapp.runtime.signing.JwtTokenCreator;
+import io.smallrye.graphql.client.dynamic.api.DynamicGraphQLClient;
+import io.smallrye.graphql.client.dynamic.api.DynamicGraphQLClientBuilder;
 import okhttp3.OkHttpClient;
 
 @ApplicationScoped
 public class GitHubService {
+
+    private static final String AUTHORIZATION_HEADER = "Authorization";
+    private static final String AUTHORIZATION_HEADER_BEARER = "Bearer %s";
 
     private final GitHubAppRuntimeConfig gitHubAppRuntimeConfig;
 
@@ -89,13 +95,34 @@ public class GitHubService {
         }
     }
 
+    public DynamicGraphQLClient getInstallationGraphQLClient(Long installationId) {
+        try {
+            return createInstallationGraphQLClient(installationId);
+        } catch (IOException | ExecutionException | InterruptedException e1) {
+            synchronized (this) {
+                try {
+                    // retry in a synchronized in case the token is invalidated in another thread
+                    return createInstallationGraphQLClient(installationId);
+                } catch (IOException | ExecutionException | InterruptedException e2) {
+                    try {
+                        // this time we invalidate the token entirely and go for a new token
+                        installationTokenCache.invalidate(installationId);
+                        return createInstallationGraphQLClient(installationId);
+                    } catch (IOException | ExecutionException | InterruptedException e3) {
+                        throw new IllegalStateException(
+                                "Unable to create a GitHub GraphQL client for the installation " + installationId, e3);
+                    }
+                }
+            }
+        }
+    }
+
     private GitHub createInstallationClient(Long installationId) throws IOException {
         CachedInstallationToken installationToken = installationTokenCache.get(installationId);
 
         final GitHubBuilder gitHubBuilder = new GitHubBuilder().withConnector(okhttpConnector)
-                .withAppInstallationToken(installationToken.getToken());
-
-        gitHubAppRuntimeConfig.instanceEndpoint.ifPresent(gitHubBuilder::withEndpoint);
+                .withAppInstallationToken(installationToken.getToken())
+                .withEndpoint(gitHubAppRuntimeConfig.instanceEndpoint);
 
         GitHub gitHub = gitHubBuilder.build();
 
@@ -105,10 +132,31 @@ public class GitHubService {
         return gitHub;
     }
 
+    private DynamicGraphQLClient createInstallationGraphQLClient(Long installationId)
+            throws IOException, ExecutionException, InterruptedException {
+        CachedInstallationToken installationToken = installationTokenCache.get(installationId);
+
+        DynamicGraphQLClient graphQLClient = DynamicGraphQLClientBuilder.newBuilder()
+                .url(gitHubAppRuntimeConfig.instanceEndpoint + "/graphql")
+                .header(AUTHORIZATION_HEADER, String.format(AUTHORIZATION_HEADER_BEARER, installationToken.getToken()))
+                .build();
+
+        // this call is probably - it's not documented - not counted in the rate limit
+        graphQLClient.executeSync("query {\n" +
+                "rateLimit {\n" +
+                "    limit\n" +
+                "    cost\n" +
+                "    remaining\n" +
+                "    resetAt\n" +
+                "  }\n" +
+                "}");
+
+        return graphQLClient;
+    }
+
     // Using a lambda leads to a warning
     private class CreateInstallationToken implements CacheLoader<Long, CachedInstallationToken> {
 
-        @SuppressWarnings("deprecation")
         @Override
         public CachedInstallationToken load(Long installationId) throws Exception {
             try {
@@ -135,9 +183,9 @@ public class GitHubService {
         }
 
         try {
-            final GitHubBuilder gitHubBuilder = new GitHubBuilder().withConnector(okhttpConnector).withJwtToken(jwtToken);
-
-            gitHubAppRuntimeConfig.instanceEndpoint.ifPresent(gitHubBuilder::withEndpoint);
+            final GitHubBuilder gitHubBuilder = new GitHubBuilder().withConnector(okhttpConnector)
+                    .withJwtToken(jwtToken)
+                    .withEndpoint(gitHubAppRuntimeConfig.instanceEndpoint);
 
             return gitHubBuilder.build();
         } catch (IOException e) {

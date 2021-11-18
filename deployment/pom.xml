@@ -33,6 +33,10 @@
             <artifactId>quarkus-caffeine-deployment</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-graphql-client-deployment</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.quarkiverse.githubapi</groupId>
             <artifactId>quarkus-github-api-deployment</artifactId>
         </dependency>
