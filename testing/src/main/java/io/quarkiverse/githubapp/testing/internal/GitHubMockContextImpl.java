@@ -23,6 +23,7 @@ import org.kohsuke.github.GitHub;
 import org.kohsuke.github.HttpConnector;
 import org.kohsuke.github.RateLimitHandler;
 import org.kohsuke.github.authorization.AuthorizationProvider;
+import org.kohsuke.github.internal.GitHubConnectorHttpConnectorAdapter;
 import org.mockito.Answers;
 import org.mockito.MockSettings;
 import org.mockito.Mockito;
@@ -53,7 +54,8 @@ public final class GitHubMockContextImpl implements GitHubMockContext, GitHubMoc
         repositories = new MockMap<>(GHRepository.class);
         clients = new MockMap<>(GitHub.class,
                 // Configure the client mocks to be offline, because we don't want to send HTTP requests.
-                settings -> settings.useConstructor("https://api.github.invalid", HttpConnector.OFFLINE, RateLimitHandler.WAIT,
+                settings -> settings.useConstructor("https://api.github.invalid",
+                        new GitHubConnectorHttpConnectorAdapter(HttpConnector.OFFLINE), RateLimitHandler.WAIT,
                         AbuseLimitHandler.WAIT, null, AuthorizationProvider.ANONYMOUS));
     }
 

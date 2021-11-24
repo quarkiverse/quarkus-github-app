@@ -75,6 +75,9 @@ public final class PayloadHelper {
         if (eventPayload instanceof GHEventPayload.Status) {
             return Optional.of(((GHEventPayload.Status) eventPayload).getDescription());
         }
+        if (eventPayload instanceof GHEventPayload.Discussion) {
+            return Optional.of(((GHEventPayload.Discussion) eventPayload).getDiscussion().getHtmlUrl().toString());
+        }
 
         return Optional.empty();
     }
