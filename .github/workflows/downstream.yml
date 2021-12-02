@@ -27,6 +27,19 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    strategy:
+      fail-fast: false
+      matrix:
+        project:
+          - {
+            organization: "quarkusio",
+            repository: "quarkus-github-bot"
+          }
+          - {
+            organization: "hibernate",
+            repository: "hibernate-github-bot"
+          }
+
     steps:
     - uses: actions/checkout@v2
 
@@ -60,27 +73,14 @@ jobs:
 
     - uses: actions/checkout@v2
       with:
-        repository: quarkusio/quarkus-github-bot
-        path: quarkus-github-bot
+        repository: ${{ matrix.project.organization }}/${{ matrix.project.repository }}
+        path: ${{ matrix.project.repository }}
 
-    - name: Update quarkus-github-app version in quarkus-github-bot
+    - name: Update quarkus-github-app version in ${{ matrix.project.repository }}
       run: mvn -B versions:set-property -Dproperty=quarkus-github-app.version -DnewVersion=${{ steps.get-version.outputs.version }}
-      working-directory: quarkus-github-bot
+      working-directory: ${{ matrix.project.repository }}
 
-    - name: Run quarkus-github-bot tests
+    - name: Run ${{ matrix.project.repository }} tests
       run: mvn -B install
-      working-directory: quarkus-github-bot
-
-    - uses: actions/checkout@v2
-      with:
-        repository: hibernate/hibernate-github-bot
-        path: hibernate-github-bot
-
-    - name: Update quarkus-github-app version in hibernate-github-bot
-      run: mvn -B versions:set-property -Dproperty=quarkus-github-app.version -DnewVersion=${{ steps.get-version.outputs.version }}
-      working-directory: hibernate-github-bot
-
-    - name: Run hibernate-github-bot build (and tests, if any)
-      run: mvn -B install
-      working-directory: hibernate-github-bot
+      working-directory: ${{ matrix.project.repository }}
 
