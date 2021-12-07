@@ -177,7 +177,7 @@ public class GitHubService {
 
         try {
             // maximum TTL is 10 minutes
-            jwtToken = jwtTokenCreator.createJwtToken(gitHubAppRuntimeConfig.appId, gitHubAppRuntimeConfig.privateKey, 540_000);
+            jwtToken = jwtTokenCreator.createJwtToken(gitHubAppRuntimeConfig.appId, gitHubAppRuntimeConfig.privateKey, 540);
         } catch (GeneralSecurityException | IOException e) {
             throw new IllegalStateException("Unable to generate the JWT token", e);
         }

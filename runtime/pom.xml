@@ -42,8 +42,8 @@
             <artifactId>quarkus-github-api</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.quarkiverse.jjwtjackson</groupId>
-            <artifactId>quarkus-jjwt-jackson</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-jwt-build</artifactId>
         </dependency>
         <dependency>
             <groupId>com.launchdarkly</groupId>
