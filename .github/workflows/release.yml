@@ -63,6 +63,8 @@ jobs:
           git commit -am "Update stable version for documentation"
           # Move the tag after inclusion of documentation adjustments
           git tag -f ${{steps.metadata.outputs.current-version}}
+          # Go back to main
+          git checkout main
 
       - name: Push changes to ${{github.base_ref}}
         uses: ad-m/github-push-action@v0.6.0
