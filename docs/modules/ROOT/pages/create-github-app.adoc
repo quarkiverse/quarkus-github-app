@@ -19,7 +19,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
 
 [TIP]
 ====
-Maven 3.6.2+ is required for this to work.
+Maven 3.8.1+ is required for this to work.
 ====
 
 Once the project is created, go to the `my-github-app` directory.
