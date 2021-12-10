@@ -40,12 +40,12 @@ public class ReplayUiStaticHandler implements Handler<RoutingContext> {
                 .setWebRoot(replayUiFinalDestination)
                 .setDefaultContentEncoding("UTF-8");
 
-        if (event.normalisedPath().length() == replayUiPath.length()) {
+        if (event.normalizedPath().length() == replayUiPath.length()) {
             event.response().setStatusCode(302);
             event.response().headers().set(HttpHeaders.LOCATION, replayUiPath + "/");
             event.response().end();
             return;
-        } else if (event.normalisedPath().length() == replayUiPath.length() + 1) {
+        } else if (event.normalizedPath().length() == replayUiPath.length() + 1) {
             event.reroute(replayUiPath + "/index.html");
             return;
         }
