@@ -1,5 +1,5 @@
 name: Quarkus GitHub App
 release:
-  current-version: 1.4.1
-  next-version: 1.4.2-SNAPSHOT
+  current-version: 1.5.0
+  next-version: 1.5.1-SNAPSHOT
 
