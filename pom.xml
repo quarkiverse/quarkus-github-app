@@ -28,9 +28,7 @@
         <jandex-plugin.version>1.2.1</jandex-plugin.version>
 
         <quarkus-github-api.version>1.301.1</quarkus-github-api.version>
-        <quarkus-jjwt-jackson.version>1.0.0</quarkus-jjwt-jackson.version>
         <okhttp-eventsource.version>2.3.2</okhttp-eventsource.version>
-        <jjwt.version>0.11.2</jjwt.version>
 
         <webjar.fomantic-ui.version>2.8.7</webjar.fomantic-ui.version>
         <webjar.vue.version>2.6.12</webjar.vue.version>
@@ -63,16 +61,6 @@
                 <groupId>io.quarkiverse.githubapi</groupId>
                 <artifactId>quarkus-github-api-deployment</artifactId>
                 <version>${quarkus-github-api.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkiverse.jjwtjackson</groupId>
-                <artifactId>quarkus-jjwt-jackson</artifactId>
-                <version>${quarkus-jjwt-jackson.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkiverse.jjwtjackson</groupId>
-                <artifactId>quarkus-jjwt-jackson-deployment</artifactId>
-                <version>${quarkus-jjwt-jackson.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.launchdarkly</groupId>
