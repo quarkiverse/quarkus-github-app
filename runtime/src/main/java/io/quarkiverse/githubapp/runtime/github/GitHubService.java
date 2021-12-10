@@ -12,7 +12,6 @@ import javax.inject.Inject;
 import org.kohsuke.github.GHAppInstallationToken;
 import org.kohsuke.github.GitHub;
 import org.kohsuke.github.GitHubBuilder;
-import org.kohsuke.github.extras.okhttp3.OkHttpConnector;
 
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -35,15 +34,12 @@ public class GitHubService {
 
     private final JwtTokenCreator jwtTokenCreator;
 
-    private final OkHttpConnector okhttpConnector;
-
     private final LoadingCache<Long, CachedInstallationToken> installationTokenCache;
 
     @Inject
     public GitHubService(GitHubAppRuntimeConfig gitHubAppRuntimeConfig, JwtTokenCreator jwtTokenCreator, OkHttpClient client) {
         this.gitHubAppRuntimeConfig = gitHubAppRuntimeConfig;
         this.jwtTokenCreator = jwtTokenCreator;
-        this.okhttpConnector = new OkHttpConnector(client);
         this.installationTokenCache = Caffeine.newBuilder()
                 .maximumSize(50)
                 .expireAfter(new Expiry<Long, CachedInstallationToken>() {
@@ -120,7 +116,7 @@ public class GitHubService {
     private GitHub createInstallationClient(Long installationId) throws IOException {
         CachedInstallationToken installationToken = installationTokenCache.get(installationId);
 
-        final GitHubBuilder gitHubBuilder = new GitHubBuilder().withConnector(okhttpConnector)
+        final GitHubBuilder gitHubBuilder = new GitHubBuilder()
                 .withAppInstallationToken(installationToken.getToken())
                 .withEndpoint(gitHubAppRuntimeConfig.instanceEndpoint);
 
@@ -183,7 +179,7 @@ public class GitHubService {
         }
 
         try {
-            final GitHubBuilder gitHubBuilder = new GitHubBuilder().withConnector(okhttpConnector)
+            final GitHubBuilder gitHubBuilder = new GitHubBuilder()
                     .withJwtToken(jwtToken)
                     .withEndpoint(gitHubAppRuntimeConfig.instanceEndpoint);
 
