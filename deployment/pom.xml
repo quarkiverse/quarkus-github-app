@@ -41,8 +41,8 @@
             <artifactId>quarkus-github-api-deployment</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.quarkiverse.jjwtjackson</groupId>
-            <artifactId>quarkus-jjwt-jackson-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-jwt-build-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkiverse.githubapp</groupId>
