@@ -9,7 +9,7 @@
 
     <groupId>io.quarkiverse.githubapp</groupId>
     <artifactId>quarkus-github-app-parent</artifactId>
-    <version>1.6.0</version>
+    <version>1.6.1-SNAPSHOT</version>
     <name>Quarkus - GitHub App - Parent</name>
 
     <packaging>pom</packaging>
@@ -134,7 +134,7 @@
         <url>https://github.com/quarkiverse/quarkus-github-app</url>
         <connection>scm:git:git@github.com:quarkiverse/quarkus-github-app.git</connection>
         <developerConnection>scm:git:git@github.com:quarkiverse/quarkus-github-app.git</developerConnection>
-        <tag>1.6.0</tag>
+        <tag>1.4.1</tag>
     </scm>
 
     <issueManagement>
