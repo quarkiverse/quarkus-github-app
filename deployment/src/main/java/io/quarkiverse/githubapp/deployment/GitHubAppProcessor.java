@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -45,7 +46,11 @@ import org.jboss.logging.Logger;
 import org.kohsuke.github.GHEventPayload;
 import org.kohsuke.github.GHRepository;
 import org.kohsuke.github.GitHub;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
 
+import io.quarkiverse.githubapi.deployment.GitHubApiClassWithBridgeMethodsBuildItem;
 import io.quarkiverse.githubapp.GitHubEvent;
 import io.quarkiverse.githubapp.deployment.DispatchingConfiguration.EventAnnotation;
 import io.quarkiverse.githubapp.deployment.DispatchingConfiguration.EventAnnotationLiteral;
@@ -73,6 +78,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
@@ -90,6 +96,7 @@ import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.FieldCreator;
 import io.quarkus.gizmo.FieldDescriptor;
+import io.quarkus.gizmo.Gizmo;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
@@ -171,6 +178,25 @@ class GitHubAppProcessor {
         }
 
         additionalBeans.produce(additionalBeanBuildItemBuilder.build());
+    }
+
+    /**
+     * The bridge methods added for binary compatibility in the GitHub API are causing issues with Mockito
+     * and more specifically with Byte Buddy (see https://github.com/raphw/byte-buddy/issues/1162).
+     * They don't bring much to the plate for new applications that are regularly updated so let's remove them altogether.
+     */
+    @BuildStep
+    void removeCompatibilityBridgeMethodsFromGitHubApi(
+            BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformers,
+            List<GitHubApiClassWithBridgeMethodsBuildItem> gitHubApiClassesWithBridgeMethods) {
+        for (GitHubApiClassWithBridgeMethodsBuildItem gitHubApiClassWithBridgeMethods : gitHubApiClassesWithBridgeMethods) {
+            bytecodeTransformers.produce(new BytecodeTransformerBuildItem.Builder()
+                    .setClassToTransform(gitHubApiClassWithBridgeMethods.getClassName())
+                    .setVisitorFunction((ignored, visitor) -> new RemoveBridgeMethodsClassVisitor(visitor,
+                            gitHubApiClassWithBridgeMethods.getClassName(),
+                            gitHubApiClassWithBridgeMethods.getMethodsWithBridges()))
+                    .build());
+        }
     }
 
     @BuildStep
@@ -775,5 +801,35 @@ class GitHubAppProcessor {
                 bytecodeCreator.readStaticField(FieldDescriptor.of(System.class, "out", PrintStream.class)),
                 bytecodeCreator.invokeVirtualMethod(MethodDescriptor.ofMethod(Object.class, "toString", String.class),
                         resultHandle));
+    }
+
+    private static class RemoveBridgeMethodsClassVisitor extends ClassVisitor {
+
+        private static final Logger LOG = Logger.getLogger(RemoveBridgeMethodsClassVisitor.class);
+
+        private final String className;
+        private final Set<String> methodsWithBridges;
+
+        public RemoveBridgeMethodsClassVisitor(ClassVisitor visitor, String className, Set<String> methodsWithBridges) {
+            super(Gizmo.ASM_API_VERSION, visitor);
+
+            this.className = className;
+            this.methodsWithBridges = methodsWithBridges;
+        }
+
+        @Override
+        public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
+            if (methodsWithBridges.contains(name) && ((access & Opcodes.ACC_BRIDGE) != 0)
+                    && ((access & Opcodes.ACC_SYNTHETIC) != 0)) {
+
+                LOG.debugf("Class %1$s - Removing method %2$s %3$s(%4$s)", className,
+                        org.objectweb.asm.Type.getReturnType(descriptor), name,
+                        Arrays.toString(org.objectweb.asm.Type.getArgumentTypes(descriptor)));
+
+                return null;
+            }
+
+            return super.visitMethod(access, name, descriptor, signature, exceptions);
+        }
     }
 }
