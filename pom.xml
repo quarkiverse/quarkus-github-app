@@ -36,6 +36,7 @@
     </properties>
 
     <modules>
+        <module>events</module>
         <module>deployment</module>
         <module>runtime</module>
         <module>testing</module>
@@ -134,7 +135,6 @@
         <url>https://github.com/quarkiverse/quarkus-github-app</url>
         <connection>scm:git:git@github.com:quarkiverse/quarkus-github-app.git</connection>
         <developerConnection>scm:git:git@github.com:quarkiverse/quarkus-github-app.git</developerConnection>
-        <tag>1.4.1</tag>
     </scm>
 
     <issueManagement>
