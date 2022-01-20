@@ -25,7 +25,7 @@
         <resource-plugin.version>3.2.0</resource-plugin.version>
         <dependency-plugin.version>3.2.0</dependency-plugin.version>
         <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
-        <jandex-plugin.version>1.2.1</jandex-plugin.version>
+        <jandex-plugin.version>1.2.2</jandex-plugin.version>
 
         <quarkus-github-api.version>1.301.2</quarkus-github-api.version>
         <okhttp-eventsource.version>2.5.0</okhttp-eventsource.version>
