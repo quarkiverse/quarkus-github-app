@@ -24,14 +24,14 @@ public class ReplayEventsRoute {
 
     private final BroadcastProcessor<ReplayEvent> broadcastProcessor = BroadcastProcessor.create();
 
-    @Route(path = "/replay/events", produces = "text/event-stream")
+    @Route(path = "/replay/events", produces = ReactiveRoutes.EVENT_STREAM)
     Multi<ReplayEvent> replayEvents(RoutingContext context) {
-        return ReactiveRoutes.asEventStream(Multi.createBy()
+        return Multi.createBy()
                 .merging().streams(
                         Multi.createFrom().iterable(recordedEvents),
                         broadcastProcessor.onOverflow().drop(),
                         Multi.createFrom().ticks().every(Duration.ofMillis(100)).onOverflow()
-                                .drop().map(x -> ReplayEvent.PING)));
+                                .drop().map(x -> ReplayEvent.PING));
     }
 
     public void pushEvent(GitHubEvent gitHubEvent) {
