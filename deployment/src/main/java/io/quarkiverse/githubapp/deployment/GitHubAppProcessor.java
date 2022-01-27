@@ -11,7 +11,6 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Modifier;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -83,12 +82,9 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
-import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
-import io.quarkus.deployment.util.WebJarUtil;
 import io.quarkus.gizmo.AnnotatedElement;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.CatchBlockCreator;
@@ -101,12 +97,14 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
-import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.maven.dependency.GACT;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
+import io.quarkus.vertx.http.deployment.webjar.WebJarBuildItem;
+import io.quarkus.vertx.http.deployment.webjar.WebJarResultsBuildItem;
 import io.smallrye.graphql.client.dynamic.api.DynamicGraphQLClient;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
@@ -132,8 +130,8 @@ class GitHubAppProcessor {
     private static final MethodDescriptor COMPLETABLE_FUTURE_JOIN = MethodDescriptor.ofMethod(CompletableFuture.class,
             "join", Object.class);
 
-    private static final String QUARKIVERSE_GITHUB_APP_GROUP_ID = "io.quarkiverse.githubapp";
-    private static final String QUARKIVERSE_GITHUB_APP_ARTIFACT_ID = "quarkus-github-app-deployment";
+    private static final GACT QUARKIVERSE_GITHUB_APP_GACT = new GACT("io.quarkiverse.githubapp",
+            "quarkus-github-app-deployment", null, "jar");
     private static final String REPLAY_UI_RESOURCES_PREFIX = "META-INF/resources/replay-ui/";
     private static final String REPLAY_UI_PATH = "/replay";
 
@@ -231,29 +229,40 @@ class GitHubAppProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    void replayUi(GitHubAppRecorder recorder,
-            LaunchModeBuildItem launchMode,
-            LiveReloadBuildItem liveReloadBuildItem,
-            CurateOutcomeBuildItem curateOutcomeBuildItem,
-            HttpRootPathBuildItem httpRootPathBuildItem,
-            BuildProducer<RouteBuildItem> routes,
-            BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints,
-            ShutdownContextBuildItem shutdownContext) throws IOException {
+    void replayUiDeployment(LaunchModeBuildItem launchMode,
+            BuildProducer<WebJarBuildItem> webJars) throws IOException {
         if (launchMode.getLaunchMode() != LaunchMode.DEVELOPMENT) {
             return;
         }
 
-        ResolvedDependency githubAppArtifact = WebJarUtil.getAppArtifact(curateOutcomeBuildItem,
-                QUARKIVERSE_GITHUB_APP_GROUP_ID,
-                QUARKIVERSE_GITHUB_APP_ARTIFACT_ID);
-        Path deploymentPath = WebJarUtil.copyResourcesForDevOrTest(liveReloadBuildItem, curateOutcomeBuildItem, launchMode,
-                githubAppArtifact, REPLAY_UI_RESOURCES_PREFIX);
+        webJars.produce(WebJarBuildItem.builder()
+                .artifactKey(QUARKIVERSE_GITHUB_APP_GACT)
+                .root(REPLAY_UI_RESOURCES_PREFIX)
+                .build());
+    }
 
-        Handler<RoutingContext> handler = recorder.replayUiHandler(deploymentPath.toAbsolutePath().toString(),
-                REPLAY_UI_PATH, shutdownContext);
-        routes.produce(httpRootPathBuildItem.routeBuilder().route(REPLAY_UI_PATH).handler(handler).build());
-        routes.produce(httpRootPathBuildItem.routeBuilder().route(REPLAY_UI_PATH + "/*").handler(handler).build());
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void replayUi(GitHubAppRecorder recorder,
+            LaunchModeBuildItem launchMode,
+            WebJarResultsBuildItem webJarResults,
+            HttpRootPathBuildItem httpRootPath,
+            ShutdownContextBuildItem shutdownContext,
+            BuildProducer<RouteBuildItem> routes,
+            BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints) throws IOException {
+        if (launchMode.getLaunchMode() != LaunchMode.DEVELOPMENT) {
+            return;
+        }
+
+        WebJarResultsBuildItem.WebJarResult webJarResult = webJarResults.byArtifactKey(QUARKIVERSE_GITHUB_APP_GACT);
+        if (webJarResult == null) {
+            return;
+        }
+
+        Handler<RoutingContext> handler = recorder.replayUiHandler(webJarResult.getFinalDestination(), REPLAY_UI_PATH,
+                webJarResult.getWebRootConfigurations(), shutdownContext);
+        routes.produce(httpRootPath.routeBuilder().route(REPLAY_UI_PATH).handler(handler).build());
+        routes.produce(httpRootPath.routeBuilder().route(REPLAY_UI_PATH + "/*").handler(handler).build());
 
         displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(REPLAY_UI_PATH + "/"));
     }
