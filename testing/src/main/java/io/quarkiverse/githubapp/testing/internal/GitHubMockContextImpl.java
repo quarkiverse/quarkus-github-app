@@ -33,8 +33,8 @@ import io.quarkiverse.githubapp.runtime.github.GitHubService;
 import io.quarkiverse.githubapp.testing.dsl.GitHubMockContext;
 import io.quarkiverse.githubapp.testing.dsl.GitHubMockSetupContext;
 import io.quarkiverse.githubapp.testing.dsl.GitHubMockVerificationContext;
-import io.quarkiverse.githubapp.testing.mockito.internal.CallRealMethodAndSpyGHObjectResults;
 import io.quarkiverse.githubapp.testing.mockito.internal.DefaultableMocking;
+import io.quarkiverse.githubapp.testing.mockito.internal.GHEventPayloadSpyDefaultAnswer;
 
 public final class GitHubMockContextImpl implements GitHubMockContext, GitHubMockSetupContext, GitHubMockVerificationContext {
 
@@ -70,7 +70,7 @@ public final class GitHubMockContextImpl implements GitHubMockContext, GitHubMoc
                     Object original = invocation.callRealMethod();
                     return Mockito.mock(original.getClass(), withSettings().spiedInstance(original)
                             .withoutAnnotations()
-                            .defaultAnswer(new CallRealMethodAndSpyGHObjectResults(this::ghObjectMocking)));
+                            .defaultAnswer(new GHEventPayloadSpyDefaultAnswer(this::ghObjectMocking)));
                 });
             } catch (IOException e) {
                 throw new UncheckedIOException(e);

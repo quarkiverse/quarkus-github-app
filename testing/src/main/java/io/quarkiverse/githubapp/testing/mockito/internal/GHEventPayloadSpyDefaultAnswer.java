@@ -5,16 +5,27 @@ import static org.mockito.Mockito.withSettings;
 import java.io.Serializable;
 import java.util.function.Function;
 
+import org.kohsuke.github.GHEventPayload;
 import org.kohsuke.github.GHObject;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-public final class CallRealMethodAndSpyGHObjectResults implements Answer<Object>, Serializable {
+/**
+ * The default answer for all {@link GHEventPayload} spies.
+ * <p>
+ * The purpose of this default answer is to retrieve information from the event payload if possible (e.g. for getters),
+ * or failing that apply whatever default behavior is configured globally (e.g. return {@code null}, ...).
+ * <p>
+ * This will call the real method,
+ * and potentially wrap the return value with a spy using {@link GHObjectSpyDefaultAnswer},
+ * if that return value is a {@link GHObject}.
+ */
+public final class GHEventPayloadSpyDefaultAnswer implements Answer<Object>, Serializable {
 
     private final Function<GHObject, DefaultableMocking<? extends GHObject>> defaultableMockingProvider;
 
-    public CallRealMethodAndSpyGHObjectResults(
+    public GHEventPayloadSpyDefaultAnswer(
             Function<GHObject, DefaultableMocking<? extends GHObject>> defaultableMockingProvider) {
         this.defaultableMockingProvider = defaultableMockingProvider;
     }
@@ -31,7 +42,7 @@ public final class CallRealMethodAndSpyGHObjectResults implements Answer<Object>
         return Mockito.mock(type, withSettings().stubOnly()
                 .withoutAnnotations()
                 .spiedInstance(original)
-                .defaultAnswer(new CallMockedMethodOrCallRealMethodAndSpyGHObjectResults(this, mocking)));
+                .defaultAnswer(new GHObjectSpyDefaultAnswer(this, mocking)));
     }
 
 }
