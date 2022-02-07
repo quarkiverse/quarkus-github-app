@@ -156,4 +156,20 @@ public class TestingFrameworkTest {
                 })).hasCauseInstanceOf(NullPointerException.class);
     }
 
+    @Test
+    void getUserLogin() {
+        String[] capture = new String[1];
+        PullRequestEventListener.behavior = (payload, configFile) -> {
+            if (payload.getPullRequest().getUser() != null) {
+                capture[0] = payload.getPullRequest().getUser().getLogin();
+            }
+        };
+
+        assertThatCode(() -> given()
+                .when().payloadFromClasspath("/pr-opened-dependabot.json")
+                .event(GHEvent.PULL_REQUEST))
+                        .doesNotThrowAnyException();
+        assertThat(capture[0]).isEqualTo("dependabot[bot]");
+    }
+
 }
