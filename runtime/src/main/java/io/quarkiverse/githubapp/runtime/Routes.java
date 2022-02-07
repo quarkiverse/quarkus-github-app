@@ -134,7 +134,7 @@ public class Routes {
         return value == null || value.isBlank();
     }
 
-    private static Long extractInstallationId(JsonObject body) {
+    private Long extractInstallationId(JsonObject body) {
         Long installationId;
 
         JsonObject installation = body.getJsonObject("installation");
@@ -143,6 +143,15 @@ public class Routes {
             if (installationId != null) {
                 return installationId;
             }
+        }
+
+        if (launchMode == LaunchMode.TEST || launchMode == LaunchMode.DEVELOPMENT) {
+            long defaultInstallationId = 1L;
+            LOG.infof(
+                    "Payload is lacking an installation ID; the payload was probably copy/pasted from GitHub's delivery history?"
+                            + " Defaulting to installation ID %s",
+                    defaultInstallationId);
+            return defaultInstallationId;
         }
 
         throw new IllegalStateException("Unable to extract installation id from payload");
