@@ -7,6 +7,7 @@ import java.util.function.Function;
 
 import org.kohsuke.github.GHEventPayload;
 import org.kohsuke.github.GHObject;
+import org.kohsuke.github.GitHub;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -23,10 +24,12 @@ import org.mockito.stubbing.Answer;
  */
 public final class GHEventPayloadSpyDefaultAnswer implements Answer<Object>, Serializable {
 
+    private final GitHub clientSpy;
     private final Function<GHObject, DefaultableMocking<? extends GHObject>> defaultableMockingProvider;
 
-    public GHEventPayloadSpyDefaultAnswer(
+    public GHEventPayloadSpyDefaultAnswer(GitHub clientSpy,
             Function<GHObject, DefaultableMocking<? extends GHObject>> defaultableMockingProvider) {
+        this.clientSpy = clientSpy;
         this.defaultableMockingProvider = defaultableMockingProvider;
     }
 
@@ -42,7 +45,7 @@ public final class GHEventPayloadSpyDefaultAnswer implements Answer<Object>, Ser
         return Mockito.mock(type, withSettings().stubOnly()
                 .withoutAnnotations()
                 .spiedInstance(original)
-                .defaultAnswer(new GHObjectSpyDefaultAnswer(this, mocking)));
+                .defaultAnswer(new GHObjectSpyDefaultAnswer(clientSpy, this, mocking)));
     }
 
 }

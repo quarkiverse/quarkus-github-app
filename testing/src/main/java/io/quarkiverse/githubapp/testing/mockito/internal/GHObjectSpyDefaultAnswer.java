@@ -1,8 +1,10 @@
 package io.quarkiverse.githubapp.testing.mockito.internal;
 
 import java.io.Serializable;
+import java.lang.reflect.Method;
 
 import org.kohsuke.github.GHObject;
+import org.kohsuke.github.GitHub;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
@@ -14,7 +16,9 @@ import org.mockito.stubbing.Answer;
  * or failing that retrieve information from the event payload if possible (e.g. for getters),
  * or failing that apply whatever default behavior is configured globally (e.g. return {@code null}, ...).
  * <p>
- * For getters, if there is a mocked behavior, this will apply that behavior.
+ * For {@code GHObject#root()} and {@link GHObject#getRoot()}, this will return the {@link GitHub} client mock.
+ * <p>
+ * For other getters, if there is a mocked behavior, this will apply that behavior.
  * Otherwise, this will call the real method,
  * and potentially wrap the return value with a spy using {@link GHObjectSpyDefaultAnswer},
  * if that return value is a {@link GHObject}.
@@ -23,18 +27,24 @@ import org.mockito.stubbing.Answer;
  */
 public final class GHObjectSpyDefaultAnswer implements Answer<Object>, Serializable {
 
+    private final GitHub clientSpy;
     private final GHEventPayloadSpyDefaultAnswer callRealMethodAndSpy;
     private final DefaultableMocking<? extends GHObject> ghObjectMocking;
 
-    public GHObjectSpyDefaultAnswer(GHEventPayloadSpyDefaultAnswer callRealMethodAndSpy,
+    public GHObjectSpyDefaultAnswer(GitHub clientSpy,
+            GHEventPayloadSpyDefaultAnswer callRealMethodAndSpy,
             DefaultableMocking<? extends GHObject> ghObjectMocking) {
+        this.clientSpy = clientSpy;
         this.callRealMethodAndSpy = callRealMethodAndSpy;
         this.ghObjectMocking = ghObjectMocking;
     }
 
     @Override
     public Object answer(InvocationOnMock invocation) throws Throwable {
-        if (invocation.getMethod().getName().startsWith("get")) {
+        Method method = invocation.getMethod();
+        if (method.getParameterCount() == 0 && (method.getName().equals("root") || method.getName().equals("getRoot"))) {
+            return clientSpy;
+        } else if (method.getName().startsWith("get")) {
             return ghObjectMocking.callMockOrDefault(invocation, callRealMethodAndSpy);
         } else {
             return ghObjectMocking.callMock(invocation);

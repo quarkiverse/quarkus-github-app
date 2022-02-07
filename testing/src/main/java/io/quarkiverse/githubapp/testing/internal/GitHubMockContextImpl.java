@@ -70,7 +70,7 @@ public final class GitHubMockContextImpl implements GitHubMockContext, GitHubMoc
                     Object original = invocation.callRealMethod();
                     return Mockito.mock(original.getClass(), withSettings().spiedInstance(original)
                             .withoutAnnotations()
-                            .defaultAnswer(new GHEventPayloadSpyDefaultAnswer(this::ghObjectMocking)));
+                            .defaultAnswer(new GHEventPayloadSpyDefaultAnswer(newClient, this::ghObjectMocking)));
                 });
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
