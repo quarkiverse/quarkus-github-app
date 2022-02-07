@@ -35,6 +35,7 @@ import io.quarkiverse.githubapp.testing.dsl.GitHubMockSetupContext;
 import io.quarkiverse.githubapp.testing.dsl.GitHubMockVerificationContext;
 import io.quarkiverse.githubapp.testing.mockito.internal.DefaultableMocking;
 import io.quarkiverse.githubapp.testing.mockito.internal.GHEventPayloadSpyDefaultAnswer;
+import io.quarkiverse.githubapp.testing.mockito.internal.GitHubMockDefaultAnswer;
 
 public final class GitHubMockContextImpl implements GitHubMockContext, GitHubMockSetupContext, GitHubMockVerificationContext {
 
@@ -56,7 +57,8 @@ public final class GitHubMockContextImpl implements GitHubMockContext, GitHubMoc
                 // Configure the client mocks to be offline, because we don't want to send HTTP requests.
                 settings -> settings.useConstructor("https://api.github.invalid",
                         new GitHubConnectorHttpConnectorAdapter(HttpConnector.OFFLINE), RateLimitHandler.WAIT,
-                        AbuseLimitHandler.WAIT, null, AuthorizationProvider.ANONYMOUS));
+                        AbuseLimitHandler.WAIT, null, AuthorizationProvider.ANONYMOUS)
+                        .defaultAnswer(new GitHubMockDefaultAnswer(defaultAnswers)));
     }
 
     @Override
@@ -178,7 +180,10 @@ public final class GitHubMockContextImpl implements GitHubMockContext, GitHubMoc
 
         private MockMap(Class<T> clazz, Consumer<MockSettings> mockSettingsContributor) {
             this.clazz = clazz;
-            this.mockSettingsContributor = mockSettingsContributor;
+            this.mockSettingsContributor = mockSettings -> {
+                mockSettings.defaultAnswer(defaultAnswers);
+                mockSettingsContributor.accept(mockSettings);
+            };
             GitHubMockContextImpl.this.allMockMaps.add(this);
         }
 
@@ -195,7 +200,7 @@ public final class GitHubMockContextImpl implements GitHubMockContext, GitHubMoc
         }
 
         private DefaultableMocking<T> create(Object id) {
-            return DefaultableMocking.create(clazz, id, mockSettingsContributor, defaultAnswers);
+            return DefaultableMocking.create(clazz, id, mockSettingsContributor);
         }
     }
 }
