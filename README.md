@@ -62,6 +62,8 @@ It also leverages [Reactive Routes](https://quarkus.io/guides/reactive-routes),
 [CDI events (both sync and async)](https://quarkus.io/guides/cdi#events-and-observers),
 and [Caffeine](https://quarkus.io/guides/cache).
 
+> ![Architecture](/docs/modules/ROOT/assets/images/architecture.jpg?raw=true "Architecture")
+
 ## Status
 
 The extension is considered stable.
