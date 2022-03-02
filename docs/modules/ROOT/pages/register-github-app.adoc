@@ -56,6 +56,12 @@ For now, you don't need to set up a webhook secret:
 secret signature checking is disabled when using Smee.io as it modifies the original payload.
 ====
 
+[TIP]
+====
+No need to start a Smee.io client:
+Quarkus GitHub App connects to Smee.io automatically when a webhook proxy url is defined in your configuration.
+====
+
 === Webhook secret
 
 When running in dev mode, we don't enforce signature checking
