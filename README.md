@@ -49,6 +49,8 @@ Anything missing in the documentation? Please [open an issue](https://github.com
 
 * The [Quarkus GitHub Bot](https://github.com/quarkusio/quarkus-github-bot)
 * The [Hibernate GitHub Bot](https://github.com/hibernate/hibernate-github-bot)
+* The [Debezium GitHub Bot](https://github.com/debezium/debezium-github-bot)
+* The [Milestone Check GitHub App](https://github.com/scholzj/milestone-check)
 
 ## How?
 
