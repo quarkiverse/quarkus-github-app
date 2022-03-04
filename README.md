@@ -31,9 +31,9 @@ And that's it.
 
 The code above listens to the `issues.opened` GitHub event and posts a comment in each opened issue.
 
-That's for the basics but it also supports YAML or JSON config files in your repository.
+That's for the basics but it supports the GitHub REST API, execution of GraphQL queries, YAML or JSON config files in your repository...
 
-It also supports using a [Smee.io proxy](https://smee.io) during the development of the app so that GitHub events are redirected to your local instance with no hassle.
+It relies on a [Smee.io proxy](https://smee.io) during the development of the app to redirect GitHub events towards your local instance with no hassle.
 
 Finally, it comes with a nice and searchable Replay UI:
 
@@ -41,9 +41,9 @@ Finally, it comes with a nice and searchable Replay UI:
 
 ## Documentation
 
-To get you started (and more!), please refer to [the documentation](https://quarkiverse.github.io/quarkiverse-docs/quarkus-github-app/dev/index.html).
+To get you started (and more!), please refer to [the extensive documentation](https://quarkiverse.github.io/quarkiverse-docs/quarkus-github-app/dev/index.html).
 
-Anything missing in the documentation? Please [open an issue](https://github.com/quarkiverse/quarkus-github-app/issues/new).
+Anything unclear or missing in the documentation? Please [open an issue](https://github.com/quarkiverse/quarkus-github-app/issues/new).
 
 ## Examples
 
@@ -54,8 +54,10 @@ Anything missing in the documentation? Please [open an issue](https://github.com
 
 ## How?
 
-The Quarkus GitHub App extension uses [the Hub4j GitHub API](https://github.com/hub4j/github-api)
-to parse the webhook payloads and handle the GitHub REST API calls.
+The Quarkus GitHub App extension uses the [Hub4j GitHub API](https://github.com/hub4j/github-api)
+to parse the webhook payloads and handle the [GitHub REST API](https://docs.github.com/en/rest) calls.
+
+It can also execute GraphQL queries towards the [GitHub GraphQL API](https://docs.github.com/en/graphql) via the SmallRye GraphQL Client.
 
 The rest of the extension is Quarkus magic - mostly code generation with [Gizmo](https://github.com/quarkusio/gizmo/) -
 to get everything wired.
