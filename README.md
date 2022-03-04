@@ -68,7 +68,7 @@ and [Caffeine](https://quarkus.io/guides/cache).
 
 ## Status
 
-The extension is considered stable.
+This extension is considered stable and is used in production.
 
 ## License
 
