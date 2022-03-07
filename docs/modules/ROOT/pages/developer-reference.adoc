@@ -269,4 +269,4 @@ include::includes/quarkus-github-app.adoc[]
 
 == Architecture Overview
 
-image::architecture.jpg[Architecture]
+image::architecture.png[Architecture]
