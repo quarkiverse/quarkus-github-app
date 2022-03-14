@@ -7,7 +7,9 @@
 
 <p align="center"><img src="https://design.jboss.org/quarkus/bot/final/images/quarkusbot_full.svg" width="128" height="128" /></p>
 
-**Develop your GitHub Apps in Java with Quarkus.**
+**Develop your GitHub Apps in Java with Quarkus**
+
+> _Interested in GitHub Actions? Have a look at the [Quarkus GitHub Action extension](https://github.com/quarkiverse/quarkus-github-action/)._
 
 Quarkus GitHub App is a [Quarkus](https://quarkus.io) extension
 that allows to create GitHub Apps in Java with very little boilerplate.
