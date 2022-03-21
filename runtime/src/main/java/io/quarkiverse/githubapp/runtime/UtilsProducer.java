@@ -34,7 +34,7 @@ public class UtilsProducer {
     @Yaml
     public ObjectMapper yamlObjectMapper() {
         ObjectMapper yamlObjectMapper = new ObjectMapper(new YAMLFactory());
-        yamlObjectMapper.disable(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES);
+        yamlObjectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
         return yamlObjectMapper;
     }
 
