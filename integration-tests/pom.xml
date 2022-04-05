@@ -21,6 +21,7 @@
 
     <modules>
         <module>testing-framework</module>
+        <module>app</module>
     </modules>
 
     <build>

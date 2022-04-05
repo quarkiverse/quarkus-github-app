@@ -322,7 +322,7 @@ class GitHubAppProcessor {
 
                 configuration
                         .getOrCreateEventConfiguration(eventDefinition.getEvent(), eventDefinition.getPayloadType().toString())
-                        .addEventAnnotation(action, eventSubscriberInstance);
+                        .addEventAnnotation(action, eventSubscriberInstance, eventSubscriberInstance.valuesWithDefaults(index));
                 configuration.addEventDispatchingMethod(new EventDispatchingMethod(eventSubscriberInstance, methodInfo));
             }
         }
@@ -483,6 +483,9 @@ class GitHubAppProcessor {
                 Class<?>[] literalParameterTypes = new Class<?>[eventAnnotation.getValues().size()];
                 Arrays.fill(literalParameterTypes, String.class);
                 List<ResultHandle> literalParameters = new ArrayList<>();
+                for (AnnotationValue eventAnnotationValue : eventAnnotation.getValues()) {
+                    literalParameters.add(eventMatchesCreator.load(eventAnnotationValue.asString()));
+                }
 
                 ResultHandle annotationLiteralRh = eventMatchesCreator.newInstance(MethodDescriptor
                         .ofConstructor(getLiteralClassName(eventAnnotation.getName()), (Object[]) literalParameterTypes),
