@@ -20,11 +20,13 @@ import com.github.benmanes.caffeine.cache.LoadingCache;
 
 import io.quarkiverse.githubapp.runtime.config.GitHubAppRuntimeConfig;
 import io.quarkiverse.githubapp.runtime.signing.JwtTokenCreator;
+import io.quarkus.arc.Unremovable;
 import io.smallrye.graphql.client.dynamic.api.DynamicGraphQLClient;
 import io.smallrye.graphql.client.dynamic.api.DynamicGraphQLClientBuilder;
 import okhttp3.OkHttpClient;
 
 @ApplicationScoped
+@Unremovable
 public class GitHubService {
 
     private static final String AUTHORIZATION_HEADER = "Authorization";

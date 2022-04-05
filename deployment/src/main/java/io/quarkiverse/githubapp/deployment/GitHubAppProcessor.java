@@ -322,7 +322,7 @@ class GitHubAppProcessor {
 
                 configuration
                         .getOrCreateEventConfiguration(eventDefinition.getEvent(), eventDefinition.getPayloadType().toString())
-                        .addEventAnnotation(action, eventSubscriberInstance);
+                        .addEventAnnotation(action, eventSubscriberInstance, eventSubscriberInstance.valuesWithDefaults(index));
                 configuration.addEventDispatchingMethod(new EventDispatchingMethod(eventSubscriberInstance, methodInfo));
             }
         }
@@ -336,7 +336,8 @@ class GitHubAppProcessor {
             for (EventAnnotationLiteral eventAnnotationLiteral : eventDispatchingConfiguration.getEventAnnotationLiterals()) {
                 String literalClassName = getLiteralClassName(eventAnnotationLiteral.getName());
 
-                String signature = String.format("Ljavax/enterprise/util/AnnotationLiteral<L%1$s;>;L%1$s;",
+                String signature = String.format("L%1$s<L%2$s;>;L%2$s;",
+                        AnnotationLiteral.class.getName().replace('.', '/'),
                         eventAnnotationLiteral.getName().toString().replace('.', '/'));
 
                 ClassCreator literalClassCreator = ClassCreator.builder().classOutput(classOutput)
@@ -483,6 +484,9 @@ class GitHubAppProcessor {
                 Class<?>[] literalParameterTypes = new Class<?>[eventAnnotation.getValues().size()];
                 Arrays.fill(literalParameterTypes, String.class);
                 List<ResultHandle> literalParameters = new ArrayList<>();
+                for (AnnotationValue eventAnnotationValue : eventAnnotation.getValues()) {
+                    literalParameters.add(eventMatchesCreator.load(eventAnnotationValue.asString()));
+                }
 
                 ResultHandle annotationLiteralRh = eventMatchesCreator.newInstance(MethodDescriptor
                         .ofConstructor(getLiteralClassName(eventAnnotation.getName()), (Object[]) literalParameterTypes),
