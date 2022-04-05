@@ -336,7 +336,8 @@ class GitHubAppProcessor {
             for (EventAnnotationLiteral eventAnnotationLiteral : eventDispatchingConfiguration.getEventAnnotationLiterals()) {
                 String literalClassName = getLiteralClassName(eventAnnotationLiteral.getName());
 
-                String signature = String.format("Ljavax/enterprise/util/AnnotationLiteral<L%1$s;>;L%1$s;",
+                String signature = String.format("L%1$s<L%2$s;>;L%2$s;",
+                        AnnotationLiteral.class.getName().replace('.', '/'),
                         eventAnnotationLiteral.getName().toString().replace('.', '/'));
 
                 ClassCreator literalClassCreator = ClassCreator.builder().classOutput(classOutput)
