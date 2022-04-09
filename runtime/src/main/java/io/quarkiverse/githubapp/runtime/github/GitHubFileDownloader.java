@@ -11,11 +11,9 @@ import org.kohsuke.github.GHContent;
 import org.kohsuke.github.GHFileNotFoundException;
 import org.kohsuke.github.GHRepository;
 
-import io.quarkus.arc.Unremovable;
 import io.quarkus.runtime.LaunchMode;
 
 @ApplicationScoped
-@Unremovable
 public class GitHubFileDownloader {
 
     private static final Logger LOG = Logger.getLogger(GitHubFileDownloader.class);
