@@ -37,7 +37,7 @@ public class SmeeIoForwarder {
     private final EventSource eventSource;
 
     @Inject
-    SmeeIoForwarder(GitHubAppRuntimeConfig gitHubAppRuntimeConfig, HttpConfiguration httpConfiguration, OkHttpClient client,
+    SmeeIoForwarder(GitHubAppRuntimeConfig gitHubAppRuntimeConfig, HttpConfiguration httpConfiguration,
             ObjectMapper objectMapper) {
         if (!gitHubAppRuntimeConfig.webhookProxyUrl.isPresent()) {
             this.eventSource = null;
@@ -45,7 +45,8 @@ public class SmeeIoForwarder {
         }
 
         String localUrl = "http://" + httpConfiguration.host + ":" + httpConfiguration.port + "/";
-        this.eventSource = startEventSource(gitHubAppRuntimeConfig.webhookProxyUrl.get(), localUrl, client, objectMapper);
+        this.eventSource = startEventSource(gitHubAppRuntimeConfig.webhookProxyUrl.get(), localUrl, new OkHttpClient(),
+                objectMapper);
     }
 
     void stopEventSource(@Observes ShutdownEvent shutdownEvent) {

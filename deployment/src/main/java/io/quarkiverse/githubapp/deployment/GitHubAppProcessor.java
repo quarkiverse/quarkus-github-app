@@ -62,6 +62,7 @@ import io.quarkiverse.githubapp.runtime.MultiplexedEvent;
 import io.quarkiverse.githubapp.runtime.Multiplexer;
 import io.quarkiverse.githubapp.runtime.error.DefaultErrorHandler;
 import io.quarkiverse.githubapp.runtime.error.ErrorHandlerBridgeFunction;
+import io.quarkiverse.githubapp.runtime.github.GitHubFileDownloader;
 import io.quarkiverse.githubapp.runtime.github.GitHubService;
 import io.quarkiverse.githubapp.runtime.github.PayloadHelper;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -166,9 +167,9 @@ class GitHubAppProcessor {
     void additionalBeans(CombinedIndexBuildItem index, BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         AdditionalBeanBuildItem.Builder additionalBeanBuildItemBuilder = new AdditionalBeanBuildItem.Builder().addBeanClasses(
                 GitHubService.class,
-                DefaultErrorHandler.class)
-                .setUnremovable()
-                .setDefaultScope(DotNames.SINGLETON);
+                DefaultErrorHandler.class,
+                GitHubFileDownloader.class)
+                .setUnremovable();
 
         for (ClassInfo errorHandler : index.getIndex().getAllKnownImplementors(GitHubAppDotNames.ERROR_HANDLER)) {
             additionalBeanBuildItemBuilder.addBeanClass(errorHandler.name().toString());

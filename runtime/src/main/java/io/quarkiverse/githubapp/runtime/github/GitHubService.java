@@ -20,13 +20,10 @@ import com.github.benmanes.caffeine.cache.LoadingCache;
 
 import io.quarkiverse.githubapp.runtime.config.GitHubAppRuntimeConfig;
 import io.quarkiverse.githubapp.runtime.signing.JwtTokenCreator;
-import io.quarkus.arc.Unremovable;
 import io.smallrye.graphql.client.dynamic.api.DynamicGraphQLClient;
 import io.smallrye.graphql.client.dynamic.api.DynamicGraphQLClientBuilder;
-import okhttp3.OkHttpClient;
 
 @ApplicationScoped
-@Unremovable
 public class GitHubService {
 
     private static final String AUTHORIZATION_HEADER = "Authorization";
@@ -39,7 +36,7 @@ public class GitHubService {
     private final LoadingCache<Long, CachedInstallationToken> installationTokenCache;
 
     @Inject
-    public GitHubService(GitHubAppRuntimeConfig gitHubAppRuntimeConfig, JwtTokenCreator jwtTokenCreator, OkHttpClient client) {
+    public GitHubService(GitHubAppRuntimeConfig gitHubAppRuntimeConfig, JwtTokenCreator jwtTokenCreator) {
         this.gitHubAppRuntimeConfig = gitHubAppRuntimeConfig;
         this.jwtTokenCreator = jwtTokenCreator;
         this.installationTokenCache = Caffeine.newBuilder()

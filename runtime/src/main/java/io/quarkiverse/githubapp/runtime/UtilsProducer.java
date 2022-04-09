@@ -18,16 +18,8 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
-import okhttp3.OkHttpClient;
-
 @Singleton
 public class UtilsProducer {
-
-    @Produces
-    @Singleton
-    public OkHttpClient okHttpClient() {
-        return new OkHttpClient();
-    }
 
     @Produces
     @Singleton
