@@ -16,6 +16,7 @@ import java.util.function.Consumer;
 
 import org.kohsuke.github.AbuseLimitHandler;
 import org.kohsuke.github.GHIssue;
+import org.kohsuke.github.GHIssueComment;
 import org.kohsuke.github.GHObject;
 import org.kohsuke.github.GHPullRequest;
 import org.kohsuke.github.GHRepository;
@@ -105,6 +106,11 @@ public final class GitHubMockContextImpl implements GitHubMockContext, GitHubMoc
     @Override
     public GHPullRequest pullRequest(long id) {
         return ghObject(GHPullRequest.class, id);
+    }
+
+    @Override
+    public GHIssueComment issueComment(long id) {
+        return ghObject(GHIssueComment.class, id);
     }
 
     @Override

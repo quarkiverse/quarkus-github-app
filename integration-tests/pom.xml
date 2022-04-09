@@ -15,13 +15,13 @@
 
     <properties>
         <maven.deploy.skip>true</maven.deploy.skip>
-        <quarkus.build.skip>${skipTests}</quarkus.build.skip>
         <native.surefire.skip>${skipTests}</native.surefire.skip>
     </properties>
 
     <modules>
         <module>testing-framework</module>
         <module>app</module>
+        <module>command-airline</module>
     </modules>
 
     <build>
@@ -31,10 +31,6 @@
                     <groupId>io.quarkus</groupId>
                     <artifactId>quarkus-maven-plugin</artifactId>
                     <version>${quarkus.version}</version>
-                    <configuration>
-                        <noDeps>true</noDeps>
-                        <skip>${quarkus.build.skip}</skip>
-                    </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>

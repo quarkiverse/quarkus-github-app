@@ -19,4 +19,6 @@ public interface EventSenderOptions {
     EventSenderOptions payloadFromClasspath(String path, String contentType) throws IOException;
 
     EventHandlingResponse event(GHEvent event);
+
+    EventHandlingResponse event(GHEvent event, boolean ignoreExceptions);
 }
