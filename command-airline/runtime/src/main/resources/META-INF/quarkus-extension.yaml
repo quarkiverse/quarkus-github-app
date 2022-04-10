@@ -1,0 +1,17 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "GitHub App Command Airline"
+metadata:
+  keywords:
+  - "github"
+  - "github-app"
+  - "github app"
+  - "bot"
+  - "command"
+  - "airline"
+  guide: "https://quarkiverse.github.io/quarkiverse-docs/quarkus-github-app/dev/index.html"
+  categories:
+    - "business-automation"
+  status: "stable"
+  config:
+    - "quarkus.github-app."

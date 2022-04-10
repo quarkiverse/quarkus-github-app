@@ -82,6 +82,11 @@ final class EventSenderOptionsImpl implements EventSenderOptions {
 
     @Override
     public EventHandlingResponseImpl event(GHEvent event) {
+        return event(event, false);
+    }
+
+    @Override
+    public EventHandlingResponseImpl event(GHEvent event, boolean ignoreExceptions) {
         OkHttpClient httpClient = clientBuilder.build();
         Call call = httpClient.newCall(new Request.Builder()
                 .url(buildUrl())
@@ -110,7 +115,9 @@ final class EventSenderOptionsImpl implements EventSenderOptions {
             if (callAssertionError != null) {
                 handlingAssertionError.addSuppressed(callAssertionError);
             }
-            throw handlingAssertionError;
+            if (!ignoreExceptions) {
+                throw handlingAssertionError;
+            }
         } else if (callAssertionError != null) {
             throw callAssertionError;
         }

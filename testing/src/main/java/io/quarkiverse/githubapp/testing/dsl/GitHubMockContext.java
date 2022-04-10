@@ -1,6 +1,7 @@
 package io.quarkiverse.githubapp.testing.dsl;
 
 import org.kohsuke.github.GHIssue;
+import org.kohsuke.github.GHIssueComment;
 import org.kohsuke.github.GHObject;
 import org.kohsuke.github.GHPullRequest;
 import org.kohsuke.github.GHRepository;
@@ -15,6 +16,8 @@ public interface GitHubMockContext {
     GHIssue issue(long id);
 
     GHPullRequest pullRequest(long id);
+
+    GHIssueComment issueComment(long id);
 
     <T extends GHObject> T ghObject(Class<T> type, long id);
 

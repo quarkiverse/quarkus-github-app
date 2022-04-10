@@ -36,6 +36,7 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
@@ -142,16 +143,22 @@ class GitHubAppProcessor {
 
     @BuildStep
     void registerForReflection(CombinedIndexBuildItem combinedIndex,
+            List<AdditionalEventDispatchingClassesIndexBuildItem> additionalEventDispatchingIndexes,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchies) {
+        List<IndexView> indexes = new ArrayList<>();
+        indexes.add(combinedIndex.getIndex());
+        additionalEventDispatchingIndexes.forEach(i -> indexes.add(i.getIndex()));
+        IndexView index = CompositeIndex.create(indexes);
+
         // Types used for config files
-        for (AnnotationInstance configFileAnnotationInstance : combinedIndex.getIndex().getAnnotations(CONFIG_FILE)) {
+        for (AnnotationInstance configFileAnnotationInstance : index.getAnnotations(CONFIG_FILE)) {
             MethodParameterInfo methodParameter = configFileAnnotationInstance.target().asMethodParameter();
             short parameterPosition = methodParameter.position();
             Type parameterType = methodParameter.method().parameters().get(parameterPosition);
             reflectiveHierarchies.produce(new ReflectiveHierarchyBuildItem.Builder()
                     .type(parameterType)
-                    .index(combinedIndex.getIndex())
+                    .index(index)
                     .source(GitHubAppProcessor.class.getSimpleName() + " > " + methodParameter.method().declaringClass() + "#"
                             + methodParameter.method())
                     .build());
@@ -199,12 +206,18 @@ class GitHubAppProcessor {
 
     @BuildStep
     void generateClasses(CombinedIndexBuildItem combinedIndex, LaunchModeBuildItem launchMode,
+            List<AdditionalEventDispatchingClassesIndexBuildItem> additionalEventDispatchingIndexes,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer) {
-        Collection<EventDefinition> allEventDefinitions = getAllEventDefinitions(combinedIndex.getIndex());
+        List<IndexView> indexes = new ArrayList<>();
+        indexes.add(combinedIndex.getIndex());
+        additionalEventDispatchingIndexes.forEach(i -> indexes.add(i.getIndex()));
+        IndexView index = CompositeIndex.create(indexes);
+
+        Collection<EventDefinition> allEventDefinitions = getAllEventDefinitions(index);
 
         // Add @Vetoed to all the user-defined event listening classes
         annotationsTransformer
@@ -217,13 +230,13 @@ class GitHubAppProcessor {
         additionalBeans.produce(new AdditionalBeanBuildItem(subscriberAnnotations));
 
         DispatchingConfiguration dispatchingConfiguration = getDispatchingConfiguration(
-                combinedIndex.getIndex(), allEventDefinitions);
+                index, allEventDefinitions);
 
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClasses, true);
         generateAnnotationLiterals(classOutput, dispatchingConfiguration);
 
         ClassOutput beanClassOutput = new GeneratedBeanGizmoAdaptor(generatedBeans);
-        generateDispatcher(beanClassOutput, combinedIndex, launchMode, dispatchingConfiguration, reflectiveClasses);
+        generateDispatcher(beanClassOutput, launchMode, dispatchingConfiguration, reflectiveClasses);
         generateMultiplexers(beanClassOutput, dispatchingConfiguration, reflectiveClasses);
     }
 
@@ -305,6 +318,7 @@ class GitHubAppProcessor {
             Collection<AnnotationInstance> eventSubscriberInstances = index.getAnnotations(eventDefinition.getAnnotation())
                     .stream()
                     .filter(ai -> ai.target().kind() == Kind.METHOD_PARAMETER)
+                    .filter(ai -> !Modifier.isInterface(ai.target().asMethodParameter().method().declaringClass().flags()))
                     .collect(Collectors.toList());
             for (AnnotationInstance eventSubscriberInstance : eventSubscriberInstances) {
                 String action = eventDefinition.getAction() != null ? eventDefinition.getAction()
@@ -388,7 +402,6 @@ class GitHubAppProcessor {
      * It only generates code for the GitHub events actually listened to by the application.
      */
     private static void generateDispatcher(ClassOutput beanClassOutput,
-            CombinedIndexBuildItem combinedIndex,
             LaunchModeBuildItem launchMode,
             DispatchingConfiguration dispatchingConfiguration,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
