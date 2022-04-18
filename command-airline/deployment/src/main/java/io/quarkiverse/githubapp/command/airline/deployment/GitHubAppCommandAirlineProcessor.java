@@ -82,8 +82,13 @@ class GitHubAppCommandAirlineProcessor {
 
     @BuildStep
     public void indexAnnotations(BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexedClasses) {
+        // adding the *Options annotations
         additionalIndexedClasses
                 .produce(new AdditionalIndexedClassesBuildItem(CLI_OPTIONS.toString(), COMMAND_OPTIONS.toString()));
+
+        // adding Runnable as it's a likely candidate for simple commands
+        additionalIndexedClasses
+                .produce(new AdditionalIndexedClassesBuildItem(Runnable.class.getName()));
     }
 
     @BuildStep
@@ -367,6 +372,11 @@ class GitHubAppCommandAirlineProcessor {
         RunMethod commonInterfaceWithRunMethod = null;
         for (DotName candidate : candidates) {
             ClassInfo candidateClassInfo = index.getClassByName(candidate);
+
+            if (candidateClassInfo == null) {
+                continue;
+            }
+
             List<MethodInfo> runMethods = candidateClassInfo.methods().stream()
                     .filter(mi -> RUN_METHOD.equals(mi.name()))
                     .collect(Collectors.toList());
