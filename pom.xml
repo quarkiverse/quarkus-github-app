@@ -28,7 +28,7 @@
         <jandex-plugin.version>1.2.2</jandex-plugin.version>
         <assertj.version>3.22.0</assertj.version>
 
-        <quarkus-github-api.version>1.304.0</quarkus-github-api.version>
+        <quarkus-github-api.version>1.305.0</quarkus-github-api.version>
         <airline.version>2.8.5</airline.version>
         <okhttp-eventsource.version>2.5.0</okhttp-eventsource.version>
 
