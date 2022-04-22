@@ -27,8 +27,7 @@ public final class Reactions {
         }
 
         try {
-            // TODO waiting for GitHub API PR: https://github.com/hub4j/github-api/pull/1423
-            //issueCommentPayload.getComment().deleteReaction(reaction);
+            issueCommentPayload.getComment().deleteReaction(reaction);
         } catch (Exception e) {
             LOGGER.warn("Unable to delete reaction " + reaction.getContent().getContent() + " from comment "
                     + issueCommentPayload.getRepository().getFullName() + "#"
