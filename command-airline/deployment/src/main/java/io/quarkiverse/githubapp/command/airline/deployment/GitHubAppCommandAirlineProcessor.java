@@ -8,6 +8,8 @@ import static io.quarkiverse.githubapp.command.airline.deployment.GitHubAppComma
 import static io.quarkiverse.githubapp.command.airline.deployment.GitHubAppCommandAirlineDotNames.DEPENDENT;
 import static io.quarkiverse.githubapp.command.airline.deployment.GitHubAppCommandAirlineDotNames.GH_EVENT_PAYLOAD_ISSUE_COMMENT;
 import static io.quarkiverse.githubapp.command.airline.deployment.GitHubAppCommandAirlineDotNames.ISSUE_COMMENT_CREATED;
+import static io.quarkiverse.githubapp.command.airline.deployment.GitHubAppCommandAirlineDotNames.PERMISSION;
+import static io.quarkiverse.githubapp.command.airline.deployment.GitHubAppCommandAirlineDotNames.TEAM;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -29,6 +31,7 @@ import org.jboss.jandex.Type;
 import org.kohsuke.github.GHEventPayload;
 import org.kohsuke.github.GHEventPayload.IssueComment;
 import org.kohsuke.github.GHIssueComment;
+import org.kohsuke.github.GHPermissionType;
 import org.kohsuke.github.GHReaction;
 import org.kohsuke.github.ReactionContent;
 
@@ -40,6 +43,8 @@ import io.quarkiverse.githubapp.command.airline.runtime.AbstractCommandDispatche
 import io.quarkiverse.githubapp.command.airline.runtime.CliConfig;
 import io.quarkiverse.githubapp.command.airline.runtime.CommandConfig;
 import io.quarkiverse.githubapp.command.airline.runtime.CommandExecutionException;
+import io.quarkiverse.githubapp.command.airline.runtime.CommandPermissionConfig;
+import io.quarkiverse.githubapp.command.airline.runtime.CommandTeamConfig;
 import io.quarkiverse.githubapp.command.airline.runtime.util.Reactions;
 import io.quarkiverse.githubapp.deployment.AdditionalEventDispatchingClassesIndexBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
@@ -134,6 +139,8 @@ class GitHubAppCommandAirlineProcessor {
                 aliases);
 
         generateCommandDispatcherGetCommandConfigsMethod(commandDispatcherClassCreator, index, allCommands);
+        generateCommandDispatcherGetCommandPermissionConfigsMethod(commandDispatcherClassCreator, allCommands);
+        generateCommandDispatcherGetCommandTeamConfigsMethod(commandDispatcherClassCreator, allCommands);
 
         generateCommandDispatcherDispatchMethod(commandDispatcherClassCreator, runMethod);
 
@@ -266,6 +273,86 @@ class GitHubAppCommandAirlineProcessor {
         getCommandConfigsMethodCreator.returnValue(commandConfigsRh);
     }
 
+    private static void generateCommandDispatcherGetCommandPermissionConfigsMethod(ClassCreator commandDispatcherClassCreator,
+            Collection<ClassInfo> allCommands) {
+        MethodCreator getCommandPermissionConfigsMethodCreator = commandDispatcherClassCreator.getMethodCreator(
+                "getCommandPermissionConfigs",
+                Map.class.getName());
+
+        ResultHandle commandPermissionConfigsRh = getCommandPermissionConfigsMethodCreator
+                .newInstance(MethodDescriptor.ofConstructor(HashMap.class));
+
+        for (ClassInfo command : allCommands) {
+            AnnotationInstance permissionAnnotation = command.classAnnotation(PERMISSION);
+
+            if (permissionAnnotation != null) {
+                getCommandPermissionConfigsMethodCreator.invokeVirtualMethod(
+                        MethodDescriptor.ofMethod(HashMap.class, "put", Object.class, Object.class, Object.class),
+                        commandPermissionConfigsRh,
+                        getCommandPermissionConfigsMethodCreator.load(command.name().toString()),
+                        getCommandPermissionConfig(getCommandPermissionConfigsMethodCreator, permissionAnnotation));
+            }
+        }
+
+        getCommandPermissionConfigsMethodCreator.returnValue(commandPermissionConfigsRh);
+    }
+
+    private static ResultHandle getCommandPermissionConfig(MethodCreator bytecodeCreator,
+            AnnotationInstance permissionAnnotation) {
+        ResultHandle permissionRh;
+        if (permissionAnnotation != null) {
+            permissionRh = bytecodeCreator.load(GHPermissionType.valueOf(permissionAnnotation.value().asEnum()));
+        } else {
+            permissionRh = bytecodeCreator.loadNull();
+        }
+
+        return bytecodeCreator.newInstance(
+                MethodDescriptor.ofConstructor(CommandPermissionConfig.class, GHPermissionType.class),
+                permissionRh);
+    }
+
+    private static void generateCommandDispatcherGetCommandTeamConfigsMethod(ClassCreator commandDispatcherClassCreator,
+            Collection<ClassInfo> allCommands) {
+        MethodCreator getCommandTeamConfigsMethodCreator = commandDispatcherClassCreator.getMethodCreator(
+                "getCommandTeamConfigs",
+                Map.class.getName());
+
+        ResultHandle commandTeamConfigsRh = getCommandTeamConfigsMethodCreator
+                .newInstance(MethodDescriptor.ofConstructor(HashMap.class));
+
+        for (ClassInfo command : allCommands) {
+            AnnotationInstance teamAnnotation = command.classAnnotation(TEAM);
+
+            if (teamAnnotation != null) {
+                getCommandTeamConfigsMethodCreator.invokeVirtualMethod(
+                        MethodDescriptor.ofMethod(HashMap.class, "put", Object.class, Object.class, Object.class),
+                        commandTeamConfigsRh,
+                        getCommandTeamConfigsMethodCreator.load(command.name().toString()),
+                        getCommandTeamConfig(getCommandTeamConfigsMethodCreator, teamAnnotation));
+            }
+        }
+
+        getCommandTeamConfigsMethodCreator.returnValue(commandTeamConfigsRh);
+    }
+
+    private static ResultHandle getCommandTeamConfig(BytecodeCreator bytecodeCreator, AnnotationInstance teamAnnotation) {
+        ResultHandle teamsRh;
+        if (teamAnnotation != null) {
+            String[] teams = teamAnnotation.value().asStringArray();
+            teamsRh = bytecodeCreator.newArray(String.class, teams.length);
+
+            for (int i = 0; i < teams.length; i++) {
+                bytecodeCreator.writeArrayValue(teamsRh, i, bytecodeCreator.load(teams[i]));
+            }
+        } else {
+            teamsRh = bytecodeCreator.loadNull();
+        }
+
+        return bytecodeCreator.newInstance(
+                MethodDescriptor.ofConstructor(CommandTeamConfig.class, String[].class),
+                teamsRh);
+    }
+
     private static void generateCommandDispatcherConstructor(ClassCreator commandDispatcherClassCreator,
             String commandDispatcherClassName, IndexView index, ClassInfo cliClassInfo, List<String> aliases) {
         MethodCreator constructorMethodCreator = commandDispatcherClassCreator
@@ -275,22 +362,30 @@ class GitHubAppCommandAirlineProcessor {
         ResultHandle cliConfigRh;
         AnnotationInstance cliOptionsAnnotation = cliClassInfo.classAnnotation(CLI_OPTIONS);
 
-        if (cliOptionsAnnotation != null) {
-            ResultHandle defaultCommandConfigRh = getCommandConfig(constructorMethodCreator, index,
-                    cliOptionsAnnotation.valueWithDefault(index, "defaultCommandOptions").asNested());
+        ResultHandle defaultCommandConfigRh = getCommandConfig(constructorMethodCreator, index,
+                cliOptionsAnnotation != null ? cliOptionsAnnotation.valueWithDefault(index, "defaultCommandOptions").asNested()
+                        : null);
+        ResultHandle defaultCommandPermissionConfigRh = getCommandPermissionConfig(constructorMethodCreator,
+                cliClassInfo.classAnnotation(PERMISSION));
+        ResultHandle defaultCommandTeamConfigRh = getCommandTeamConfig(constructorMethodCreator,
+                cliClassInfo.classAnnotation(TEAM));
 
+        if (cliOptionsAnnotation != null) {
             cliConfigRh = constructorMethodCreator.newInstance(
                     MethodDescriptor.ofConstructor(CliConfig.class, List.class,
-                            ParseErrorStrategy.class, String.class, CommandConfig.class),
+                            ParseErrorStrategy.class, String.class, CommandConfig.class,
+                            CommandPermissionConfig.class, CommandTeamConfig.class),
                     aliasesRh,
                     constructorMethodCreator.load(ParseErrorStrategy
                             .valueOf(cliOptionsAnnotation.valueWithDefault(index, "parseErrorStrategy").asEnum())),
                     constructorMethodCreator
                             .load(cliOptionsAnnotation.valueWithDefault(index, "parseErrorMessage").asString()),
-                    defaultCommandConfigRh);
+                    defaultCommandConfigRh, defaultCommandPermissionConfigRh, defaultCommandTeamConfigRh);
         } else {
-            cliConfigRh = constructorMethodCreator.newInstance(MethodDescriptor.ofConstructor(CliConfig.class, List.class),
-                    aliasesRh);
+            cliConfigRh = constructorMethodCreator.newInstance(
+                    MethodDescriptor.ofConstructor(CliConfig.class, List.class, CommandConfig.class,
+                            CommandPermissionConfig.class, CommandTeamConfig.class),
+                    aliasesRh, defaultCommandConfigRh, defaultCommandPermissionConfigRh, defaultCommandTeamConfigRh);
         }
 
         constructorMethodCreator.invokeSpecialMethod(
@@ -350,7 +445,8 @@ class GitHubAppCommandAirlineProcessor {
     private static ResultHandle getCommandConfig(BytecodeCreator bytecodeCreator, IndexView index,
             AnnotationInstance commandOptionsAnnotation) {
         if (commandOptionsAnnotation == null) {
-            return bytecodeCreator.newInstance(MethodDescriptor.ofConstructor(CommandConfig.class));
+            return bytecodeCreator.newInstance(
+                    MethodDescriptor.ofConstructor(CommandConfig.class));
         }
 
         return bytecodeCreator.newInstance(

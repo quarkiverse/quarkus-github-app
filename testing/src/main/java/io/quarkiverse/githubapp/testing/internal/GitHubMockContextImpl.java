@@ -20,6 +20,7 @@ import org.kohsuke.github.GHIssueComment;
 import org.kohsuke.github.GHObject;
 import org.kohsuke.github.GHPullRequest;
 import org.kohsuke.github.GHRepository;
+import org.kohsuke.github.GHTeam;
 import org.kohsuke.github.GitHub;
 import org.kohsuke.github.HttpConnector;
 import org.kohsuke.github.RateLimitHandler;
@@ -111,6 +112,11 @@ public final class GitHubMockContextImpl implements GitHubMockContext, GitHubMoc
     @Override
     public GHIssueComment issueComment(long id) {
         return ghObject(GHIssueComment.class, id);
+    }
+
+    @Override
+    public GHTeam team(long id) {
+        return ghObject(GHTeam.class, id);
     }
 
     @Override

@@ -16,6 +16,8 @@ import com.github.rvesse.airline.model.GlobalMetadata;
 
 import io.quarkiverse.githubapp.command.airline.CliOptions;
 import io.quarkiverse.githubapp.command.airline.CommandOptions;
+import io.quarkiverse.githubapp.command.airline.Permission;
+import io.quarkiverse.githubapp.command.airline.Team;
 import io.quarkiverse.githubapp.event.IssueComment;
 
 class GitHubAppCommandAirlineDotNames {
@@ -26,6 +28,8 @@ class GitHubAppCommandAirlineDotNames {
     static final DotName ALIAS = DotName.createSimple(Alias.class.getName());
     static final DotName CLI_OPTIONS = DotName.createSimple(CliOptions.class.getName());
     static final DotName COMMAND_OPTIONS = DotName.createSimple(CommandOptions.class.getName());
+    static final DotName PERMISSION = DotName.createSimple(Permission.class.getName());
+    static final DotName TEAM = DotName.createSimple(Team.class.getName());
     static final DotName COMMAND = DotName.createSimple(Command.class.getName());
     static final DotName OPTION = DotName.createSimple(Option.class.getName());
     static final DotName ARGUMENTS = DotName.createSimple(Arguments.class.getName());
