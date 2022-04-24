@@ -42,12 +42,16 @@ public final class GHObjectSpyDefaultAnswer implements Answer<Object>, Serializa
     @Override
     public Object answer(InvocationOnMock invocation) throws Throwable {
         Method method = invocation.getMethod();
-        if (method.getParameterCount() == 0 && (method.getName().equals("root") || method.getName().equals("getRoot"))) {
-            return clientSpy;
-        } else if (method.getName().startsWith("get") || method.getName().startsWith("is")) {
-            return ghObjectMocking.callMockOrDefault(invocation, callRealMethodAndSpy);
-        } else {
-            return ghObjectMocking.callMock(invocation);
+
+        if (method.getParameterCount() == 0) {
+            if (method.getName().equals("root") || method.getName().equals("getRoot")) {
+                return clientSpy;
+            }
+            if (method.getName().startsWith("get") || method.getName().startsWith("is")) {
+                return ghObjectMocking.callMockOrDefault(invocation, callRealMethodAndSpy);
+            }
         }
+
+        return ghObjectMocking.callMock(invocation);
     }
 }

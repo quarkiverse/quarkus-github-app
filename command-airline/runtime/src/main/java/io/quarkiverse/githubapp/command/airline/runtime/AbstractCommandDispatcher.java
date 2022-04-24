@@ -7,11 +7,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
 import org.kohsuke.github.GHEventPayload;
 import org.kohsuke.github.GHEventPayload.IssueComment;
 import org.kohsuke.github.GHReaction;
+import org.kohsuke.github.GHRepository;
+import org.kohsuke.github.GHTeam;
+import org.kohsuke.github.GHUser;
 import org.kohsuke.github.ReactionContent;
 
 import com.github.rvesse.airline.Cli;
@@ -32,6 +36,8 @@ public abstract class AbstractCommandDispatcher<C> {
     private final Cli<C> cli;
     private final CliConfig cliConfig;
     private final Map<String, CommandConfig> commandConfigs;
+    private final Map<String, CommandPermissionConfig> commandPermissionConfigs;
+    private final Map<String, CommandTeamConfig> commandTeamConfigs;
 
     protected AbstractCommandDispatcher(Class<?> cliClass, CliConfig cliConfig) {
         ParserBuilder<C> parserBuilder = new ParserBuilder<C>();
@@ -41,9 +47,15 @@ public abstract class AbstractCommandDispatcher<C> {
         this.cli = new Cli<>(MetadataLoader.loadGlobal(cliClass, parserBuilder.build()));
         this.cliConfig = cliConfig;
         this.commandConfigs = getCommandConfigs();
+        this.commandPermissionConfigs = getCommandPermissionConfigs();
+        this.commandTeamConfigs = getCommandTeamConfigs();
     }
 
     protected abstract Map<String, CommandConfig> getCommandConfigs();
+
+    protected abstract Map<String, CommandPermissionConfig> getCommandPermissionConfigs();
+
+    protected abstract Map<String, CommandTeamConfig> getCommandTeamConfigs();
 
     protected Optional<CommandExecutionContext<C>> getCommand(GHEventPayload.IssueComment issueCommentPayload) {
         String body = issueCommentPayload.getComment().getBody();
@@ -68,9 +80,22 @@ public abstract class AbstractCommandDispatcher<C> {
         ParseResult<C> parseResult = cli.parseWithResult(commandLine);
 
         if (parseResult.wasSuccessful()) {
-            CommandConfig commandConfig = commandConfigs.getOrDefault(parseResult.getCommand().getClass().getName(),
+            String commandClassName = parseResult.getCommand().getClass().getName();
+
+            CommandConfig commandConfig = commandConfigs.getOrDefault(commandClassName,
                     cliConfig.getDefaultCommandConfig());
             if (!commandConfig.getScope().isInScope(issueCommentPayload.getIssue().isPullRequest())) {
+                return Optional.empty();
+            }
+
+            CommandPermissionConfig commandPermissionConfig = commandPermissionConfigs.getOrDefault(commandClassName,
+                    cliConfig.getDefaultCommandPermissionConfig());
+            CommandTeamConfig commandTeamConfig = commandTeamConfigs.getOrDefault(commandClassName,
+                    cliConfig.getDefaultCommandTeamConfig());
+
+            if (!hasPermission(commandPermissionConfig, commandTeamConfig, issueCommentPayload.getRepository(),
+                    issueCommentPayload.getSender())) {
+                Reactions.createReaction(issueCommentPayload, ReactionContent.MINUS_ONE);
                 return Optional.empty();
             }
 
@@ -94,6 +119,43 @@ public abstract class AbstractCommandDispatcher<C> {
         }
 
         return false;
+    }
+
+    private boolean hasPermission(CommandPermissionConfig commandPermissionConfig,
+            CommandTeamConfig commandTeamConfig,
+            GHRepository repository, GHUser user) {
+        try {
+            if (commandPermissionConfig.getPermission() != null) {
+                if (user == null) {
+                    return false;
+                }
+
+                if (!repository.hasPermission(user, commandPermissionConfig.getPermission())) {
+                    return false;
+                }
+            }
+            if (!commandTeamConfig.getTeams().isEmpty()) {
+                if (user == null) {
+                    return false;
+                }
+
+                List<GHTeam> matchingTeams = repository.getTeams().stream()
+                        .filter(t -> commandTeamConfig.getTeams().contains(t.getSlug()))
+                        .collect(Collectors.toList());
+
+                for (GHTeam matchingTeam : matchingTeams) {
+                    if (matchingTeam.hasMember(user)) {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
+            return true;
+        } catch (IOException e) {
+            throw new CommandExecutionException("Unable to check the permissions for the command", e);
+        }
     }
 
     private void handleParseError(IssueComment issueCommentPayload, String command, List<String> commandLine,

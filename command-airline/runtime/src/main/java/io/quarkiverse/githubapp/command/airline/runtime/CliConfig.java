@@ -11,20 +11,29 @@ public class CliConfig {
     private final ParseErrorStrategy parseErrorStrategy;
     private final String parseErrorMessage;
     private final CommandConfig defaultCommandConfig;
+    private final CommandPermissionConfig defaultCommandPermissionConfig;
+    private final CommandTeamConfig defaultCommandTeamConfig;
 
-    public CliConfig(List<String> aliases) {
+    public CliConfig(List<String> aliases, CommandConfig defaultCommandConfig,
+            CommandPermissionConfig defaultCommandPermissionConfig,
+            CommandTeamConfig defaultCommandTeamConfig) {
         this.aliases = aliases;
         this.parseErrorStrategy = CliOptions.DEFAULT_PARSE_ERROR_STRATEGY;
         this.parseErrorMessage = CliOptions.DEFAULT_PARSE_ERROR_MESSAGE;
-        this.defaultCommandConfig = new CommandConfig();
+        this.defaultCommandConfig = defaultCommandConfig;
+        this.defaultCommandPermissionConfig = defaultCommandPermissionConfig;
+        this.defaultCommandTeamConfig = defaultCommandTeamConfig;
     }
 
     public CliConfig(List<String> aliases, ParseErrorStrategy parseErrorStrategy, String parseErrorMessage,
-            CommandConfig defaultCommandConfig) {
+            CommandConfig defaultCommandConfig, CommandPermissionConfig defaultCommandPermissionConfig,
+            CommandTeamConfig defaultCommandTeamConfig) {
         this.aliases = aliases;
         this.parseErrorStrategy = parseErrorStrategy;
         this.parseErrorMessage = parseErrorMessage;
         this.defaultCommandConfig = defaultCommandConfig;
+        this.defaultCommandPermissionConfig = defaultCommandPermissionConfig;
+        this.defaultCommandTeamConfig = defaultCommandTeamConfig;
     }
 
     public List<String> getAliases() {
@@ -41,5 +50,13 @@ public class CliConfig {
 
     public CommandConfig getDefaultCommandConfig() {
         return defaultCommandConfig;
+    }
+
+    public CommandPermissionConfig getDefaultCommandPermissionConfig() {
+        return defaultCommandPermissionConfig;
+    }
+
+    public CommandTeamConfig getDefaultCommandTeamConfig() {
+        return defaultCommandTeamConfig;
     }
 }
