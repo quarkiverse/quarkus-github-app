@@ -14,7 +14,7 @@
 Quarkus GitHub App is a [Quarkus](https://quarkus.io) extension
 that allows to create GitHub Apps in Java with very little boilerplate.
 
-Think of it as [Probot](https://probot.github.io) for Java.
+Think of it as [Probot](https://probot.github.io) for Java with some cool additional features.
 
 And yes, it supports generating native executables with GraalVM or Mandrel.
 
@@ -36,6 +36,8 @@ The code above listens to the `issues.opened` GitHub event and posts a comment i
 That's for the basics but it supports the GitHub REST API, execution of GraphQL queries, YAML or JSON config files in your repository...
 
 It relies on a [Smee.io proxy](https://smee.io) during the development of the app to redirect GitHub events towards your local instance with no hassle.
+
+With the `command-airline` additional extension, you can also easily develop comment-based commands (e.g. `@bot do something`).
 
 Finally, it comes with a nice and searchable Replay UI:
 

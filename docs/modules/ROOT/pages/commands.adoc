@@ -1,0 +1,374 @@
+= Comment-Based Commands
+
+include::./includes/attributes.adoc[]
+
+A popular requirement for GitHub Apps is to react to comments to perform commands e.g. `@bot do something`.
+
+While you can rely on the traditional listeners presented previously and implement the parsing of the comments by yourself,
+Quarkus GitHub App comes with an additional extension called `quarkus-github-app-command-airline` which makes it extremely easy to develop comment-based commands.
+
+[NOTE]
+====
+This extension is based on the popular https://rvesse.github.io/airline/[Airline library] and you can use all the features of the library to develop your commands.
+====
+
+[TIP]
+====
+You can mix traditional event listeners and comment-based commands in the same GitHub App.
+They use the exact same infrastructure.
+====
+
+== Adding the dependency
+
+First things first, add the `quarkus-github-app-command-airline` dependency to your GitHub App `pom.xml`:
+
+[source,xml,subs=attributes+]
+----
+<dependency>
+    <groupId>io.quarkiverse.githubapp</groupId>
+    <artifactId>quarkus-github-app-command-airline</artifactId>
+    <version>{quarkus-github-app-version}</version>
+</dependency>
+----
+
+== Your first command
+
+Let's say we want to implement a command to re-run a CI workflow.
+The idea is to react to users submitting a comment containing `@mybot retest` in a pull request.
+
+This is as simple as:
+
+[source,java]
+----
+include::{command-airline-examples-dir}/MyFirstCli.java[tag=include]
+----
+<1> First thing is to declare a `@Cli` class. The `name` of the `@Cli` is what will trigger the parsing of the command.
+<2> We create a command called `retest`.
+<3> All the commands of a same `@Cli` have to implement the same interface, in this case `Runnable`.
+<4> Your interface must have a `run(...)` method. You can inject parameters as we will see later but it has to be called `run`.
+
+That is all that is necessary.
+Every time a comment containing `@bot retest` is posted in your project,
+the `run()` method above is called.
+
+By default, the command is run whether the comment is added to issues or pull requests
+(as far as comments are concerned a pull request is just another type of issue).
+We will see a bit later how we can configure it.
+
+[WARNING]
+====
+Be careful about permissions when exposing commands,
+typically, in this example, we probably don't want all the users to be able to trigger a new CI run.
+
+Make sure to implement the proper <<permissions,permission checks>>.
+====
+
+== Injecting parameters
+
+=== Injecting the `IssueComment` payload
+
+To turn the command above into something actually useful, we miss a few things:
+
+- We don't have any context about the comment (which issue or pull request was it posted in?).
+- We don't have a `GitHub` client around.
+
+This is a very common requirement and something you can't do without, really.
+
+Luckily for us, we can get all this injected into the `run()` method of our commands.
+
+Let's take a first example:
+
+[source,java]
+----
+include::{command-airline-examples-dir}/PayloadInjectionCli.java[tag=include]
+----
+<1> As already mentioned, we have to define a common interface for all commands with a `run(...)` method.
+<2> It is possible to inject the `IssueComment` payload, from which you can get the issue (or the comment).
+Keep in mind a pull request is also an issue.
+<3> Unfortunately, most of GitHub API calls throw ``IOException``s in case an error occurs. It is not pretty but just throw them from your methods, the framework will handle them for you.
+<4> This is how you can get to a `GHPullRequest` instance that represents a pull request from the pull request associated issue.
+
+[NOTE]
+====
+From the `GHEventPayload.IssueComment` instance, you can also get to the `GHRepository` via `issueCommentPayload.getRepository()`
+and so do everything you need on the repository in which the comment was posted.
+====
+
+=== Injecting the `GitHub` client
+
+You can inject a `GitHub` client as a parameter.
+It is authenticated with your GitHub App installation's token.
+
+This is especially useful if you want to execute REST API calls that are outside of the bounds of your current `GHRepository`.
+
+[source,java]
+----
+include::{command-airline-examples-dir}/GitHubInjectionCli.java[tag=include]
+----
+<1> You can inject a `GitHub` instance in your `run()` method.
+
+=== Injecting a GraphQL client
+
+In a similar way, you can inject a `DynamicGraphQLClient` as a parameter if you want to execute GraphQL queries.
+It is authenticated with your GitHub App installation's token.
+
+=== Injecting CDI beans
+
+You can inject CDI beans as parameters but it is not a recommended practice as it makes your common command interface more cluttered.
+See <<cdi-injection>> for more details.
+
+[[cdi-injection]]
+== CDI injection
+
+You can inject any CDI bean in your commands, either via parameters of the `run()` method or via field injection.
+
+It is recommended to use field injection to avoid cluttering the `run()` method:
+
+[source,java]
+----
+include::{command-airline-examples-dir}/CdiInjectionCli.java[tag=include]
+----
+<1> You can inject the `@ApplicationScoped` `CdiBean` via the CDI `javax.inject.Inject` annotation.
+
+== Additional options
+
+=== `@Command` options
+
+With the `@CommandOptions` annotation, you can fine tune the behavior of a `@Command`.
+
+==== Scope
+
+By default, commands are executed for both issues and pull requests.
+Some commands might only make sense for issues or pull requests.
+
+Luckily, you can limit the scope of a command using `@CommandOptions(scope = ...)`:
+
+[source,java]
+----
+include::{command-airline-examples-dir}/CommandOptionsCli.java[tag=only-for-issues]
+----
+<1> This command will only be executed in the context of an issue.
+
+[source,java]
+----
+include::{command-airline-examples-dir}/CommandOptionsCli.java[tag=only-for-prs]
+----
+<1> This command will only be executed in the context of a pull request.
+
+==== Execution error strategy
+
+By default, when an execution error occurs, a <<reactions, `MINUS_ONE` reaction>> is added to the comment but that's it.
+You might want to customize this behavior and have your GitHub App post a comment:
+
+[source,java]
+----
+include::{command-airline-examples-dir}/CommandOptionsCli.java[tag=execution-error-strategy]
+----
+<1> When an error occurs executing the command, a comment containing `:warning: An error occurred while executing command: %s` will be posted.
+
+If you want to go further, you can customize this message:
+
+[source,java]
+----
+include::{command-airline-examples-dir}/CommandOptionsCli.java[tag=execution-error-message]
+----
+<1> When an error occurs executing the command, a comment containing `Your custom error message` will be posted.
+
+[TIP]
+====
+Use `%s` in your message to include the executed command.
+====
+
+=== `@Cli` options
+
+You can fine tune the behavior of your `@Cli` via the `@CliOptions` annotation.
+
+==== Defining aliases
+
+The `name` attribute of the `@Cli` annotation defines how your commands will be invoked.
+For instance, `@Cli(name = "@bot")` means that your commands will be executed if a user starts their comments with `@bot`.
+
+You might want to define several aliases for this invocation (e.g. `@bot`, `@quarkus-bot`, `@quarkusbot`),
+which you can do as follows:
+
+[source,java]
+----
+include::{command-airline-examples-dir}/CliOptionsCli.java[tag=aliases,indent=0]
+----
+<1> Commands will be executed for comments starting with `@quarkus-bot`, `@bot` or `@quarkusbot`.
+
+==== Default command options
+
+As seen above, you can fine tune command options with the `@CommandOptions` annotation.
+
+If you need to define common command options, you can do it at the `@Cli` level:
+
+[source,java]
+----
+include::{command-airline-examples-dir}/CliOptionsCli.java[tag=default-command-options,indent=0]
+----
+<1> Commands will be executed for comments starting with `@quarkus-bot`, `@bot` or `@quarkusbot`.
+
+[NOTE]
+====
+You can override the default command options by adding a `@CommandOptions` annotation to a command.
+====
+
+==== Parse error strategy
+
+By default, when an error occurs parsing the command, a comment is posted containing:
+
+- `:warning: We were not able to parse command: %s` (`%s` being the parsed command)
+- the help generated by Airline for this given `@Cli`
+
+This behavior can be customized:
+
+[source,java]
+----
+include::{command-airline-examples-dir}/CliOptionsCli.java[tag=parse-error-strategy,indent=0]
+----
+<1> In this case, no comment will be added when a parse error occurs.
+A <<reactions,`CONFUSED` reaction>> will be added to the comment though.
+
+The following strategies are available:
+
+- `NONE` - Nothing is done.
+- `COMMENT_MESSAGE` - A comment containing the parse error message is posted.
+- `COMMENT_MESSAGE_HELP` - A comment containing the parse error message and the generated help is posted.
+- `COMMENT_MESSAGE_ERRORS` - A comment containing the parse error message and the parse errors is posted.
+- `COMMENT_MESSAGE_HELP_ERRORS` - A comment containing the parse error message, the generated help and the parse errors is posted.
+
+You can also customize the error message:
+
+[source,java]
+----
+include::{command-airline-examples-dir}/CliOptionsCli.java[tag=parse-error-message,indent=0]
+----
+<1> A comment containing `Your custom message` is posted when a parse error occurs.
+
+[TIP]
+====
+Use `%s` in your message to include the parsed command.
+====
+
+[[permissions]]
+== Permissions
+
+=== Permissions
+
+GitHub has 3 levels of permissions for a repository:
+
+- Read
+- Write
+- Admin
+
+The Read permission is not very useful in our case as anyone able to add a comment to an issue or pull request has the Read permission.
+But restricting some commands to users with the Write or Admin permission is a common requirement.
+
+Note that when requiring a permission, you require that the user has _at least_ the given permission.
+So, if you require the Write permission, users with the Admin permission are also authorized to execute the command.
+
+Requiring a permission for a command is as easy as adding a `@Permission` annotation to your command:
+
+[source,java]
+----
+include::{command-airline-examples-dir}/PermissionCli.java[tag=include]
+----
+<1> To execute the `write-command`, the Write permission is required.
+
+Note that you can also define a permission at the `@Cli` level.
+In this case, the permission will be applied to all commands,
+except if you override it with a `@Permission` annotation at the command level.
+
+[source,java]
+----
+include::{command-airline-examples-dir}/PermissionOverrideCli.java[tag=include]
+----
+<1> For all commands in this `@Cli`, the Write permission is required if not defined otherwise.
+<2> The `write-command` doesn't have any `@Permission` annotation so the default one is used:
+the Write permission is required.
+<3> The `admin-command` overrides the default permission: the Admin permission is required.
+
+=== Team permissions
+
+Team permissions behaves in exactly the same way as standard permissions,
+except for the usage of the `@Team` annotation.
+
+You can define several teams in the `@Team` annotation.
+Permission is granted if the user is part of at least one team (logical OR).
+
+Use the `slug` of the team to reference a team i.e. the team identifier in the team page URL.
+
+[source,java]
+----
+include::{command-airline-examples-dir}/TeamPermissionCli.java[tag=include]
+----
+<1> The command will be executed only if the user is part of `my-team1` or `my-team2`.
+
+[[reactions]]
+== Reaction based feedback
+
+Feedback to commands is handled via reactions added to the comment.
+
+The following reactions can be added:
+
+- `ROCKET` - command is executed, this reaction will be removed on command completion.
+- `PLUS_ONE` - command was executed successfully.
+- `MINUS_ONE` - the user doesn't have the permission to execute the command or there was an error executing the command.
+- `CONFUSED` - there was an error parsing the command.
+
+== Providing help
+
+If you propose a lot of features,
+it might be useful for the users to be able to get a description of the available commands and what they are doing.
+
+Luckily, Airline can generate a comprehensive help description from your commands.
+Obviously, the help will be more comprehensive if you describe your commands with the appropriate annotation attributes.
+
+As we already mentioned, the Quarkus extension requires all your commands to implement the same command interface.
+This is why we provide an abstract class that you can subclass to implement your help command.
+
+Providing a help command to the users would look like:
+
+[source,java]
+----
+include::{command-airline-examples-dir}/HelpCli.java[tag=include]
+----
+<1> Add a description to your `@Cli` annotation.
+Also add the help command to your commands.
+<2> Add descriptions to your commands so that they are included in the help.
+<3> Have your help command extend `AbstractHelpCommand`.
+`AbstractHelpCommand` adds a comment with the help when someone execute the commands.
+<4> Call the `run()` method of `AbstractHelpCommand`.
+`AbstractHelpCommand` requires a `GHEventPayload.IssueComment` payload to be injected.
+
+== Some common examples of Airline usage
+
+In this section, you will find a couple of common Airline examples.
+
+For more information about what you can do with Airline, please refer to the https://rvesse.github.io/airline/guide/index.html[Airline documentation].
+
+=== Arguments
+
+You can have Airline injecting command arguments to your command:
+
+[source,java]
+----
+include::{command-airline-examples-dir}/ArgumentsCli.java[tag=include]
+----
+<1> Use the `@Arguments` annotation to inject the arguments.
+<2> You can then consume them in your `run()` method.
+
+=== Group commands
+
+Airline support command groups.
+A popular example is how the `git` command line is architectured e.g. `git remote ...`.
+
+[source,java]
+----
+include::{command-airline-examples-dir}/GroupCli.java[tag=include]
+----
+<1> Define groups in the `@Cli` annotation.
+Each group has a name and is composed of a list of commands.
+<2> To execute this command, add a comment with `@bot remote list`.
+<3> To execute this command, add a comment with `@bot remote show`.

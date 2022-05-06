@@ -3,3 +3,5 @@
 
 :github-api-javadoc-root-url: https://github-api.kohsuke.org/apidocs/org/kohsuke/github
 :github-reference-documentation-root-url: https://docs.github.com/en/free-pro-team@latest/developers
+
+:command-airline-examples-dir: ./../examples/command/airline/

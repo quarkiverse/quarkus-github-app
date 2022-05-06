@@ -18,10 +18,27 @@
             <artifactId>quarkus-github-app-deployment</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.githubapp</groupId>
+            <artifactId>quarkus-github-app-command-airline-deployment</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 
     <build>
+        <sourceDirectory>modules/ROOT/examples</sourceDirectory>
         <plugins>
+            <plugin>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>build</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>it.ozimov</groupId>
                 <artifactId>yaml-properties-maven-plugin</artifactId>

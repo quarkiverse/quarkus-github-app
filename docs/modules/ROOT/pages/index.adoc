@@ -1,5 +1,7 @@
 = Quarkus GitHub App
 
+include::./includes/attributes.adoc[]
+
 When maintaining large projects on GitHub, GitHub Apps come handy:
 they allow you to automate most of the repetitive tasks.
 

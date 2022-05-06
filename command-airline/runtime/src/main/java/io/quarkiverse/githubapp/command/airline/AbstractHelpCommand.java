@@ -22,7 +22,7 @@ public class AbstractHelpCommand {
     @Arguments
     public List<String> command = new ArrayList<>();
 
-    public void run(GHEventPayload.IssueComment issueCommentPayload) {
+    public void run(GHEventPayload.IssueComment issueCommentPayload) throws IOException {
         try {
             ByteArrayOutputStream helpOs = new ByteArrayOutputStream();
             Help.help(global, command, helpOs);
