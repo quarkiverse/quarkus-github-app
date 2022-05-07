@@ -37,7 +37,7 @@ That's for the basics but it supports the GitHub REST API, execution of GraphQL 
 
 It relies on a [Smee.io proxy](https://smee.io) during the development of the app to redirect GitHub events towards your local instance with no hassle.
 
-With the `command-airline` additional extension, you can also easily develop comment-based commands (e.g. `@bot do something`).
+With the [`command-airline` additional extension](https://quarkiverse.github.io/quarkiverse-docs/quarkus-github-app/dev/commands.html), you can also easily develop comment-based commands (e.g. `@bot do something`).
 
 Finally, it comes with a nice and searchable Replay UI:
 
