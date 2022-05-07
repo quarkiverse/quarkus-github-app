@@ -1,5 +1,7 @@
 = Push to Production
 
+include::./includes/attributes.adoc[]
+
 == Register another GitHub App
 
 There is a good chance you will continue to develop your GitHub App to add features and fix issues.

@@ -460,6 +460,10 @@ class GitHubAppCommandAirlineProcessor {
 
     private static RunMethod findCommonInterfaceWithRunMethod(IndexView index, String cliName,
             Collection<ClassInfo> commands) {
+        if (commands.isEmpty()) {
+            throw new IllegalStateException("No commands are defined for command " + cliName);
+        }
+
         List<DotName> candidates = commands.iterator().next().interfaceNames();
         for (ClassInfo command : commands) {
             candidates.retainAll(command.interfaceNames());
