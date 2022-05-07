@@ -13,7 +13,7 @@ import io.quarkiverse.githubapp.command.airline.CommandOptions.ExecutionErrorStr
 import io.quarkiverse.githubapp.it.command.airline.ExecutionErrorStrategyCli.TestCommand1;
 
 @Cli(name = "@execution-error-strategy", commands = { TestCommand1.class })
-class ExecutionErrorStrategyCli {
+public class ExecutionErrorStrategyCli {
 
     @Command(name = "command1")
     @CommandOptions(executionErrorStrategy = ExecutionErrorStrategy.COMMENT_MESSAGE)

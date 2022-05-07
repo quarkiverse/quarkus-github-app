@@ -17,7 +17,7 @@ import io.quarkiverse.githubapp.it.command.airline.DefaultPermissionCli.TestRead
 @Cli(name = "@default-permission", commands = { TestNoPermissionCommand.class, TestReadPermissionCommand.class,
         TestAdminPermissionCommand.class })
 @Permission(GHPermissionType.WRITE)
-class DefaultPermissionCli {
+public class DefaultPermissionCli {
 
     @Command(name = "test-no-permission")
     static class TestNoPermissionCommand implements PermissionCommand {

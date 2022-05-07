@@ -13,7 +13,7 @@ import com.github.rvesse.airline.annotations.Command;
 import io.quarkiverse.githubapp.it.command.airline.ServiceInjectionCli.TestCommand;
 
 @Cli(name = "@service-injection", commands = { TestCommand.class })
-class ServiceInjectionCli {
+public class ServiceInjectionCli {
 
     @Command(name = "test")
     static class TestCommand implements ServiceInjectionCommand {

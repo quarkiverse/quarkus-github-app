@@ -14,7 +14,7 @@ import com.github.rvesse.airline.model.GlobalMetadata;
 import io.quarkiverse.githubapp.it.command.airline.CdiInjectionCli.TestCommand;
 
 @Cli(name = "@cdi-injection", commands = { TestCommand.class })
-class CdiInjectionCli {
+public class CdiInjectionCli {
 
     @Command(name = "test")
     static class TestCommand implements CdiInjectionCommand {

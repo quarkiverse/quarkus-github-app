@@ -13,7 +13,7 @@ import io.quarkiverse.githubapp.it.command.airline.TeamCli.TestTeam1Command;
 import io.quarkiverse.githubapp.it.command.airline.TeamCli.TestTwoTeamsCommand;
 
 @Cli(name = "@team", commands = { TestTeam1Command.class, TestTwoTeamsCommand.class })
-class TeamCli {
+public class TeamCli {
 
     @Command(name = "team1")
     @Team("my-team-1")

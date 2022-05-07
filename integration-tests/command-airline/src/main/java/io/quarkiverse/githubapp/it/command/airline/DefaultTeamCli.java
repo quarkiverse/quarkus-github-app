@@ -14,7 +14,7 @@ import io.quarkiverse.githubapp.it.command.airline.DefaultTeamCli.TestTeam2Comma
 
 @Cli(name = "@default-team", commands = { TestNoTeamsCommand.class, TestTeam2Command.class })
 @Team("my-team-1")
-class DefaultTeamCli {
+public class DefaultTeamCli {
 
     @Command(name = "no-teams")
     static class TestNoTeamsCommand implements TeamCommand {

@@ -14,7 +14,7 @@ import io.quarkiverse.githubapp.it.command.airline.ParseErrorStrategyNoneCli.Tes
 
 @Cli(name = "@parse-error-strategy-none", commands = { TestCommand1.class })
 @CliOptions(parseErrorStrategy = ParseErrorStrategy.NONE)
-class ParseErrorStrategyNoneCli {
+public class ParseErrorStrategyNoneCli {
 
     @Command(name = "command1")
     static class TestCommand1 implements TestCommand {
