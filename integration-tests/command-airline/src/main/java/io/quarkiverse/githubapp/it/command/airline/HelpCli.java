@@ -13,7 +13,7 @@ import io.quarkiverse.githubapp.it.command.airline.HelpCli.HelpCommand;
 import io.quarkiverse.githubapp.it.command.airline.HelpCli.TestCommand1;
 
 @Cli(name = "@help", description = "Testing help generation", commands = { TestCommand1.class, HelpCommand.class })
-class HelpCli {
+public class HelpCli {
 
     @Command(name = "command1", description = "Command 1")
     static class TestCommand1 implements TestCommand {

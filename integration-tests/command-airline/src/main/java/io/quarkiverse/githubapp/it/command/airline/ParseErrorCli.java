@@ -11,7 +11,7 @@ import com.github.rvesse.airline.annotations.Command;
 import io.quarkiverse.githubapp.it.command.airline.ParseErrorCli.TestCommand1;
 
 @Cli(name = "@parse-error", description = "Default parse error behavior", commands = { TestCommand1.class })
-class ParseErrorCli {
+public class ParseErrorCli {
 
     @Command(name = "command1", description = "Command 1")
     static class TestCommand1 implements TestCommand {

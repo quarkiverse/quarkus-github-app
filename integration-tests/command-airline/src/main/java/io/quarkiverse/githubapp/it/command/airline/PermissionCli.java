@@ -16,7 +16,7 @@ import io.quarkiverse.githubapp.it.command.airline.PermissionCli.TestWritePermis
 
 @Cli(name = "@permission", commands = { TestNoPermissionCommand.class, TestWritePermissionCommand.class,
         TestAdminPermissionCommand.class })
-class PermissionCli {
+public class PermissionCli {
 
     @Command(name = "test-no-permission")
     static class TestNoPermissionCommand implements PermissionCommand {

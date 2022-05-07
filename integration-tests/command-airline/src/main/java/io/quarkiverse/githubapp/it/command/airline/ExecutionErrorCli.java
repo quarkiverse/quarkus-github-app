@@ -11,7 +11,7 @@ import com.github.rvesse.airline.annotations.Command;
 import io.quarkiverse.githubapp.it.command.airline.ExecutionErrorCli.TestCommand1;
 
 @Cli(name = "@execution-error", commands = { TestCommand1.class })
-class ExecutionErrorCli {
+public class ExecutionErrorCli {
 
     @Command(name = "command1")
     static class TestCommand1 implements TestCommand {

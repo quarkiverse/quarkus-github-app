@@ -16,7 +16,7 @@ import io.quarkiverse.githubapp.it.command.airline.DefaultCommandOptionsCli.Test
 
 @Cli(name = "@default-command-options", commands = { TestCommand1.class, TestCommand2.class })
 @CliOptions(defaultCommandOptions = @CommandOptions(scope = CommandScope.ISSUES))
-class DefaultCommandOptionsCli {
+public class DefaultCommandOptionsCli {
 
     @Command(name = "command1")
     static class TestCommand1 implements TestCommand {

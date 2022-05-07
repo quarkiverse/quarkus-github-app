@@ -6,7 +6,7 @@ import org.kohsuke.github.GHEventPayload;
 
 import io.quarkiverse.githubapp.event.Issue;
 
-class CatchAllEventListener {
+public class CatchAllEventListener {
 
     void onEvent(@Issue GHEventPayload.Issue payload) throws IOException {
         payload.getIssue().addLabels("someValue");

@@ -11,7 +11,7 @@ import io.quarkiverse.githubapp.ConfigFile;
 import io.quarkiverse.githubapp.it.command.airline.ConfigFileReaderCli.TestCommand;
 
 @Cli(name = "@config-file-reader", commands = { TestCommand.class })
-class ConfigFileReaderCli {
+public class ConfigFileReaderCli {
 
     @Command(name = "test")
     static class TestCommand implements ConfigFileReaderCommand {

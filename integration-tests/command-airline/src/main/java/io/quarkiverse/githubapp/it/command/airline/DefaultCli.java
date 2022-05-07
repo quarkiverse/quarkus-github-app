@@ -20,7 +20,7 @@ import io.quarkiverse.githubapp.it.command.airline.DefaultCli.TestGroup1Command2
         TestCommandWithArguments.class }, groups = {
                 @Group(name = "group1", commands = { TestGroup1Command1.class, TestGroup1Command2.class }) })
 @CliOptions(aliases = "@other-alias")
-class DefaultCli {
+public class DefaultCli {
 
     @Command(name = "basic")
     static class TestBasicCommand implements DefaultCommand {
