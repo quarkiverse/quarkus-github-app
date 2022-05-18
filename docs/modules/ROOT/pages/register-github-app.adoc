@@ -41,6 +41,14 @@ So you might want to make it clear in the name that this app is for development/
 
 The homepage URL could be, for instance, the URL of your app's repository.
 
+=== Identifying and authorizing users
+
+You can skip this section for now: it's not useful for a minimal app.
+
+=== Post installation
+
+You can skip this section for now: it's not useful for a minimal app.
+
 === Webhook URL
 
 There is a good chance your development box is not directly accessible from the Internet.
