@@ -27,7 +27,7 @@ public class AbstractHelpCommand {
             ByteArrayOutputStream helpOs = new ByteArrayOutputStream();
             Help.help(global, command, helpOs);
 
-            issueCommentPayload.getIssue().comment(helpOs.toString(StandardCharsets.UTF_8));
+            issueCommentPayload.getIssue().comment("```\n" + helpOs.toString(StandardCharsets.UTF_8) + "\n```");
         } catch (IOException e) {
             throw new RuntimeException("Error generating usage documentation for " + String.join(" ", command), e);
         }
