@@ -27,7 +27,7 @@ public class HelpCliTest {
                             + "    command1   Command 1\n"
                             + "    help       Push a message with help\n"
                             + "\n"
-                            + "See '@help help <command>' for more information on a specific command.\n\n"
+                            + "See '@help help <command>' for more information on a specific command.\n"
                             + "```");
                 });
     }
