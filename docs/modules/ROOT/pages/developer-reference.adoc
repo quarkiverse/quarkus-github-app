@@ -48,6 +48,11 @@ class IssueListener {
 }
 ----
 
+Several methods can listen to the same event types but you cannot control the order of their execution.
+We use CDI events under the hood and the execution of event observer methods cannot be ordered.
+If you need ordering for several steps, use a single method to control the execution of these steps.
+They can be split in smaller private methods if need be.
+
 === Event types
 
 Here are all the events currently supported, together with the type of the payload that will be injected.
