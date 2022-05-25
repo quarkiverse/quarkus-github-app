@@ -193,7 +193,7 @@ which you can do as follows:
 
 [source,java]
 ----
-include::{command-airline-examples-dir}/CliOptionsCli.java[tag=aliases,indent=0]
+include::{command-airline-examples-dir}/CliOptionsAliasesCli.java[tag=aliases,indent=0]
 ----
 <1> Commands will be executed for comments starting with `@quarkus-bot`, `@bot` or `@quarkusbot`.
 
@@ -205,7 +205,7 @@ If you need to define common command options, you can do it at the `@Cli` level:
 
 [source,java]
 ----
-include::{command-airline-examples-dir}/CliOptionsCli.java[tag=default-command-options,indent=0]
+include::{command-airline-examples-dir}/CliOptionsDefaultCommandOptionsCli.java[tag=default-command-options,indent=0]
 ----
 <1> Commands will be executed for comments starting with `@quarkus-bot`, `@bot` or `@quarkusbot`.
 
@@ -225,7 +225,7 @@ This behavior can be customized:
 
 [source,java]
 ----
-include::{command-airline-examples-dir}/CliOptionsCli.java[tag=parse-error-strategy,indent=0]
+include::{command-airline-examples-dir}/CliOptionsParseErrorStrategyCli.java[tag=parse-error-strategy,indent=0]
 ----
 <1> In this case, no comment will be added when a parse error occurs.
 A <<reactions,`CONFUSED` reaction>> will be added to the comment though.
@@ -242,7 +242,7 @@ You can also customize the error message:
 
 [source,java]
 ----
-include::{command-airline-examples-dir}/CliOptionsCli.java[tag=parse-error-message,indent=0]
+include::{command-airline-examples-dir}/CliOptionsParseErrorMessageCli.java[tag=parse-error-message,indent=0]
 ----
 <1> A comment containing `Your custom message` is posted when a parse error occurs.
 

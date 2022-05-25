@@ -11,6 +11,7 @@ import static io.quarkiverse.githubapp.command.airline.deployment.GitHubAppComma
 import static io.quarkiverse.githubapp.command.airline.deployment.GitHubAppCommandAirlineDotNames.PERMISSION;
 import static io.quarkiverse.githubapp.command.airline.deployment.GitHubAppCommandAirlineDotNames.TEAM;
 
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -18,6 +19,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -101,6 +104,8 @@ class GitHubAppCommandAirlineProcessor {
             BuildProducer<AdditionalEventDispatchingClassesIndexBuildItem> additionalEventDispatchingClassesIndexes,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans) {
+        validate(index.getIndex());
+
         IndexedGeneratedBeansBuildProducer indexedGeneratedBeans = new IndexedGeneratedBeansBuildProducer(
                 generatedBeans);
         ClassOutput classOutput = new GeneratedBeanGizmoAdaptor(indexedGeneratedBeans);
@@ -121,6 +126,20 @@ class GitHubAppCommandAirlineProcessor {
         if (!indexedGeneratedBeans.isEmpty()) {
             additionalEventDispatchingClassesIndexes
                     .produce(new AdditionalEventDispatchingClassesIndexBuildItem(indexedGeneratedBeans.getIndex()));
+        }
+    }
+
+    private static void validate(IndexView index) {
+        Set<String> nonStaticNestedCommandClasses = index.getAnnotations(COMMAND).stream()
+                .filter(ai -> ai.target().kind() == Kind.CLASS)
+                .map(ai -> ai.target().asClass())
+                .filter(ci -> ci.enclosingClass() != null && !Modifier.isStatic(ci.flags()))
+                .map(ci -> ci.name().toString())
+                .collect(Collectors.toCollection(TreeSet::new));
+
+        if (!nonStaticNestedCommandClasses.isEmpty()) {
+            throw new IllegalStateException("Nested classes marked with @Command must be made static. Offending classes: "
+                    + String.join(", ", nonStaticNestedCommandClasses));
         }
     }
 
