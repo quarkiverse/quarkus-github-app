@@ -26,13 +26,14 @@ public class ParseErrorCliTest {
                             .comment(":warning: We were not able to parse command: @parse-error invalid-command\n"
                                     + "\n"
                                     + "Help:\n"
-                                    + "\n"
+                                    + "\n```\n"
                                     + "usage: @parse-error <command> [ <args> ]\n"
                                     + "\n"
                                     + "Commands are:\n"
                                     + "    command1   Command 1\n"
                                     + "\n"
-                                    + "See '@parse-error help <command>' for more information on a specific command.\n");
+                                    + "See '@parse-error help <command>' for more information on a specific command.\n"
+                                    + "```");
                     verify(mocks.issueComment(1093016219))
                             .createReaction(ReactionContent.CONFUSED);
                     verifyNoMoreInteractions(mocks.ghObjects());

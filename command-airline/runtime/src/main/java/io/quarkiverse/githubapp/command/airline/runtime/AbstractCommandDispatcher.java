@@ -187,7 +187,7 @@ public abstract class AbstractCommandDispatcher<C> {
                 String help = helpOs.toString(StandardCharsets.UTF_8);
 
                 if (!help.isBlank()) {
-                    message.append("\n\nHelp:\n\n").append(helpOs.toString(StandardCharsets.UTF_8));
+                    message.append("\n\nHelp:\n\n").append("```\n" + help.trim() + "\n```");
                 }
             } catch (IOException e) {
                 LOGGER.warn("Error trying to generate help for command `" + command + "` in "
