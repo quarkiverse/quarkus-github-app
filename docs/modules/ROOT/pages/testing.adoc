@@ -97,7 +97,7 @@ Add the following class to `src/test/java`, in a package of your choosing:
 @GitHubAppTest
 class CreateCommentTest {
     @Test
-    void testIssueOpened() {
+    void testIssueOpened() throws IOException {
         GitHubAppTesting.when() // <1>
                 .payloadFromClasspath("/issue-opened.json") // <2>
                 .event(GHEvent.ISSUES) // <3>
@@ -133,7 +133,7 @@ that includes defining their behavior before the event is simulated:
 @GitHubAppTest
 class CreateCommentTest {
     @Test
-    void testIssueOpened() {
+    void testIssueOpened() throws IOException {
         GitHubAppTesting.given() // <1>
                 .github(mocks -> { // <2>
                     Mockito.doThrow(new RuntimeException()) // <3>
