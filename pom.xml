@@ -26,7 +26,7 @@
         <dependency-plugin.version>3.3.0</dependency-plugin.version>
         <surefire-plugin.version>3.0.0-M6</surefire-plugin.version>
         <jandex-plugin.version>1.2.2</jandex-plugin.version>
-        <assertj.version>3.22.0</assertj.version>
+        <assertj.version>3.23.0</assertj.version>
 
         <quarkus-github-api.version>1.306.0</quarkus-github-api.version>
         <airline.version>2.8.5</airline.version>
