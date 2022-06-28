@@ -27,6 +27,7 @@ public final class Actions {
     public static final String PRIVATIZED = "privatized";
     public static final String PUBLICIZED = "publicized";
     public static final String PUBLISHED = "published";
+    public static final String QUEUED = "queued";
     public static final String READY_FOR_REVIEW = "ready_for_review";
     public static final String RELEASED = "released";
     public static final String REMOVED = "removed";
