@@ -38,7 +38,7 @@ public class TestingFrameworkTest {
                 .event(GHEvent.ISSUES)
                 .then().github(mocks -> {
                 }))
-                        .doesNotThrowAnyException();
+                .doesNotThrowAnyException();
         assertThat(capture[0]).isEqualTo("someValue");
     }
 
@@ -139,9 +139,9 @@ public class TestingFrameworkTest {
                             .addLabels("someValue");
                     verifyNoMoreInteractions(mocks.ghObjects());
                 }))
-                        .hasMessageContaining("The event handler threw an exception:")
-                        .hasMessageEndingWith("null")
-                        .hasStackTraceContaining("at org.kohsuke.github.GHIssue.getComments");
+                .hasMessageContaining("The event handler threw an exception:")
+                .hasMessageEndingWith("null")
+                .hasStackTraceContaining("at org.kohsuke.github.GHIssue.getComments");
     }
 
     @Test
@@ -168,7 +168,7 @@ public class TestingFrameworkTest {
         assertThatCode(() -> given()
                 .when().payloadFromClasspath("/pr-opened-dependabot.json")
                 .event(GHEvent.PULL_REQUEST))
-                        .doesNotThrowAnyException();
+                .doesNotThrowAnyException();
         assertThat(capture[0]).isEqualTo("dependabot[bot]");
     }
 

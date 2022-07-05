@@ -59,7 +59,7 @@ public class SmeeIoForwarder {
             ObjectMapper objectMapper) {
         EventSource.Builder builder = new EventSource.Builder(new SimpleEventHandler(localUrl, client, objectMapper),
                 URI.create(webhookProxyUrl))
-                        .reconnectTime(Duration.ofMillis(3000));
+                .reconnectTime(Duration.ofMillis(3000));
 
         EventSource eventSource = builder.build();
         eventSource.start();
