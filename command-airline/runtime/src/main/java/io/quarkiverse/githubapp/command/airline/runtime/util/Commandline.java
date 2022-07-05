@@ -34,7 +34,7 @@ public final class Commandline {
 
     /**
      * Crack a command line.
-     * 
+     *
      * @param toProcess the command line to process.
      * @return the command line broken into strings.
      *         An empty or null toProcess parameter results in a zero sized array.

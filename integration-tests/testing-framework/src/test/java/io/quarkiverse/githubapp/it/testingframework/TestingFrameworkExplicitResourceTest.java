@@ -37,7 +37,7 @@ public class TestingFrameworkExplicitResourceTest {
                 .event(GHEvent.ISSUES)
                 .then().github(mocks -> {
                 }))
-                        .doesNotThrowAnyException();
+                .doesNotThrowAnyException();
         assertThat(capture[0]).isEqualTo("someValue");
     }
 
@@ -138,9 +138,9 @@ public class TestingFrameworkExplicitResourceTest {
                             .addLabels("someValue");
                     verifyNoMoreInteractions(mocks.ghObjects());
                 }))
-                        .hasMessageContaining("The event handler threw an exception:")
-                        .hasMessageEndingWith("null")
-                        .hasStackTraceContaining("at org.kohsuke.github.GHIssue.getComments");
+                .hasMessageContaining("The event handler threw an exception:")
+                .hasMessageEndingWith("null")
+                .hasStackTraceContaining("at org.kohsuke.github.GHIssue.getComments");
     }
 
 }
