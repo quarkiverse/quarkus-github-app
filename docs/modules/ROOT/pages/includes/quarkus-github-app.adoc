@@ -27,6 +27,15 @@ The GitHub name of the application.
 |
 
 
+a| [[quarkus-github-app_quarkus.github-app.read-config-files-from-source-repository]]`link:#quarkus-github-app_quarkus.github-app.read-config-files-from-source-repository[quarkus.github-app.read-config-files-from-source-repository]`
+
+[.description]
+--
+Read the configuration files from the source repository in case of a fork.
+--|boolean 
+|`false`
+
+
 a| [[quarkus-github-app_quarkus.github-app.private-key]]`link:#quarkus-github-app_quarkus.github-app.private-key[quarkus.github-app.private-key]`
 
 [.description]

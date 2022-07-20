@@ -1,5 +1,6 @@
 package io.quarkiverse.githubapp.runtime;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -15,7 +16,9 @@ import org.kohsuke.github.GHRepository;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.quarkiverse.githubapp.ConfigFile;
 import io.quarkiverse.githubapp.runtime.UtilsProducer.Yaml;
+import io.quarkiverse.githubapp.runtime.config.GitHubAppRuntimeConfig;
 import io.quarkiverse.githubapp.runtime.github.GitHubFileDownloader;
 
 @RequestScoped
@@ -32,6 +35,9 @@ public class ConfigFileReader {
     private final Map<String, Object> cache = new ConcurrentHashMap<>();
 
     @Inject
+    GitHubAppRuntimeConfig gitHubAppRuntimeConfig;
+
+    @Inject
     GitHubFileDownloader gitHubFileDownloader;
 
     @Inject
@@ -41,16 +47,19 @@ public class ConfigFileReader {
     @Yaml
     ObjectMapper yamlObjectMapper;
 
-    public Object getConfigObject(GHRepository ghRepository, String path, Class<?> type) {
+    public Object getConfigObject(GHRepository ghRepository, String path, ConfigFile.Source source, Class<?> type) {
+        GHRepository configGHRepository = getConfigRepository(ghRepository, source,
+                gitHubAppRuntimeConfig.readConfigFilesFromSourceRepository, path);
+
         String fullPath = getFilePath(path.trim());
-        String cacheKey = getCacheKey(ghRepository, fullPath);
+        String cacheKey = getCacheKey(configGHRepository, fullPath);
 
         Object cachedObject = cache.get(cacheKey);
         if (cachedObject != null) {
             return cachedObject;
         }
 
-        return cache.computeIfAbsent(cacheKey, k -> readConfigFile(ghRepository, fullPath, type));
+        return cache.computeIfAbsent(cacheKey, k -> readConfigFile(configGHRepository, fullPath, type));
     }
 
     private Object readConfigFile(GHRepository ghRepository, String fullPath, Class<?> type) {
@@ -76,6 +85,37 @@ public class ConfigFileReader {
             return objectMapper.readValue(content, type);
         } catch (Exception e) {
             throw new IllegalStateException("Error deserializing config file " + fullPath + " to type " + type.getName(), e);
+        }
+    }
+
+    private static GHRepository getConfigRepository(GHRepository ghRepository,
+            ConfigFile.Source source,
+            boolean readConfigFilesFromSourceRepository,
+            String path) {
+        ConfigFile.Source effectiveSource = (source == ConfigFile.Source.DEFAULT)
+                ? (readConfigFilesFromSourceRepository ? ConfigFile.Source.SOURCE_REPOSITORY
+                        : ConfigFile.Source.CURRENT_REPOSITORY)
+                : source;
+
+        if (effectiveSource == ConfigFile.Source.CURRENT_REPOSITORY) {
+            return ghRepository;
+        }
+        if (!ghRepository.isFork()) {
+            return ghRepository;
+        }
+
+        try {
+            GHRepository sourceRepository = ghRepository.getSource();
+
+            if (sourceRepository == null) {
+                throw new IllegalStateException("Unable to get the source repository for fork " + ghRepository.getFullName()
+                        + ": unable to read config file " + path);
+            }
+
+            return sourceRepository;
+        } catch (IOException e) {
+            throw new IllegalStateException("Unable to get the source repository for fork " + ghRepository.getFullName()
+                    + ": unable to read config file " + path, e);
         }
     }
 

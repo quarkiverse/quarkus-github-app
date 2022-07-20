@@ -28,6 +28,12 @@ public class GitHubAppRuntimeConfig {
     public Optional<String> appName;
 
     /**
+     * Read the configuration files from the source repository in case of a fork.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean readConfigFilesFromSourceRepository;
+
+    /**
      * The RSA private key.
      */
     @ConfigItem
