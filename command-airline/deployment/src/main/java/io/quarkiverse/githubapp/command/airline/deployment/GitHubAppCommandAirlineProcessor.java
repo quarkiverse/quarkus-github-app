@@ -81,11 +81,13 @@ class GitHubAppCommandAirlineProcessor {
     }
 
     @BuildStep
-    public void beanConfig(BuildProducer<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations,
+    public void beanConfig(CombinedIndexBuildItem index,
+            BuildProducer<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations,
             BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer) {
         beanDefiningAnnotations.produce(new BeanDefiningAnnotationBuildItem(COMMAND, DEPENDENT));
 
-        annotationsTransformer.produce(new AnnotationsTransformerBuildItem(new HideAirlineInjectAnnotationsTransformer()));
+        annotationsTransformer
+                .produce(new AnnotationsTransformerBuildItem(new HideAirlineInjectAnnotationsTransformer(index.getIndex())));
     }
 
     @BuildStep
