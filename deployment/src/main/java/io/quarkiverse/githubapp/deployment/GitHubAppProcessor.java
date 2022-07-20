@@ -51,6 +51,7 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
 import io.quarkiverse.githubapi.deployment.GitHubApiClassWithBridgeMethodsBuildItem;
+import io.quarkiverse.githubapp.ConfigFile;
 import io.quarkiverse.githubapp.GitHubEvent;
 import io.quarkiverse.githubapp.deployment.DispatchingConfiguration.EventAnnotation;
 import io.quarkiverse.githubapp.deployment.DispatchingConfiguration.EventAnnotationLiteral;
@@ -237,7 +238,7 @@ class GitHubAppProcessor {
 
         ClassOutput beanClassOutput = new GeneratedBeanGizmoAdaptor(generatedBeans);
         generateDispatcher(beanClassOutput, launchMode, dispatchingConfiguration, reflectiveClasses);
-        generateMultiplexers(beanClassOutput, dispatchingConfiguration, reflectiveClasses);
+        generateMultiplexers(beanClassOutput, index, dispatchingConfiguration, reflectiveClasses);
     }
 
     @BuildStep
@@ -551,6 +552,7 @@ class GitHubAppProcessor {
      * </ul>
      */
     private static void generateMultiplexers(ClassOutput beanClassOutput,
+            IndexView index,
             DispatchingConfiguration dispatchingConfiguration,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
         for (Entry<DotName, TreeSet<EventDispatchingMethod>> eventDispatchingMethodsEntry : dispatchingConfiguration
@@ -757,10 +759,12 @@ class GitHubAppProcessor {
                                 payloadRh);
                         ResultHandle configObject = methodCreator.invokeVirtualMethod(
                                 MethodDescriptor.ofMethod(ConfigFileReader.class, "getConfigObject", Object.class,
-                                        GHRepository.class, String.class, Class.class),
+                                        GHRepository.class, String.class, ConfigFile.Source.class, Class.class),
                                 configFileReaderRh,
                                 ghRepositoryRh,
                                 methodCreator.load(configFileAnnotationInstance.value().asString()),
+                                methodCreator.load(ConfigFile.Source
+                                        .valueOf(configFileAnnotationInstance.valueWithDefault(index, "source").asEnum())),
                                 methodCreator.loadClass(configObjectType));
                         configObject = methodCreator.checkCast(configObject, configObjectType);
 

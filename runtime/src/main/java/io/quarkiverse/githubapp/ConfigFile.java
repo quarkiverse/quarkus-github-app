@@ -11,4 +11,12 @@ import java.lang.annotation.Target;
 public @interface ConfigFile {
 
     String value();
+
+    Source source() default Source.DEFAULT;
+
+    public enum Source {
+        DEFAULT,
+        SOURCE_REPOSITORY,
+        CURRENT_REPOSITORY;
+    }
 }
