@@ -23,7 +23,7 @@ class VetoUserDefinedEventListeningClassesAnnotationsTransformer implements Anno
 
     @Override
     public void transform(TransformationContext transformationContext) {
-        Set<DotName> annotations = transformationContext.getTarget().asClass().annotations().keySet();
+        Set<DotName> annotations = transformationContext.getTarget().asClass().annotationsMap().keySet();
 
         if (annotations.contains(GitHubAppDotNames.MULTIPLEXER)) {
             return;

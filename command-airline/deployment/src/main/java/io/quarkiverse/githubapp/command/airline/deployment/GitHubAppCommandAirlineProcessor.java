@@ -170,7 +170,7 @@ class GitHubAppCommandAirlineProcessor {
 
     private static void generateCommandDispatcherDispatchMethod(ClassCreator commandDispatcherClassCreator,
             RunMethod runMethod) {
-        List<Type> originalMethodParameterTypes = runMethod.getMethod().parameters();
+        List<Type> originalMethodParameterTypes = runMethod.getMethod().parameterTypes();
         Map<Short, List<AnnotationInstance>> originalMethodParameterAnnotationMapping = runMethod.getMethod().annotations()
                 .stream()
                 .filter(ai -> ai.target().kind() == Kind.METHOD_PARAMETER)

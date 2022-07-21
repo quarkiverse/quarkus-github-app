@@ -156,7 +156,7 @@ class GitHubAppProcessor {
         for (AnnotationInstance configFileAnnotationInstance : index.getAnnotations(CONFIG_FILE)) {
             MethodParameterInfo methodParameter = configFileAnnotationInstance.target().asMethodParameter();
             short parameterPosition = methodParameter.position();
-            Type parameterType = methodParameter.method().parameters().get(parameterPosition);
+            Type parameterType = methodParameter.method().parameterTypes().get(parameterPosition);
             reflectiveHierarchies.produce(new ReflectiveHierarchyBuildItem.Builder()
                     .type(parameterType)
                     .index(index)
@@ -327,7 +327,7 @@ class GitHubAppProcessor {
 
                 MethodParameterInfo annotatedParameter = eventSubscriberInstance.target().asMethodParameter();
                 MethodInfo methodInfo = annotatedParameter.method();
-                DotName annotatedParameterType = annotatedParameter.method().parameters().get(annotatedParameter.position())
+                DotName annotatedParameterType = annotatedParameter.method().parameterTypes().get(annotatedParameter.position())
                         .name();
                 if (!eventDefinition.getPayloadType().equals(annotatedParameterType)) {
                     throw new IllegalStateException(
@@ -585,7 +585,7 @@ class GitHubAppProcessor {
             for (MethodInfo originalConstructor : declaringClass.constructors()) {
                 MethodCreator constructorCreator = multiplexerClassCreator.getMethodCreator(MethodDescriptor.ofConstructor(
                         multiplexerClassName,
-                        originalConstructor.parameters().stream().map(t -> t.name().toString()).toArray(String[]::new)));
+                        originalConstructor.parameterTypes().stream().map(t -> t.name().toString()).toArray(String[]::new)));
 
                 List<AnnotationInstance> originalMethodAnnotations = originalConstructor.annotations().stream()
                         .filter(ai -> ai.target().kind() == Kind.METHOD).collect(Collectors.toList());
@@ -599,7 +599,7 @@ class GitHubAppProcessor {
                         .collect(Collectors.groupingBy(ai -> ai.target().asMethodParameter().position()));
 
                 List<ResultHandle> parametersRh = new ArrayList<>();
-                for (short i = 0; i < originalConstructor.parameters().size(); i++) {
+                for (short i = 0; i < originalConstructor.parameterTypes().size(); i++) {
                     parametersRh.add(constructorCreator.getMethodParam(i));
 
                     AnnotatedElement parameterAnnotations = constructorCreator.getParameterAnnotations(i);
@@ -632,7 +632,7 @@ class GitHubAppProcessor {
                 }
 
                 List<String> parameterTypes = new ArrayList<>();
-                List<Type> originalMethodParameterTypes = originalMethod.parameters();
+                List<Type> originalMethodParameterTypes = originalMethod.parameterTypes();
 
                 // detect the parameter that is a payload
                 short payloadParameterPosition = 0;
@@ -682,7 +682,7 @@ class GitHubAppProcessor {
                     methodCreator.addException(exceptionType.name().toString());
                 }
 
-                ResultHandle[] parameterValues = new ResultHandle[originalMethod.parameters().size()];
+                ResultHandle[] parameterValues = new ResultHandle[originalMethod.parameterTypes().size()];
 
                 // copy annotations except for @ConfigFile
                 for (short i = 0; i < originalMethodParameterTypes.size(); i++) {

@@ -195,7 +195,7 @@ class DispatchingConfiguration {
         }
 
         public boolean requiresGraphQLClient() {
-            return method.parameters().stream().map(t -> t.name()).anyMatch(n -> DYNAMIC_GRAPHQL_CLIENT.equals(n));
+            return method.parameterTypes().stream().map(t -> t.name()).anyMatch(n -> DYNAMIC_GRAPHQL_CLIENT.equals(n));
         }
 
         @Override
