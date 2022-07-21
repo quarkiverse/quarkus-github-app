@@ -64,7 +64,7 @@ public class HideAirlineInjectAnnotationsTransformer implements AnnotationsTrans
             return false;
         }
 
-        Set<DotName> fieldClassAnnotations = fieldClass.annotations().keySet();
+        Set<DotName> fieldClassAnnotations = fieldClass.annotationsMap().keySet();
 
         return fieldClassAnnotations.contains(ARGUMENTS) || fieldClassAnnotations.contains(OPTION);
     }
