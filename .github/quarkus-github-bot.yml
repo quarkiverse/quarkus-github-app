@@ -4,7 +4,7 @@
 features: [ALL]
 workflowRunAnalysis:
   workflows: ["Quarkus CI"]
-projects:
+projectsClassic:
   rules:
     - labels: [area/hibernate-validator]
       project: 1
