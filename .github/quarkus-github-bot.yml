@@ -10,3 +10,4 @@ projectsClassic:
       project: 1
       issues: true
       pullRequests: true
+      status: To do
