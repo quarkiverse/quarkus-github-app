@@ -24,7 +24,6 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import javax.enterprise.event.Event;
@@ -57,6 +56,7 @@ import io.quarkiverse.githubapp.deployment.DispatchingConfiguration.EventAnnotat
 import io.quarkiverse.githubapp.deployment.DispatchingConfiguration.EventAnnotationLiteral;
 import io.quarkiverse.githubapp.deployment.DispatchingConfiguration.EventDispatchingConfiguration;
 import io.quarkiverse.githubapp.deployment.DispatchingConfiguration.EventDispatchingMethod;
+import io.quarkiverse.githubapp.error.ErrorHandler;
 import io.quarkiverse.githubapp.event.Actions;
 import io.quarkiverse.githubapp.runtime.ConfigFileReader;
 import io.quarkiverse.githubapp.runtime.GitHubAppRecorder;
@@ -124,8 +124,6 @@ class GitHubAppProcessor {
             Annotation[].class);
     private static final MethodDescriptor EVENT_FIRE_ASYNC = MethodDescriptor.ofMethod(Event.class, "fireAsync",
             CompletionStage.class, Object.class);
-    private static final MethodDescriptor COMPLETION_STAGE_EXCEPTIONALLY = MethodDescriptor.ofMethod(CompletionStage.class,
-            "exceptionally", CompletionStage.class, Function.class);
     private static final MethodDescriptor COMPLETION_STAGE_TO_COMPLETABLE_FUTURE = MethodDescriptor.ofMethod(
             CompletionStage.class,
             "toCompletableFuture", CompletableFuture.class);
@@ -488,8 +486,9 @@ class GitHubAppProcessor {
                     eventMatchesCreator.loadClass(payloadType));
 
             ResultHandle multiplexedEventRh = eventMatchesCreator.newInstance(MethodDescriptor
-                    .ofConstructor(MultiplexedEvent.class, GHEventPayload.class, GitHub.class, DynamicGraphQLClient.class),
-                    payloadInstanceRh, gitHubRh, gitHubGraphQLClientRh);
+                    .ofConstructor(MultiplexedEvent.class, GitHubEvent.class, GHEventPayload.class, GitHub.class,
+                            DynamicGraphQLClient.class),
+                    gitHubEventRh, payloadInstanceRh, gitHubRh, gitHubGraphQLClientRh);
 
             for (Entry<String, EventAnnotation> eventAnnotationEntry : eventDispatchingConfiguration.getEventAnnotations()
                     .entrySet()) {
@@ -580,6 +579,13 @@ class GitHubAppProcessor {
             for (AnnotationInstance classAnnotation : declaringClass.classAnnotations()) {
                 multiplexerClassCreator.addAnnotation(classAnnotation);
             }
+
+            // Inject ErrorHandler
+            FieldDescriptor errorHandlerFieldDescriptor = FieldDescriptor.of(multiplexerClassName, "errorHandler",
+                    ErrorHandler.class);
+            FieldCreator errorHandlerFieldCreator = multiplexerClassCreator.getFieldCreator(errorHandlerFieldDescriptor);
+            errorHandlerFieldCreator.addAnnotation(Inject.class);
+            errorHandlerFieldCreator.setModifiers(Modifier.PROTECTED);
 
             // Copy the constructors
             for (MethodInfo originalConstructor : declaringClass.constructors()) {
@@ -710,9 +716,12 @@ class GitHubAppProcessor {
                     }
                 }
 
+                ResultHandle multiplexedEventRh = methodCreator.getMethodParam(parameterMapping.get(payloadParameterPosition));
                 ResultHandle payloadRh = methodCreator.invokeVirtualMethod(
                         MethodDescriptor.ofMethod(MultiplexedEvent.class, "getPayload", GHEventPayload.class),
-                        methodCreator.getMethodParam(parameterMapping.get(payloadParameterPosition)));
+                        multiplexedEventRh);
+
+                TryBlock tryBlock = methodCreator.tryBlock();
 
                 // generate the code of the method
                 for (short originalMethodParameterIndex = 0; originalMethodParameterIndex < originalMethodParameterTypes
@@ -724,15 +733,15 @@ class GitHubAppProcessor {
                     if (originalMethodParameterIndex == payloadParameterPosition) {
                         parameterValues[originalMethodParameterIndex] = payloadRh;
                     } else if (GITHUB.equals(originalMethodParameterTypes.get(originalMethodParameterIndex).name())) {
-                        parameterValues[originalMethodParameterIndex] = methodCreator.invokeVirtualMethod(
+                        parameterValues[originalMethodParameterIndex] = tryBlock.invokeVirtualMethod(
                                 MethodDescriptor.ofMethod(MultiplexedEvent.class, "getGitHub", GitHub.class),
-                                methodCreator.getMethodParam(parameterMapping.get(payloadParameterPosition)));
+                                tryBlock.getMethodParam(parameterMapping.get(payloadParameterPosition)));
                     } else if (DYNAMIC_GRAPHQL_CLIENT
                             .equals(originalMethodParameterTypes.get(originalMethodParameterIndex).name())) {
-                        parameterValues[originalMethodParameterIndex] = methodCreator.invokeVirtualMethod(
+                        parameterValues[originalMethodParameterIndex] = tryBlock.invokeVirtualMethod(
                                 MethodDescriptor.ofMethod(MultiplexedEvent.class, "getGitHubGraphQLClient",
                                         DynamicGraphQLClient.class),
-                                methodCreator.getMethodParam(parameterMapping.get(payloadParameterPosition)));
+                                tryBlock.getMethodParam(parameterMapping.get(payloadParameterPosition)));
                     } else if (parameterAnnotations.stream().anyMatch(ai -> ai.name().equals(CONFIG_FILE))) {
                         AnnotationInstance configFileAnnotationInstance = parameterAnnotations.stream()
                                 .filter(ai -> ai.name().equals(CONFIG_FILE)).findFirst().get();
@@ -753,37 +762,51 @@ class GitHubAppProcessor {
                         }
 
                         // it's a config file, we will use the ConfigFileReader (last parameter of the method) and inject the result
-                        ResultHandle configFileReaderRh = methodCreator.getMethodParam(parameterTypes.size() - 1);
-                        ResultHandle ghRepositoryRh = methodCreator.invokeStaticMethod(MethodDescriptor
+                        ResultHandle configFileReaderRh = tryBlock.getMethodParam(parameterTypes.size() - 1);
+                        ResultHandle ghRepositoryRh = tryBlock.invokeStaticMethod(MethodDescriptor
                                 .ofMethod(PayloadHelper.class, "getRepository", GHRepository.class, GHEventPayload.class),
                                 payloadRh);
-                        ResultHandle configObject = methodCreator.invokeVirtualMethod(
+                        ResultHandle configObject = tryBlock.invokeVirtualMethod(
                                 MethodDescriptor.ofMethod(ConfigFileReader.class, "getConfigObject", Object.class,
                                         GHRepository.class, String.class, ConfigFile.Source.class, Class.class),
                                 configFileReaderRh,
                                 ghRepositoryRh,
-                                methodCreator.load(configFileAnnotationInstance.value().asString()),
-                                methodCreator.load(ConfigFile.Source
+                                tryBlock.load(configFileAnnotationInstance.value().asString()),
+                                tryBlock.load(ConfigFile.Source
                                         .valueOf(configFileAnnotationInstance.valueWithDefault(index, "source").asEnum())),
-                                methodCreator.loadClass(configObjectType));
-                        configObject = methodCreator.checkCast(configObject, configObjectType);
+                                tryBlock.loadClass(configObjectType));
+                        configObject = tryBlock.checkCast(configObject, configObjectType);
 
                         if (isOptional) {
-                            configObject = methodCreator.invokeStaticMethod(
+                            configObject = tryBlock.invokeStaticMethod(
                                     MethodDescriptor.ofMethod(Optional.class, "ofNullable", Optional.class, Object.class),
                                     configObject);
                         }
 
                         parameterValues[originalMethodParameterIndex] = configObject;
                     } else {
-                        parameterValues[originalMethodParameterIndex] = methodCreator
+                        parameterValues[originalMethodParameterIndex] = tryBlock
                                 .getMethodParam(multiplexerMethodParameterIndex);
                     }
                 }
 
-                ResultHandle returnValue = methodCreator.invokeVirtualMethod(originalMethod, methodCreator.getThis(),
+                ResultHandle returnValue = tryBlock.invokeVirtualMethod(originalMethod, tryBlock.getThis(),
                         parameterValues);
-                methodCreator.returnValue(returnValue);
+                tryBlock.returnValue(returnValue);
+
+                CatchBlockCreator catchBlock = tryBlock.addCatch(Throwable.class);
+                catchBlock.invokeInterfaceMethod(
+                        MethodDescriptor.ofMethod(ErrorHandler.class, "handleError", void.class, GitHubEvent.class,
+                                GHEventPayload.class, Throwable.class),
+                        catchBlock.readInstanceField(errorHandlerFieldDescriptor, catchBlock.getThis()),
+                        catchBlock.invokeVirtualMethod(
+                                MethodDescriptor.ofMethod(MultiplexedEvent.class, "getGitHubEvent", GitHubEvent.class),
+                                multiplexedEventRh),
+                        catchBlock.invokeVirtualMethod(
+                                MethodDescriptor.ofMethod(MultiplexedEvent.class, "getPayload", GHEventPayload.class),
+                                multiplexedEventRh),
+                        catchBlock.getCaughtException());
+                catchBlock.returnValue(null);
             }
 
             multiplexerClassCreator.close();
@@ -801,22 +824,12 @@ class GitHubAppProcessor {
         ResultHandle fireAsyncCompletionStageRH = bytecodeCreator.invokeInterfaceMethod(EVENT_FIRE_ASYNC, cdiEventRh,
                 multiplexedEventRh);
 
-        ResultHandle exceptionallyRH = bytecodeCreator.invokeInterfaceMethod(COMPLETION_STAGE_EXCEPTIONALLY,
-                fireAsyncCompletionStageRH,
-                bytecodeCreator.newInstance(
-                        MethodDescriptor.ofConstructor(ErrorHandlerBridgeFunction.class, GitHubEvent.class,
-                                GHEventPayload.class),
-                        gitHubEventRh,
-                        bytecodeCreator.invokeVirtualMethod(
-                                MethodDescriptor.ofMethod(MultiplexedEvent.class, "getPayload", GHEventPayload.class),
-                                multiplexedEventRh)));
-
         if (LaunchMode.TEST.equals(launchMode)) {
             ResultHandle toFutureRH = bytecodeCreator.invokeInterfaceMethod(COMPLETION_STAGE_TO_COMPLETABLE_FUTURE,
-                    exceptionallyRH);
+                    fireAsyncCompletionStageRH);
             return bytecodeCreator.invokeVirtualMethod(COMPLETABLE_FUTURE_JOIN, toFutureRH);
         } else {
-            return exceptionallyRH;
+            return fireAsyncCompletionStageRH;
         }
     }
 

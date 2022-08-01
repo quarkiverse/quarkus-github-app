@@ -3,9 +3,12 @@ package io.quarkiverse.githubapp.runtime;
 import org.kohsuke.github.GHEventPayload;
 import org.kohsuke.github.GitHub;
 
+import io.quarkiverse.githubapp.GitHubEvent;
 import io.smallrye.graphql.client.dynamic.api.DynamicGraphQLClient;
 
 public class MultiplexedEvent {
+
+    private final GitHubEvent gitHubEvent;
 
     private final GHEventPayload payload;
 
@@ -13,10 +16,16 @@ public class MultiplexedEvent {
 
     private final DynamicGraphQLClient gitHubGraphQLClient;
 
-    public MultiplexedEvent(GHEventPayload payload, GitHub gitHub, DynamicGraphQLClient gitHubGraphQLClient) {
+    public MultiplexedEvent(GitHubEvent gitHubEvent, GHEventPayload payload, GitHub gitHub,
+            DynamicGraphQLClient gitHubGraphQLClient) {
+        this.gitHubEvent = gitHubEvent;
         this.payload = payload;
         this.gitHub = gitHub;
         this.gitHubGraphQLClient = gitHubGraphQLClient;
+    }
+
+    public GitHubEvent getGitHubEvent() {
+        return gitHubEvent;
     }
 
     public GHEventPayload getPayload() {
