@@ -31,8 +31,6 @@ public class ParseErrorCliTest {
                                     + "\n"
                                     + "Commands are:\n"
                                     + "    command1   Command 1\n"
-                                    + "\n"
-                                    + "See '@parse-error help <command>' for more information on a specific command.\n"
                                     + "```");
                     verify(mocks.issueComment(1093016219))
                             .createReaction(ReactionContent.CONFUSED);
