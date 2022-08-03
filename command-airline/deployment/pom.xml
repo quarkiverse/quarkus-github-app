@@ -4,7 +4,7 @@
     <parent>
         <groupId>io.quarkiverse.githubapp</groupId>
         <artifactId>quarkus-github-app-command-airline-parent</artifactId>
-        <version>1.10.2</version>
+        <version>999-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
