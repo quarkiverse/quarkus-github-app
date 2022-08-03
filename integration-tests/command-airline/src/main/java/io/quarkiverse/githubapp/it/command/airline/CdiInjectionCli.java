@@ -27,7 +27,8 @@ public class CdiInjectionCli {
 
         @Override
         public void run(GHEventPayload.IssueComment issueCommentPayload, Service2 service2) throws IOException {
-            issueCommentPayload.getIssue().comment(service1.hello() + " - " + service2.hello());
+            issueCommentPayload.getIssue()
+                    .comment(service1.hello() + " - " + service2.hello() + " - " + globalMetadata.getName());
         }
     }
 

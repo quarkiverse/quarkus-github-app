@@ -22,7 +22,7 @@ public class CdiInjectionCliTest {
         when().payloadFromClasspath("/issue-comment-cdi-injection-test.json")
                 .event(GHEvent.ISSUE_COMMENT)
                 .then().github(mocks -> {
-                    verifyCommandExecution(mocks, Service1.HELLO + " - " + Service2.HELLO);
+                    verifyCommandExecution(mocks, Service1.HELLO + " - " + Service2.HELLO + " - @cdi-injection");
                 });
     }
 }
