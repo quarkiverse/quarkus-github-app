@@ -38,6 +38,7 @@ import io.quarkiverse.githubapp.testing.dsl.GitHubMockVerificationContext;
 import io.quarkiverse.githubapp.testing.mockito.internal.DefaultableMocking;
 import io.quarkiverse.githubapp.testing.mockito.internal.GHEventPayloadSpyDefaultAnswer;
 import io.quarkiverse.githubapp.testing.mockito.internal.GitHubMockDefaultAnswer;
+import io.smallrye.graphql.client.dynamic.api.DynamicGraphQLClient;
 
 public final class GitHubMockContextImpl implements GitHubMockContext, GitHubMockSetupContext, GitHubMockVerificationContext {
 
@@ -46,6 +47,7 @@ public final class GitHubMockContextImpl implements GitHubMockContext, GitHubMoc
 
     private final List<MockMap<?, ?>> allMockMaps = new ArrayList<>();
     private final MockMap<Long, GitHub> clients;
+    private final MockMap<Object, DynamicGraphQLClient> graphQLClients;
     private final MockMap<String, GHRepository> repositories;
     private final Map<Class<?>, MockMap<Long, ? extends GHObject>> nonRepositoryGHObjectMockMaps = new LinkedHashMap<>();
     private final Answers defaultAnswers;
@@ -61,6 +63,7 @@ public final class GitHubMockContextImpl implements GitHubMockContext, GitHubMoc
                         new GitHubConnectorHttpConnectorAdapter(HttpConnector.OFFLINE), RateLimitHandler.WAIT,
                         AbuseLimitHandler.WAIT, null, AuthorizationProvider.ANONYMOUS)
                         .defaultAnswer(new GitHubMockDefaultAnswer(defaultAnswers)));
+        graphQLClients = new MockMap<>(DynamicGraphQLClient.class);
     }
 
     @Override
@@ -80,6 +83,12 @@ public final class GitHubMockContextImpl implements GitHubMockContext, GitHubMoc
                 throw new UncheckedIOException(e);
             }
         })
+                .mock();
+    }
+
+    @Override
+    public DynamicGraphQLClient graphQLClient(long id) {
+        return graphQLClients.getOrCreate(id)
                 .mock();
     }
 
@@ -143,6 +152,9 @@ public final class GitHubMockContextImpl implements GitHubMockContext, GitHubMoc
 
         when(service.getInstallationClient(any()))
                 .thenAnswer(invocation -> client(invocation.getArgument(0, Long.class)));
+
+        when(service.getInstallationGraphQLClient(any()))
+                .thenAnswer(invocation -> graphQLClient(invocation.getArgument(0, Long.class)));
     }
 
     void reset() {
