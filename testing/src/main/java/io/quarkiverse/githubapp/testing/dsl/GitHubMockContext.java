@@ -1,6 +1,5 @@
 package io.quarkiverse.githubapp.testing.dsl;
 
-import io.smallrye.graphql.client.dynamic.api.DynamicGraphQLClient;
 import org.kohsuke.github.GHIssue;
 import org.kohsuke.github.GHIssueComment;
 import org.kohsuke.github.GHObject;
@@ -8,6 +7,8 @@ import org.kohsuke.github.GHPullRequest;
 import org.kohsuke.github.GHRepository;
 import org.kohsuke.github.GHTeam;
 import org.kohsuke.github.GitHub;
+
+import io.smallrye.graphql.client.dynamic.api.DynamicGraphQLClient;
 
 public interface GitHubMockContext {
 
