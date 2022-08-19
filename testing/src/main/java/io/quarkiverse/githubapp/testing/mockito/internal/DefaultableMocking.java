@@ -23,19 +23,13 @@ public final class DefaultableMocking<M> {
     private static final MockMaker mockMaker = Plugins.getMockMaker();
 
     public static <M> DefaultableMocking<M> create(Class<M> clazz, Object id, Consumer<MockSettings> mockSettingsContributor) {
-        ClassLoader old = Thread.currentThread().getContextClassLoader();
-        try {
-            Thread.currentThread().setContextClassLoader(clazz.getClassLoader());
-            StubDetectingInvocationListener listener = new StubDetectingInvocationListener();
-            MockSettings mockSettings = Mockito.withSettings().name(clazz.getSimpleName() + "#" + id)
-                    .withoutAnnotations()
-                    .invocationListeners(listener);
-            mockSettingsContributor.accept(mockSettings);
-            M mock = Mockito.mock(clazz, mockSettings);
-            return new DefaultableMocking<>(mock, listener);
-        } finally {
-            Thread.currentThread().setContextClassLoader(old);
-        }
+        StubDetectingInvocationListener listener = new StubDetectingInvocationListener();
+        MockSettings mockSettings = Mockito.withSettings().name(clazz.getSimpleName() + "#" + id)
+                .withoutAnnotations()
+                .invocationListeners(listener);
+        mockSettingsContributor.accept(mockSettings);
+        M mock = Mockito.mock(clazz, mockSettings);
+        return new DefaultableMocking<>(mock, listener);
     }
 
     private final M mock;
