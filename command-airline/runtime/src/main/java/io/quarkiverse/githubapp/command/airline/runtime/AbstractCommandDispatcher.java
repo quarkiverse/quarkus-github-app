@@ -95,16 +95,26 @@ public abstract class AbstractCommandDispatcher<C> {
 
             if (!hasPermission(commandPermissionConfig, commandTeamConfig, issueCommentPayload.getRepository(),
                     issueCommentPayload.getSender())) {
-                Reactions.createReaction(issueCommentPayload, ReactionContent.MINUS_ONE);
+                if (commandConfig.getReactionStrategy().reactionOnError()) {
+                    Reactions.createReaction(issueCommentPayload, ReactionContent.MINUS_ONE);
+                }
                 return Optional.empty();
             }
 
-            GHReaction ackReaction = Reactions.createReaction(issueCommentPayload, ReactionContent.ROCKET);
+            GHReaction ackReaction;
+            if (commandConfig.getReactionStrategy().reactionOnProgress()) {
+                ackReaction = Reactions.createReaction(issueCommentPayload, ReactionContent.ROCKET);
+            } else {
+                ackReaction = null;
+            }
 
             return Optional.of(new CommandExecutionContext<>(firstLine, parseResult.getCommand(), commandConfig, ackReaction));
         }
 
-        Reactions.createReaction(issueCommentPayload, ReactionContent.CONFUSED);
+        CommandConfig bestCommandConfig = getBestCommandConfigInErrorState(parseResult);
+        if (bestCommandConfig.getReactionStrategy().reactionOnError()) {
+            Reactions.createReaction(issueCommentPayload, ReactionContent.CONFUSED);
+        }
 
         handleParseError(issueCommentPayload, firstLine, commandLine, parseResult);
 
@@ -156,6 +166,15 @@ public abstract class AbstractCommandDispatcher<C> {
         } catch (IOException e) {
             throw new CommandExecutionException("Unable to check the permissions for the command", e);
         }
+    }
+
+    private CommandConfig getBestCommandConfigInErrorState(ParseResult<C> parseResult) {
+        if (parseResult.getState().getCommand() == null) {
+            return cliConfig.getDefaultCommandConfig();
+        }
+
+        return commandConfigs.getOrDefault(parseResult.getState().getCommand().getType().getName(),
+                cliConfig.getDefaultCommandConfig());
     }
 
     private void handleParseError(IssueComment issueCommentPayload, String command, List<String> commandLine,

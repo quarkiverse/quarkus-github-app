@@ -11,6 +11,7 @@ import command.airline.CommandOptionsCli.CommandOnlyForIssues;
 import io.quarkiverse.githubapp.command.airline.CommandOptions;
 import io.quarkiverse.githubapp.command.airline.CommandOptions.CommandScope;
 import io.quarkiverse.githubapp.command.airline.CommandOptions.ExecutionErrorStrategy;
+import io.quarkiverse.githubapp.command.airline.CommandOptions.ReactionStrategy;
 
 // tag::include[]
 @Cli(name = "@bot", commands = { CommandOnlyForIssues.class })
@@ -68,5 +69,17 @@ public class CommandOptionsCli {
         }
     }
     // end::execution-error-message[]
+
+    // tag::reaction-strategy[]
+    @Command(name = "reaction-strategy")
+    @CommandOptions(reactionStrategy = ReactionStrategy.NONE)
+    static class CommandWithCustomReactionStrategy implements Commands {
+
+        @Override
+        public void run(GHEventPayload.IssueComment issueCommentPayload) throws IOException {
+            // do something
+        }
+    }
+    // end::reaction-strategy[]
 }
 // end::include[]

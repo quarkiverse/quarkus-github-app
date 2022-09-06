@@ -179,6 +179,18 @@ include::{command-airline-examples-dir}/CommandOptionsCli.java[tag=execution-err
 Use `%s` in your message to include the executed command.
 ====
 
+==== Reaction strategy
+
+By default, the Command Airline extension provides feedback about command execution with <<reactions,reactions>>.
+
+It is possible to configure this behavior.
+For instance to disable them entirely:
+
+[source,java]
+----
+include::{command-airline-examples-dir}/CommandOptionsCli.java[tag=reaction-strategy]
+----
+
 === `@Cli` options
 
 You can fine tune the behavior of your `@Cli` via the `@CliOptions` annotation.

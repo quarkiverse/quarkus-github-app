@@ -21,6 +21,7 @@ public @interface CommandOptions {
     CommandScope DEFAULT_SCOPE = CommandScope.ISSUES_AND_PULL_REQUESTS;
     ExecutionErrorStrategy DEFAULT_EXECUTION_ERROR_STRATEGY = ExecutionErrorStrategy.NONE;
     String DEFAULT_EXECUTION_ERROR_MESSAGE = ":warning: An error occurred while executing command: %s";
+    ReactionStrategy DEFAULT_REACTION_STRATEGY = ReactionStrategy.ALL;
 
     /**
      * Whether the command should target issues, pull requests or both.
@@ -36,6 +37,11 @@ public @interface CommandOptions {
      * The error message when an error occurs executing the command.
      */
     String executionErrorMessage() default DEFAULT_EXECUTION_ERROR_MESSAGE;
+
+    /**
+     * The reaction strategy used to provide feedback via comment reactions.
+     */
+    ReactionStrategy reactionStrategy() default ReactionStrategy.ALL;
 
     public enum ExecutionErrorStrategy {
 
@@ -65,6 +71,43 @@ public @interface CommandOptions {
             } else {
                 return this == ISSUES_AND_PULL_REQUESTS || this == ISSUES;
             }
+        }
+    }
+
+    /**
+     * Things are a bit specific here:
+     * - the command specific option will be honored if possible
+     * - if the error happens at a more global level (typically if not able to parse the command), the default command option
+     * will be used
+     */
+    public enum ReactionStrategy {
+
+        NONE(false, false, false),
+        ON_PROGRESS(true, false, false),
+        ON_PROGRESS_ON_ERROR(true, false, true),
+        ON_ERROR(false, false, true),
+        ALL(true, true, true);
+
+        private final boolean reactionOnProgress;
+        private final boolean reactionOnNormalFlow;
+        private final boolean reactionOnError;
+
+        ReactionStrategy(boolean reactionOnProgress, boolean reactionOnNormalFlow, boolean reactionOnError) {
+            this.reactionOnProgress = reactionOnProgress;
+            this.reactionOnNormalFlow = reactionOnNormalFlow;
+            this.reactionOnError = reactionOnError;
+        }
+
+        public boolean reactionOnProgress() {
+            return reactionOnProgress;
+        }
+
+        public boolean reactionOnNormalFlow() {
+            return reactionOnNormalFlow;
+        }
+
+        public boolean reactionOnError() {
+            return reactionOnError;
         }
     }
 }
