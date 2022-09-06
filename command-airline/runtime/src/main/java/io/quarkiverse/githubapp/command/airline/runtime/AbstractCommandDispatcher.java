@@ -28,6 +28,8 @@ import com.github.rvesse.airline.parser.errors.handlers.CollectAll;
 
 import io.quarkiverse.githubapp.command.airline.runtime.util.Commandline;
 import io.quarkiverse.githubapp.command.airline.runtime.util.Reactions;
+import io.quarkus.arc.ClientProxy;
+import io.quarkus.arc.Subclass;
 
 public abstract class AbstractCommandDispatcher<C> {
 
@@ -80,7 +82,7 @@ public abstract class AbstractCommandDispatcher<C> {
         ParseResult<C> parseResult = cli.parseWithResult(commandLine);
 
         if (parseResult.wasSuccessful()) {
-            String commandClassName = parseResult.getCommand().getClass().getName();
+            String commandClassName = normalizeCommandClass(parseResult.getCommand().getClass()).getName();
 
             CommandConfig commandConfig = commandConfigs.getOrDefault(commandClassName,
                     cliConfig.getDefaultCommandConfig());
@@ -109,6 +111,17 @@ public abstract class AbstractCommandDispatcher<C> {
         handleParseError(issueCommentPayload, firstLine, commandLine, parseResult);
 
         return Optional.empty();
+    }
+
+    private static Class<?> normalizeCommandClass(Class<?> commandClass) {
+        if (Subclass.class.isAssignableFrom(commandClass)) {
+            return commandClass.getSuperclass();
+        }
+        if (ClientProxy.class.isAssignableFrom(commandClass)) {
+            return commandClass.getSuperclass();
+        }
+
+        return commandClass;
     }
 
     private boolean matches(String cli) {
