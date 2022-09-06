@@ -41,6 +41,7 @@ import org.kohsuke.github.ReactionContent;
 import io.quarkiverse.githubapp.command.airline.CliOptions.ParseErrorStrategy;
 import io.quarkiverse.githubapp.command.airline.CommandOptions.CommandScope;
 import io.quarkiverse.githubapp.command.airline.CommandOptions.ExecutionErrorStrategy;
+import io.quarkiverse.githubapp.command.airline.CommandOptions.ReactionStrategy;
 import io.quarkiverse.githubapp.command.airline.runtime.AbstractCommandDispatcher;
 import io.quarkiverse.githubapp.command.airline.runtime.AbstractCommandDispatcher.CommandExecutionContext;
 import io.quarkiverse.githubapp.command.airline.runtime.CliConfig;
@@ -239,6 +240,14 @@ class GitHubAppCommandAirlineProcessor {
                 .invokeVirtualMethod(
                         MethodDescriptor.ofMethod(CommandExecutionContext.class, "getAckReaction", GHReaction.class),
                         commandExecutionContextRh);
+        ResultHandle reactionStrategyRh = commandExecutionContextOptionalIsPresentTrue
+                .invokeVirtualMethod(
+                        MethodDescriptor.ofMethod(CommandConfig.class, "getReactionStrategy", ReactionStrategy.class),
+                        commandExecutionContextOptionalIsPresentTrue
+                                .invokeVirtualMethod(
+                                        MethodDescriptor.ofMethod(CommandExecutionContext.class, "getCommandConfig",
+                                                CommandConfig.class),
+                                        commandExecutionContextRh));
 
         TryBlock tryBlock = commandExecutionContextOptionalIsPresentTrue.tryBlock();
 
@@ -249,11 +258,15 @@ class GitHubAppCommandAirlineProcessor {
         tryBlock.invokeInterfaceMethod(runMethod.getMethod(), commandRh,
                 runMethodParameters.toArray(new ResultHandle[0]));
         deleteReaction(tryBlock, issueCommentPayloadRh, ackReactionRh);
-        createReaction(tryBlock, issueCommentPayloadRh, ReactionContent.PLUS_ONE);
+        BranchResult reactionOnNormalFlow = tryBlock.ifTrue(tryBlock.invokeVirtualMethod(
+                MethodDescriptor.ofMethod(ReactionStrategy.class, "reactionOnNormalFlow", boolean.class), reactionStrategyRh));
+        createReaction(reactionOnNormalFlow.trueBranch(), issueCommentPayloadRh, ReactionContent.PLUS_ONE);
 
         CatchBlockCreator catchBlock = tryBlock.addCatch(Exception.class);
         deleteReaction(catchBlock, issueCommentPayloadRh, ackReactionRh);
-        createReaction(catchBlock, issueCommentPayloadRh, ReactionContent.MINUS_ONE);
+        BranchResult reactionOnError = catchBlock.ifTrue(catchBlock.invokeVirtualMethod(
+                MethodDescriptor.ofMethod(ReactionStrategy.class, "reactionOnError", boolean.class), reactionStrategyRh));
+        createReaction(reactionOnError.trueBranch(), issueCommentPayloadRh, ReactionContent.MINUS_ONE);
 
         catchBlock.invokeSpecialMethod(MethodDescriptor.ofMethod(AbstractCommandDispatcher.class, "handleExecutionError",
                 void.class, GHEventPayload.IssueComment.class, CommandExecutionContext.class), catchBlock.getThis(),
@@ -472,11 +485,13 @@ class GitHubAppCommandAirlineProcessor {
 
         return bytecodeCreator.newInstance(
                 MethodDescriptor.ofConstructor(CommandConfig.class, CommandScope.class, ExecutionErrorStrategy.class,
-                        String.class),
+                        String.class, ReactionStrategy.class),
                 bytecodeCreator.load(CommandScope.valueOf(commandOptionsAnnotation.valueWithDefault(index, "scope").asEnum())),
                 bytecodeCreator.load(ExecutionErrorStrategy
                         .valueOf(commandOptionsAnnotation.valueWithDefault(index, "executionErrorStrategy").asEnum())),
-                bytecodeCreator.load(commandOptionsAnnotation.valueWithDefault(index, "executionErrorMessage").asString()));
+                bytecodeCreator.load(commandOptionsAnnotation.valueWithDefault(index, "executionErrorMessage").asString()),
+                bytecodeCreator.load(ReactionStrategy
+                        .valueOf(commandOptionsAnnotation.valueWithDefault(index, "reactionStrategy").asEnum())));
     }
 
     private static RunMethod findCommonInterfaceWithRunMethod(IndexView index, String cliName,
