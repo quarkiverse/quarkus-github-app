@@ -1,6 +1,7 @@
 package io.quarkiverse.githubapp.testing.internal;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
@@ -152,10 +153,10 @@ public final class GitHubMockContextImpl implements GitHubMockContext, GitHubMoc
     void init() {
         reset();
 
-        when(service.getInstallationClient(any()))
+        when(service.getInstallationClient(anyLong()))
                 .thenAnswer(invocation -> client(invocation.getArgument(0, Long.class)));
 
-        when(service.getInstallationGraphQLClient(any()))
+        when(service.getInstallationGraphQLClient(anyLong()))
                 .thenAnswer(invocation -> graphQLClient(invocation.getArgument(0, Long.class)));
     }
 

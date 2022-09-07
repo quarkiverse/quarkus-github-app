@@ -448,7 +448,7 @@ class GitHubAppProcessor {
         TryBlock tryBlock = dispatchMethodCreator.tryBlock();
 
         ResultHandle gitHubRh = tryBlock.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(GitHubService.class, "getInstallationClient", GitHub.class, Long.class),
+                MethodDescriptor.ofMethod(GitHubService.class, "getInstallationClient", GitHub.class, long.class),
                 tryBlock.readInstanceField(
                         FieldDescriptor.of(dispatcherClassCreator.getClassName(), GITHUB_SERVICE_FIELD, GitHubService.class),
                         tryBlock.getThis()),
@@ -459,7 +459,7 @@ class GitHubAppProcessor {
         if (dispatchingConfiguration.requiresGraphQLClient()) {
             gitHubGraphQLClientRh = tryBlock.invokeVirtualMethod(
                     MethodDescriptor.ofMethod(GitHubService.class, "getInstallationGraphQLClient", DynamicGraphQLClient.class,
-                            Long.class),
+                            long.class),
                     tryBlock.readInstanceField(
                             FieldDescriptor.of(dispatcherClassCreator.getClassName(), GITHUB_SERVICE_FIELD,
                                     GitHubService.class),
