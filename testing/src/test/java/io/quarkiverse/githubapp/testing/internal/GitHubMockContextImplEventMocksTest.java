@@ -36,7 +36,7 @@ public class GitHubMockContextImplEventMocksTest {
     public void init() {
         context.init();
         context.initEventStubs(123);
-        client = context.client(123);
+        client = context.installationClient(123);
     }
 
     @Test

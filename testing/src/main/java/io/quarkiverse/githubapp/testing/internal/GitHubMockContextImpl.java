@@ -74,7 +74,7 @@ public final class GitHubMockContextImpl implements GitHubMockContext, GitHubMoc
     }
 
     @Override
-    public GitHub client(long installationId) {
+    public GitHub installationClient(long installationId) {
         return applicationOrInstallationClient(installationId);
     }
 
@@ -84,7 +84,7 @@ public final class GitHubMockContextImpl implements GitHubMockContext, GitHubMoc
     }
 
     @Override
-    public DynamicGraphQLClient graphQLClient(long installationId) {
+    public DynamicGraphQLClient installationGraphQLClient(long installationId) {
         return graphQLClients.getOrCreate(installationId)
                 .mock();
     }
@@ -151,14 +151,14 @@ public final class GitHubMockContextImpl implements GitHubMockContext, GitHubMoc
                 .thenAnswer(invocation -> applicationClient());
 
         when(service.getInstallationClient(anyLong()))
-                .thenAnswer(invocation -> client(invocation.getArgument(0, Long.class)));
+                .thenAnswer(invocation -> installationClient(invocation.getArgument(0, Long.class)));
 
         when(service.getInstallationGraphQLClient(anyLong()))
-                .thenAnswer(invocation -> graphQLClient(invocation.getArgument(0, Long.class)));
+                .thenAnswer(invocation -> installationGraphQLClient(invocation.getArgument(0, Long.class)));
     }
 
     void initEventStubs(long installationId) {
-        GitHub clientMock = client(installationId);
+        GitHub clientMock = installationClient(installationId);
         MockitoUtils.doWithMockedClassClassLoader(GitHub.class, () -> {
             try {
                 when(clientMock.parseEventPayload(any(), any())).thenAnswer(invocation -> {

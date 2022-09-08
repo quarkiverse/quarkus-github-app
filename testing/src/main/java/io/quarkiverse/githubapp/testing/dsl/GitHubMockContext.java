@@ -24,14 +24,38 @@ public interface GitHubMockContext {
      * @return The mock for the installation client.
      * @see GitHubClientProvider#getInstallationClient(long)
      */
-    GitHub client(long installationId);
+    GitHub installationClient(long installationId);
+
+    /**
+     * @param installationId The identifier of the GitHub app installation.
+     * @return The mock for the installation client.
+     * @see GitHubClientProvider#getInstallationClient(long)
+     * @deprecated Use {@link #installationClient(long)} instead.
+     *             This method will be removed in version 2 of this extension.
+     */
+    @Deprecated(forRemoval = true)
+    default GitHub client(long installationId) {
+        return installationClient(installationId);
+    }
 
     /**
      * @param installationId The identifier of the GitHub app installation.
      * @return The mock for the installation GraphQL client.
      * @see GitHubClientProvider#getInstallationGraphQLClient(long)
      */
-    DynamicGraphQLClient graphQLClient(long installationId);
+    DynamicGraphQLClient installationGraphQLClient(long installationId);
+
+    /**
+     * @param installationId The identifier of the GitHub app installation.
+     * @return The mock for the installation GraphQL client.
+     * @see GitHubClientProvider#getInstallationGraphQLClient(long)
+     * @deprecated Use {@link #installationGraphQLClient(long)} instead.
+     *             This method will be removed in version 2 of this extension.
+     */
+    @Deprecated(forRemoval = true)
+    default DynamicGraphQLClient graphQLClient(long installationId) {
+        return installationGraphQLClient(installationId);
+    }
 
     GHRepository repository(String id);
 
