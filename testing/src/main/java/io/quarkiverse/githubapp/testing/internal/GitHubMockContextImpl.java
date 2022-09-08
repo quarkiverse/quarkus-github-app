@@ -7,7 +7,6 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -58,40 +57,35 @@ public final class GitHubMockContextImpl implements GitHubMockContext, GitHubMoc
         fileDownloader = MockitoUtils.doWithMockedClassClassLoader(GitHubFileDownloader.class,
                 () -> Mockito.mock(GitHubFileDownloader.class));
         service = MockitoUtils.doWithMockedClassClassLoader(GitHubFileDownloader.class,
-                () -> Mockito.mock(GitHubService.class));
+                () -> Mockito.mock(GitHubService.class, withSettings().stubOnly()));
         repositories = new MockMap<>(GHRepository.class);
         clients = new MockMap<>(GitHub.class,
                 // Configure the client mocks to be offline, because we don't want to send HTTP requests.
                 settings -> settings.useConstructor("https://api.github.invalid",
                         new GitHubConnectorHttpConnectorAdapter(HttpConnector.OFFLINE), RateLimitHandler.WAIT,
                         AbuseLimitHandler.WAIT, null, AuthorizationProvider.ANONYMOUS)
-                        .defaultAnswer(new GitHubMockDefaultAnswer(defaultAnswers)));
+                        .defaultAnswer(new GitHubMockDefaultAnswer(defaultAnswers, this::repository)));
         graphQLClients = new MockMap<>(DynamicGraphQLClient.class);
     }
 
     @Override
-    public GitHub client(long id) {
-        return clients.getOrCreate(id, newClient -> {
-            try {
-                when(newClient.isOffline()).thenReturn(true);
-                when(newClient.getRepository(any()))
-                        .thenAnswer(invocation -> repository(invocation.getArgument(0, String.class)));
-                when(newClient.parseEventPayload(any(), any())).thenAnswer(invocation -> {
-                    Object original = invocation.callRealMethod();
-                    return Mockito.mock(original.getClass(), withSettings().spiedInstance(original)
-                            .withoutAnnotations()
-                            .defaultAnswer(new GHEventPayloadSpyDefaultAnswer(newClient, this::ghObjectMocking)));
-                });
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        })
-                .mock();
+    public GitHub applicationClient() {
+        return applicationOrInstallationClient(null);
     }
 
     @Override
-    public DynamicGraphQLClient graphQLClient(long id) {
-        return graphQLClients.getOrCreate(id)
+    public GitHub client(long installationId) {
+        return applicationOrInstallationClient(installationId);
+    }
+
+    // By convention, the application client has a null ID.
+    public GitHub applicationOrInstallationClient(Long idOrNull) {
+        return clients.getOrCreate(idOrNull).mock();
+    }
+
+    @Override
+    public DynamicGraphQLClient graphQLClient(long installationId) {
+        return graphQLClients.getOrCreate(installationId)
                 .mock();
     }
 
@@ -153,11 +147,30 @@ public final class GitHubMockContextImpl implements GitHubMockContext, GitHubMoc
     void init() {
         reset();
 
+        when(service.getApplicationClient())
+                .thenAnswer(invocation -> applicationClient());
+
         when(service.getInstallationClient(anyLong()))
                 .thenAnswer(invocation -> client(invocation.getArgument(0, Long.class)));
 
         when(service.getInstallationGraphQLClient(anyLong()))
                 .thenAnswer(invocation -> graphQLClient(invocation.getArgument(0, Long.class)));
+    }
+
+    void initEventStubs(long installationId) {
+        GitHub clientMock = client(installationId);
+        MockitoUtils.doWithMockedClassClassLoader(GitHub.class, () -> {
+            try {
+                when(clientMock.parseEventPayload(any(), any())).thenAnswer(invocation -> {
+                    Object original = invocation.callRealMethod();
+                    return Mockito.mock(original.getClass(), withSettings().spiedInstance(original)
+                            .withoutAnnotations()
+                            .defaultAnswer(new GHEventPayloadSpyDefaultAnswer(clientMock, this::ghObjectMocking)));
+                });
+            } catch (RuntimeException | IOException e) {
+                throw new AssertionError("Stubbing before the simulated event threw an exception: " + e.getMessage(), e);
+            }
+        });
     }
 
     void reset() {
@@ -176,7 +189,7 @@ public final class GitHubMockContextImpl implements GitHubMockContext, GitHubMoc
         return ".github/" + path;
     }
 
-    DefaultableMocking<? extends GHObject> ghObjectMocking(GHObject original) {
+    private DefaultableMocking<? extends GHObject> ghObjectMocking(GHObject original) {
         Class<? extends GHObject> type = original.getClass();
         if (GHRepository.class.equals(type)) {
             return repositories.getOrCreate(((GHRepository) original).getName());
@@ -216,14 +229,6 @@ public final class GitHubMockContextImpl implements GitHubMockContext, GitHubMoc
 
         private DefaultableMocking<T> getOrCreate(ID id) {
             return map.computeIfAbsent(id, this::create);
-        }
-
-        private DefaultableMocking<T> getOrCreate(ID id, Consumer<T> consumerIfCreated) {
-            return map.computeIfAbsent(id, theId -> MockitoUtils.doWithMockedClassClassLoader(clazz, () -> {
-                DefaultableMocking<T> result = create(theId);
-                consumerIfCreated.accept(result.mock());
-                return result;
-            }));
         }
 
         private DefaultableMocking<T> create(Object id) {

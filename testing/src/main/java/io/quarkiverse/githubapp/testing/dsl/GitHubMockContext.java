@@ -8,13 +8,30 @@ import org.kohsuke.github.GHRepository;
 import org.kohsuke.github.GHTeam;
 import org.kohsuke.github.GitHub;
 
+import io.quarkiverse.githubapp.GitHubClientProvider;
 import io.smallrye.graphql.client.dynamic.api.DynamicGraphQLClient;
 
 public interface GitHubMockContext {
 
-    GitHub client(long id);
+    /**
+     * @return The mock for the application client.
+     * @see GitHubClientProvider#getApplicationClient()
+     */
+    GitHub applicationClient();
 
-    DynamicGraphQLClient graphQLClient(long id);
+    /**
+     * @param installationId The identifier of the GitHub app installation.
+     * @return The mock for the installation client.
+     * @see GitHubClientProvider#getInstallationClient(long)
+     */
+    GitHub client(long installationId);
+
+    /**
+     * @param installationId The identifier of the GitHub app installation.
+     * @return The mock for the installation GraphQL client.
+     * @see GitHubClientProvider#getInstallationGraphQLClient(long)
+     */
+    DynamicGraphQLClient graphQLClient(long installationId);
 
     GHRepository repository(String id);
 
