@@ -13,7 +13,7 @@ public class ReplayEventRouteAvailableInDevModeTest {
     @RegisterExtension
     public static final QuarkusDevModeTest test = new QuarkusDevModeTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addAsResource("application.properties"));
+                    .addAsResource("application-for-dev.properties", "application.properties"));
 
     @Test
     public void testPayloadSignatureCheck() {

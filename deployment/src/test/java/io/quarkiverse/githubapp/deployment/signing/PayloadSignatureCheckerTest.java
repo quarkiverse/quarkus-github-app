@@ -22,7 +22,8 @@ public class PayloadSignatureCheckerTest {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClass(PayloadUtil.class)
                     .addAsResource(PAYLOAD))
-            .withConfigurationResource("application.properties");
+            .withConfigurationResource("application.properties")
+            .overrideConfigKey("quarkus.github-app.webhook-secret", "cs5WKyOlY6go0E1RbkAOf0jq5K4KWBcP");
 
     @Inject
     PayloadSignatureChecker payloadSignatureChecker;

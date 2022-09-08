@@ -14,11 +14,12 @@ a| [[quarkus-github-app_quarkus.github-app.app-id]]`link:#quarkus-github-app_qua
 
 [.description]
 --
-The numeric application id provided by GitHub.
+The numeric application id provided by GitHub. 
+ Optional for tests, but mandatory in production and dev mode.
 
 Environment variable: `+++QUARKUS_GITHUB_APP_APP_ID+++`
 --|string 
-|required icon:exclamation-circle[title=Configuration property is required]
+|
 
 
 a| [[quarkus-github-app_quarkus.github-app.app-name]]`link:#quarkus-github-app_quarkus.github-app.app-name[quarkus.github-app.app-name]`
@@ -48,12 +49,13 @@ a| [[quarkus-github-app_quarkus.github-app.private-key]]`link:#quarkus-github-ap
 
 [.description]
 --
-The RSA private key.
+The RSA private key. 
+ Optional for tests, but mandatory in production and dev mode.
 
 Environment variable: `+++QUARKUS_GITHUB_APP_PRIVATE_KEY+++`
 --|link:https://docs.oracle.com/javase/8/docs/api/java/security/PrivateKey.html[PrivateKey]
  
-|required icon:exclamation-circle[title=Configuration property is required]
+|
 
 
 a| [[quarkus-github-app_quarkus.github-app.webhook-secret]]`link:#quarkus-github-app_quarkus.github-app.webhook-secret[quarkus.github-app.webhook-secret]`
