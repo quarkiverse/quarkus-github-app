@@ -88,14 +88,14 @@ public class Routes {
             return;
         }
 
-        JsonObject body = routingContext.getBodyAsJson();
+        JsonObject body = routingContext.body().asJsonObject();
 
         if (body == null) {
             routingExchange.ok().end();
             return;
         }
 
-        byte[] bodyBytes = routingContext.getBody().getBytes();
+        byte[] bodyBytes = routingContext.body().buffer().getBytes();
         String action = body.getString("action");
 
         if (!isBlank(deliveryId) && gitHubAppRuntimeConfig.debug.payloadDirectory.isPresent()) {
@@ -107,7 +107,7 @@ public class Routes {
         Long installationId = extractInstallationId(body);
         String repository = extractRepository(body);
         GitHubEvent gitHubEvent = new GitHubEvent(installationId, gitHubAppRuntimeConfig.appName.orElse(null), deliveryId,
-                repository, event, action, routingContext.getBodyAsString(), body, "true".equals(replayed) ? true : false);
+                repository, event, action, routingContext.body().asString(), body, "true".equals(replayed) ? true : false);
 
         if (launchMode == LaunchMode.DEVELOPMENT && replayRouteInstance.isResolvable()) {
             replayRouteInstance.get().pushEvent(gitHubEvent);
