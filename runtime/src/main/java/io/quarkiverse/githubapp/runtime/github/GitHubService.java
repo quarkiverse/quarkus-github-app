@@ -2,11 +2,15 @@ package io.quarkiverse.githubapp.runtime.github;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.security.PrivateKey;
 import java.time.temporal.ChronoUnit;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 
 import org.kohsuke.github.GHAppInstallationToken;
@@ -21,6 +25,9 @@ import com.github.benmanes.caffeine.cache.LoadingCache;
 import io.quarkiverse.githubapp.GitHubClientProvider;
 import io.quarkiverse.githubapp.runtime.config.GitHubAppRuntimeConfig;
 import io.quarkiverse.githubapp.runtime.signing.JwtTokenCreator;
+import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.StartupEvent;
+import io.quarkus.runtime.configuration.ConfigurationException;
 import io.smallrye.graphql.client.dynamic.api.DynamicGraphQLClient;
 import io.smallrye.graphql.client.dynamic.api.DynamicGraphQLClientBuilder;
 
@@ -32,14 +39,17 @@ public class GitHubService implements GitHubClientProvider {
 
     private final GitHubAppRuntimeConfig gitHubAppRuntimeConfig;
 
-    private final JwtTokenCreator jwtTokenCreator;
+    private final JwtTokenProvider jwtTokenProvider;
 
     private final LoadingCache<Long, CachedInstallationToken> installationTokenCache;
 
     @Inject
+    LaunchMode launchMode;
+
+    @Inject
     public GitHubService(GitHubAppRuntimeConfig gitHubAppRuntimeConfig, JwtTokenCreator jwtTokenCreator) {
         this.gitHubAppRuntimeConfig = gitHubAppRuntimeConfig;
-        this.jwtTokenCreator = jwtTokenCreator;
+        this.jwtTokenProvider = new JwtTokenProvider(gitHubAppRuntimeConfig, jwtTokenCreator);
         this.installationTokenCache = Caffeine.newBuilder()
                 .maximumSize(50)
                 .expireAfter(new Expiry<Long, CachedInstallationToken>() {
@@ -67,6 +77,20 @@ public class GitHubService implements GitHubClientProvider {
                     }
                 })
                 .build(new CreateInstallationToken());
+    }
+
+    public void init(@Observes StartupEvent startupEvent) throws IOException {
+        switch (launchMode) {
+            case TEST:
+                // If some client config is missing, we'll fail later, and only if tests attempt to retrieve the client.
+                break;
+            case NORMAL:
+            case DEVELOPMENT:
+            default:
+                // If some client config is missing, we'll fail on startup.
+                jwtTokenProvider.checkConfig();
+                break;
+        }
     }
 
     @Override
@@ -179,8 +203,7 @@ public class GitHubService implements GitHubClientProvider {
         String jwtToken;
 
         try {
-            // maximum TTL is 10 minutes
-            jwtToken = jwtTokenCreator.createJwtToken(gitHubAppRuntimeConfig.appId, gitHubAppRuntimeConfig.privateKey, 540);
+            jwtToken = jwtTokenProvider.createJwtToken();
         } catch (GeneralSecurityException | IOException e) {
             throw new IllegalStateException("Unable to generate the JWT token", e);
         }
@@ -194,5 +217,46 @@ public class GitHubService implements GitHubClientProvider {
         } catch (IOException e) {
             throw new IllegalStateException("Unable to create a GitHub client for the application", e);
         }
+    }
+
+    private static class JwtTokenProvider {
+        private final String appId;
+        private final PrivateKey privateKey;
+        private final Set<String> missingPropertyKeys = new HashSet<>();
+        private final JwtTokenCreator jwtTokenCreator;
+
+        public JwtTokenProvider(GitHubAppRuntimeConfig gitHubAppRuntimeConfig, JwtTokenCreator jwtTokenCreator) {
+            this.jwtTokenCreator = jwtTokenCreator;
+            if (gitHubAppRuntimeConfig.appId.isPresent()) {
+                appId = gitHubAppRuntimeConfig.appId.get();
+            } else {
+                appId = null;
+                missingPropertyKeys.add("quarkus.github-app.app-id");
+            }
+            if (gitHubAppRuntimeConfig.privateKey.isPresent()) {
+                privateKey = gitHubAppRuntimeConfig.privateKey.get();
+            } else {
+                privateKey = null;
+                missingPropertyKeys.add("quarkus.github-app.private-key");
+            }
+        }
+
+        public String createJwtToken() throws GeneralSecurityException, IOException {
+            checkConfig();
+            // maximum TTL is 10 minutes
+            return jwtTokenCreator.createJwtToken(appId, privateKey, 540);
+        }
+
+        public void checkConfig() {
+            if (!missingPropertyKeys.isEmpty()) {
+                throw new ConfigurationException(
+                        "Missing value for configuration properties " + missingPropertyKeys + "."
+                                + " This configuration is necessary to create the GitHub clients."
+                                + " It is optional only in tests, if GitHub clients are being mocked using quarkus-github-app-testing"
+                                + " (see https://quarkiverse.github.io/quarkiverse-docs/quarkus-github-app/dev/testing.html).",
+                        missingPropertyKeys);
+            }
+        }
+
     }
 }

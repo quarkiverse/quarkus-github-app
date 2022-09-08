@@ -15,9 +15,11 @@ public class GitHubAppRuntimeConfig {
 
     /**
      * The numeric application id provided by GitHub.
+     * <p>
+     * Optional for tests, but mandatory in production and dev mode.
      */
     @ConfigItem
-    public String appId;
+    public Optional<String> appId;
 
     /**
      * The GitHub name of the application.
@@ -35,10 +37,12 @@ public class GitHubAppRuntimeConfig {
 
     /**
      * The RSA private key.
+     * <p>
+     * Optional for tests, but mandatory in production and dev mode.
      */
     @ConfigItem
     @ConvertWith(PrivateKeyConverter.class)
-    public PrivateKey privateKey;
+    public Optional<PrivateKey> privateKey;
 
     /**
      * The webhook secret if defined in the GitHub UI.
