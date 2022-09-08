@@ -88,13 +88,15 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
 <!-- prettier-ignore-start -->
 <!-- markdownlint-disable -->
 <table>
-  <tr>
-    <td align="center"><a href="https://github.com/gsmet/"><img src="https://avatars1.githubusercontent.com/u/1279749?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Guillaume Smet</b></sub></a><br /><a href="https://github.com/quarkiverse/quarkus-github-app/commits?author=gsmet" title="Code">💻</a> <a href="#maintenance-gsmet" title="Maintenance">🚧</a></td>
-    <td align="center"><a href="https://github.com/yrodiere"><img src="https://avatars1.githubusercontent.com/u/412878?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Yoann Rodière</b></sub></a><br /><a href="https://github.com/quarkiverse/quarkus-github-app/commits?author=yrodiere" title="Code">💻</a></td>
-    <td align="center"><a href="https://github.com/jtama"><img src="https://avatars.githubusercontent.com/u/39991688?v=4?s=100" width="100px;" alt=""/><br /><sub><b>jtama</b></sub></a><br /><a href="https://github.com/quarkiverse/quarkus-github-app/commits?author=jtama" title="Code">💻</a></td>
-    <td align="center"><a href="https://github.com/joelmarty"><img src="https://avatars.githubusercontent.com/u/134835?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Joël Marty</b></sub></a><br /><a href="https://github.com/quarkiverse/quarkus-github-app/commits?author=joelmarty" title="Code">💻</a></td>
-    <td align="center"><a href="https://hollycummins.com"><img src="https://avatars.githubusercontent.com/u/11509290?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Holly Cummins</b></sub></a><br /><a href="https://github.com/quarkiverse/quarkus-github-app/commits?author=holly-cummins" title="Code">💻</a></td>
-  </tr>
+  <tbody>
+    <tr>
+      <td align="center"><a href="https://github.com/gsmet/"><img src="https://avatars1.githubusercontent.com/u/1279749?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Guillaume Smet</b></sub></a><br /><a href="https://github.com/quarkiverse/quarkus-github-app/commits?author=gsmet" title="Code">💻</a> <a href="#maintenance-gsmet" title="Maintenance">🚧</a></td>
+      <td align="center"><a href="https://github.com/yrodiere"><img src="https://avatars1.githubusercontent.com/u/412878?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Yoann Rodière</b></sub></a><br /><a href="https://github.com/quarkiverse/quarkus-github-app/commits?author=yrodiere" title="Code">💻</a> <a href="#maintenance-yrodiere" title="Maintenance">🚧</a></td>
+      <td align="center"><a href="https://github.com/jtama"><img src="https://avatars.githubusercontent.com/u/39991688?v=4?s=100" width="100px;" alt=""/><br /><sub><b>jtama</b></sub></a><br /><a href="https://github.com/quarkiverse/quarkus-github-app/commits?author=jtama" title="Code">💻</a></td>
+      <td align="center"><a href="https://github.com/joelmarty"><img src="https://avatars.githubusercontent.com/u/134835?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Joël Marty</b></sub></a><br /><a href="https://github.com/quarkiverse/quarkus-github-app/commits?author=joelmarty" title="Code">💻</a></td>
+      <td align="center"><a href="https://hollycummins.com"><img src="https://avatars.githubusercontent.com/u/11509290?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Holly Cummins</b></sub></a><br /><a href="https://github.com/quarkiverse/quarkus-github-app/commits?author=holly-cummins" title="Code">💻</a></td>
+    </tr>
+  </tbody>
 </table>
 
 <!-- markdownlint-restore -->
