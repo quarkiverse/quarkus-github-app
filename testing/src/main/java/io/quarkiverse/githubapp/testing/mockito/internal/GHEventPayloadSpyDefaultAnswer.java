@@ -12,6 +12,8 @@ import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import io.quarkiverse.githubapp.testing.internal.MockitoUtils;
+
 /**
  * The default answer for all {@link GHEventPayload} spies.
  * <p>
@@ -41,11 +43,13 @@ public final class GHEventPayloadSpyDefaultAnswer implements Answer<Object>, Ser
         }
         GHObject castOriginal = (GHObject) original;
         Class<? extends GHObject> type = castOriginal.getClass();
-        DefaultableMocking<? extends GHObject> mocking = defaultableMockingProvider.apply(castOriginal);
-        return Mockito.mock(type, withSettings().stubOnly()
-                .withoutAnnotations()
-                .spiedInstance(original)
-                .defaultAnswer(new GHObjectSpyDefaultAnswer(clientSpy, this, mocking)));
+        return MockitoUtils.doWithMockedClassClassLoader(type, () -> {
+            DefaultableMocking<? extends GHObject> mocking = defaultableMockingProvider.apply(castOriginal);
+            return Mockito.mock(type, withSettings().stubOnly()
+                    .withoutAnnotations()
+                    .spiedInstance(original)
+                    .defaultAnswer(new GHObjectSpyDefaultAnswer(clientSpy, this, mocking)));
+        });
     }
 
 }

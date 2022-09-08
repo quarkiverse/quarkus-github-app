@@ -54,8 +54,10 @@ public final class GitHubMockContextImpl implements GitHubMockContext, GitHubMoc
 
     GitHubMockContextImpl(Answers defaultAnswers) {
         this.defaultAnswers = defaultAnswers;
-        fileDownloader = Mockito.mock(GitHubFileDownloader.class);
-        service = Mockito.mock(GitHubService.class);
+        fileDownloader = MockitoUtils.doWithMockedClassClassLoader(GitHubFileDownloader.class,
+                () -> Mockito.mock(GitHubFileDownloader.class));
+        service = MockitoUtils.doWithMockedClassClassLoader(GitHubFileDownloader.class,
+                () -> Mockito.mock(GitHubService.class));
         repositories = new MockMap<>(GHRepository.class);
         clients = new MockMap<>(GitHub.class,
                 // Configure the client mocks to be offline, because we don't want to send HTTP requests.
@@ -216,15 +218,16 @@ public final class GitHubMockContextImpl implements GitHubMockContext, GitHubMoc
         }
 
         private DefaultableMocking<T> getOrCreate(ID id, Consumer<T> consumerIfCreated) {
-            return map.computeIfAbsent(id, theId -> {
+            return map.computeIfAbsent(id, theId -> MockitoUtils.doWithMockedClassClassLoader(clazz, () -> {
                 DefaultableMocking<T> result = create(theId);
                 consumerIfCreated.accept(result.mock());
                 return result;
-            });
+            }));
         }
 
         private DefaultableMocking<T> create(Object id) {
-            return DefaultableMocking.create(clazz, id, mockSettingsContributor);
+            return MockitoUtils.doWithMockedClassClassLoader(clazz,
+                    () -> DefaultableMocking.create(clazz, id, mockSettingsContributor));
         }
     }
 }
