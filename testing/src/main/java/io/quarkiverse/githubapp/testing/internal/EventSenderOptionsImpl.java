@@ -10,7 +10,10 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import org.kohsuke.github.GHEvent;
 
 import io.quarkiverse.githubapp.runtime.Headers;
+import io.quarkiverse.githubapp.runtime.Routes;
 import io.quarkiverse.githubapp.testing.dsl.EventSenderOptions;
+import io.quarkus.arc.Arc;
+import io.vertx.core.json.JsonObject;
 import okhttp3.Call;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -26,6 +29,7 @@ final class EventSenderOptionsImpl implements EventSenderOptions {
 
     private UUID requestId;
     private UUID deliveryId;
+    private long installationId;
     private RequestBody requestBody;
 
     EventSenderOptionsImpl(GitHubAppTestingContext testingContext) {
@@ -60,7 +64,9 @@ final class EventSenderOptionsImpl implements EventSenderOptions {
         return payloadFromString(payload, MediaType.get(contentType));
     }
 
-    private EventSenderOptions payloadFromString(String payload, MediaType contentType) {
+    private EventSenderOptionsImpl payloadFromString(String payload, MediaType contentType) {
+        JsonObject payloadAsJsonObject = new JsonObject(payload);
+        installationId = Arc.container().instance(Routes.class).get().extractInstallationId(payloadAsJsonObject);
         requestBody = RequestBody.create(contentType, payload);
         return this;
     }
@@ -76,8 +82,7 @@ final class EventSenderOptionsImpl implements EventSenderOptions {
     }
 
     private EventSenderOptionsImpl payloadFromClasspath(String path, MediaType contentType) throws IOException {
-        requestBody = RequestBody.create(contentType, testingContext.getFromClasspath(path));
-        return this;
+        return payloadFromString(testingContext.getFromClasspath(path), contentType);
     }
 
     @Override
@@ -95,6 +100,12 @@ final class EventSenderOptionsImpl implements EventSenderOptions {
                 .addHeader(Headers.X_GITHUB_DELIVERY, (deliveryId == null ? UUID.randomUUID() : deliveryId).toString())
                 .addHeader(Headers.X_GITHUB_EVENT, symbol(event))
                 .build());
+
+        // Only stub these methods when we know they are going to get called;
+        // otherwise tests might throw a UnnecessaryStubbingException when using Mockito's "strict-stubs" mode
+        // and testing background processing instead of events.
+        testingContext.mocks.initEventStubs(installationId);
+
         testingContext.errorHandler.captured = null;
         AssertionError callAssertionError = null;
         try {

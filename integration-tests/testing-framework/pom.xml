@@ -28,6 +28,12 @@
             <artifactId>assertj-core</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- For MockitoExtension; not everyone will want to use that, so the testing framework itself doesn't depend on it. -->
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
 
         <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->
         <dependency>

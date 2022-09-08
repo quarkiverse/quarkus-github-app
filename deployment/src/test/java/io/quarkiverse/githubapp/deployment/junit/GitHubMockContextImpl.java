@@ -1,6 +1,7 @@
 package io.quarkiverse.githubapp.deployment.junit;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
@@ -77,7 +78,7 @@ public final class GitHubMockContextImpl {
     void init() {
         reset();
 
-        when(service.getInstallationClient(any()))
+        when(service.getInstallationClient(anyLong()))
                 .thenAnswer(invocation -> client(invocation.getArgument(0, Long.class)));
     }
 

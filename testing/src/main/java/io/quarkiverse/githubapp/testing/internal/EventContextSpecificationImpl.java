@@ -2,6 +2,7 @@ package io.quarkiverse.githubapp.testing.internal;
 
 import io.quarkiverse.githubapp.testing.dsl.EventContextSpecification;
 import io.quarkiverse.githubapp.testing.dsl.GitHubMockSetup;
+import io.quarkiverse.githubapp.testing.dsl.TestedAction;
 
 public final class EventContextSpecificationImpl implements EventContextSpecification {
     private final GitHubAppTestingContext testingContext;
@@ -23,4 +24,9 @@ public final class EventContextSpecificationImpl implements EventContextSpecific
         return new EventSenderOptionsImpl(testingContext);
     }
 
+    @Override
+    public <T extends Throwable> EventHandlingResponseImpl when(TestedAction<T> action) throws T {
+        action.run();
+        return new EventHandlingResponseImpl(testingContext);
+    }
 }

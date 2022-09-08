@@ -134,7 +134,7 @@ public class Routes {
         return value == null || value.isBlank();
     }
 
-    private Long extractInstallationId(JsonObject body) {
+    public Long extractInstallationId(JsonObject body) {
         Long installationId;
 
         JsonObject installation = body.getJsonObject("installation");

@@ -18,13 +18,14 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.Expiry;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 
+import io.quarkiverse.githubapp.GitHubClientProvider;
 import io.quarkiverse.githubapp.runtime.config.GitHubAppRuntimeConfig;
 import io.quarkiverse.githubapp.runtime.signing.JwtTokenCreator;
 import io.smallrye.graphql.client.dynamic.api.DynamicGraphQLClient;
 import io.smallrye.graphql.client.dynamic.api.DynamicGraphQLClientBuilder;
 
 @ApplicationScoped
-public class GitHubService {
+public class GitHubService implements GitHubClientProvider {
 
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String AUTHORIZATION_HEADER_BEARER = "Bearer %s";
@@ -68,7 +69,8 @@ public class GitHubService {
                 .build(new CreateInstallationToken());
     }
 
-    public GitHub getInstallationClient(Long installationId) {
+    @Override
+    public GitHub getInstallationClient(long installationId) {
         try {
             return createInstallationClient(installationId);
         } catch (IOException e1) {
@@ -90,7 +92,8 @@ public class GitHubService {
         }
     }
 
-    public DynamicGraphQLClient getInstallationGraphQLClient(Long installationId) {
+    @Override
+    public DynamicGraphQLClient getInstallationGraphQLClient(long installationId) {
         try {
             return createInstallationGraphQLClient(installationId);
         } catch (IOException | ExecutionException | InterruptedException e1) {
@@ -112,7 +115,7 @@ public class GitHubService {
         }
     }
 
-    private GitHub createInstallationClient(Long installationId) throws IOException {
+    private GitHub createInstallationClient(long installationId) throws IOException {
         CachedInstallationToken installationToken = installationTokenCache.get(installationId);
 
         final GitHubBuilder gitHubBuilder = new GitHubBuilder()
@@ -127,7 +130,7 @@ public class GitHubService {
         return gitHub;
     }
 
-    private DynamicGraphQLClient createInstallationGraphQLClient(Long installationId)
+    private DynamicGraphQLClient createInstallationGraphQLClient(long installationId)
             throws IOException, ExecutionException, InterruptedException {
         CachedInstallationToken installationToken = installationTokenCache.get(installationId);
 
@@ -167,6 +170,11 @@ public class GitHubService {
     }
 
     // TODO even if we have a cache for the other one, we should probably also keep this one around for a few minutes
+    @Override
+    public GitHub getApplicationClient() {
+        return createApplicationGitHub();
+    }
+
     private GitHub createApplicationGitHub() {
         String jwtToken;
 
