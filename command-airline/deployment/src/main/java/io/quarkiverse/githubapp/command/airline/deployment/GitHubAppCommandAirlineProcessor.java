@@ -517,7 +517,7 @@ class GitHubAppCommandAirlineProcessor {
                     .filter(mi -> RUN_METHOD.equals(mi.name()))
                     .collect(Collectors.toList());
 
-            if (runMethods.size() == 0) {
+            if (runMethods.isEmpty()) {
                 continue;
             }
             if (runMethods.size() > 1) {
