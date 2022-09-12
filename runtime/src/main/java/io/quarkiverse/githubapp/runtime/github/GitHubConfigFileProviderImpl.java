@@ -45,11 +45,17 @@ public class GitHubConfigFileProviderImpl implements GitHubConfigFileProvider {
 
     @Override
     public <T> Optional<T> fetchConfigFile(GHRepository repository, String path, ConfigFile.Source source, Class<T> type) {
+        return fetchConfigFile(repository, null, path, source, type);
+    }
+
+    @Override
+    public <T> Optional<T> fetchConfigFile(GHRepository repository, String ref, String path, ConfigFile.Source source,
+            Class<T> type) {
         GHRepository configGHRepository = getConfigRepository(repository, source, path);
 
         String fullPath = getFilePath(path);
 
-        Optional<String> contentOptional = gitHubFileDownloader.getFileContent(configGHRepository, fullPath);
+        Optional<String> contentOptional = gitHubFileDownloader.getFileContent(configGHRepository, ref, fullPath);
         if (contentOptional.isEmpty()) {
             return Optional.empty();
         }

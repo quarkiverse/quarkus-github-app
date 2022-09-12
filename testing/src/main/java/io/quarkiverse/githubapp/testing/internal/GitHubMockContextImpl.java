@@ -3,6 +3,7 @@ package io.quarkiverse.githubapp.testing.internal;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
@@ -100,6 +101,15 @@ public final class GitHubMockContextImpl implements GitHubMockContext, GitHubMoc
     @Override
     public GitHubMockConfigFileSetupContext configFile(GHRepository repository, String pathInRepository) {
         return new GitHubMockConfigFileSetupContext() {
+
+            private String ref;
+
+            @Override
+            public GitHubMockConfigFileSetupContext withRef(String ref) {
+                this.ref = ref;
+                return this;
+            }
+
             @Override
             public void fromClasspath(String pathInClasspath) throws IOException {
                 fromString(GitHubAppTestingContext.get().getFromClasspath(pathInClasspath));
@@ -108,7 +118,7 @@ public final class GitHubMockContextImpl implements GitHubMockContext, GitHubMoc
             @Override
             public void fromString(String configFile) {
                 when(fileDownloader.getFileContent(repository == null ? any() : same(repository),
-                        eq(GitHubConfigFileProviderImpl.getFilePath(pathInRepository))))
+                        ref == null ? isNull() : eq(ref), eq(GitHubConfigFileProviderImpl.getFilePath(pathInRepository))))
                         .thenReturn(Optional.of(configFile));
             }
         };

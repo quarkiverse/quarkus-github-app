@@ -22,7 +22,7 @@ public class GitHubFileDownloader {
     LaunchMode launchMode;
 
     @SuppressWarnings("deprecation")
-    public Optional<String> getFileContent(GHRepository ghRepository, String fullPath) {
+    public Optional<String> getFileContent(GHRepository ghRepository, String ref, String fullPath) {
         try {
             GHContent ghContent = ghRepository.getFileContent(fullPath);
 

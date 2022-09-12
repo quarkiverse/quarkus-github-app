@@ -20,16 +20,21 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.kohsuke.github.GHApp;
 import org.kohsuke.github.GHAppInstallation;
 import org.kohsuke.github.GHEvent;
+import org.kohsuke.github.GHPullRequest;
 import org.kohsuke.github.GHRepository;
 import org.kohsuke.github.GitHub;
 import org.kohsuke.github.PagedIterable;
 import org.kohsuke.github.PagedSearchIterable;
 import org.kohsuke.github.ReactionContent;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import io.quarkiverse.githubapp.ConfigFile;
+import io.quarkiverse.githubapp.GitHubConfigFileProvider;
+import io.quarkiverse.githubapp.it.testingframework.config.MyConfigFile;
 import io.quarkiverse.githubapp.testing.GitHubAppTest;
+import io.quarkus.arc.Arc;
 import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
@@ -139,6 +144,56 @@ public class TestingFrameworkTest {
                 .hasMessageContaining("Argument(s) are different! Wanted:\n" +
                         "GHIssue#750705278.addLabels(\n" +
                         "    \"valueFromConfigFile\"\n" +
+                        ");");
+    }
+
+    @Test
+    @ExtendWith(MockitoExtension.class) // To get strict stubs, which simplifies verifyNoMoreInteractions() (stubbed calls are verified automatically)
+    void configFileMocking_linting() {
+        ThrowingCallable assertion = () -> given().github(mocks -> {
+            // The config file from the main branch, passed to the listener
+            mocks.configFile("config.yml").fromString("someProperty: \"valueFromConfigFile\"");
+            // The config file from the PR, retrieved explicitly through GitHubConfigFileProvider
+            mocks.configFile("config.yml")
+                    .withRef("09d9cfb430c2192856e62b330145cabfe3610aa1") // HEAD of PR
+                    .fromString("someProperty:\n  - \"invalidListValueForStringProperty\"");
+        })
+                .when().payloadFromClasspath("/pr-opened-dependabot.json")
+                .event(GHEvent.PULL_REQUEST)
+                .then().github(mocks -> {
+                    verify(mocks.pullRequest(841242879))
+                            .getHead();
+                    verify(mocks.pullRequest(841242879))
+                            .comment(ArgumentMatchers.contains("Linting failed! Error:\n"));
+                    verifyNoMoreInteractions(mocks.ghObjects());
+                });
+
+        // Success (linting detects the invalid content)
+        PullRequestEventListener.behavior = (payload, configFile) -> {
+            GHPullRequest pr = payload.getPullRequest();
+            String sha = pr.getHead().getSha();
+            GitHubConfigFileProvider configFileProvider = Arc.container().instance(GitHubConfigFileProvider.class).get();
+            try {
+                configFileProvider.fetchConfigFile(payload.getRepository(), sha,
+                        "config.yml", ConfigFile.Source.CURRENT_REPOSITORY, MyConfigFile.class);
+            } catch (IllegalStateException e) {
+                pr.comment("Linting failed! Error:\n" + e.getMessage());
+            }
+        };
+        assertThatCode(assertion).doesNotThrowAnyException();
+
+        // Failure (no linting)
+        PullRequestEventListener.behavior = (payload, configFile) -> {
+            // act as the other behavior...
+            GHPullRequest pr = payload.getPullRequest();
+            String sha = pr.getHead().getSha();
+            // ... then forget to lint.
+        };
+        assertThatThrownBy(assertion)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("Wanted but not invoked:\n" +
+                        "GHPullRequest#841242879.comment(\n" +
+                        "    contains(\"Linting failed! Error:\n\")\n" +
                         ");");
     }
 
