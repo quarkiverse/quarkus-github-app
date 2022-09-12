@@ -30,6 +30,7 @@ import org.mockito.Answers;
 import org.mockito.MockSettings;
 import org.mockito.Mockito;
 
+import io.quarkiverse.githubapp.runtime.github.GitHubConfigFileProviderImpl;
 import io.quarkiverse.githubapp.runtime.github.GitHubFileDownloader;
 import io.quarkiverse.githubapp.runtime.github.GitHubService;
 import io.quarkiverse.githubapp.testing.dsl.GitHubMockContext;
@@ -96,7 +97,7 @@ public final class GitHubMockContextImpl implements GitHubMockContext, GitHubMoc
 
     @Override
     public void configFileFromString(String pathInRepository, String configFile) {
-        when(fileDownloader.getFileContent(any(), eq(getGitHubFilePath(pathInRepository))))
+        when(fileDownloader.getFileContent(any(), eq(GitHubConfigFileProviderImpl.getFilePath(pathInRepository))))
                 .thenReturn(Optional.of(configFile));
     }
 
@@ -179,14 +180,6 @@ public final class GitHubMockContextImpl implements GitHubMockContext, GitHubMoc
         for (MockMap<?, ?> mockMap : allMockMaps) {
             mockMap.map.clear();
         }
-    }
-
-    private static String getGitHubFilePath(String path) {
-        if (path.startsWith("/")) {
-            return path.substring(1);
-        }
-
-        return ".github/" + path;
     }
 
     private DefaultableMocking<? extends GHObject> ghObjectMocking(GHObject original) {

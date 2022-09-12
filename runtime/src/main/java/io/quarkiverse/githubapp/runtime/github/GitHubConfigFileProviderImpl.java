@@ -1,15 +1,13 @@
-package io.quarkiverse.githubapp.runtime;
+package io.quarkiverse.githubapp.runtime.github;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 
-import javax.enterprise.context.RequestScoped;
+import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
 import org.kohsuke.github.GHRepository;
@@ -17,12 +15,12 @@ import org.kohsuke.github.GHRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkiverse.githubapp.ConfigFile;
-import io.quarkiverse.githubapp.runtime.UtilsProducer.Yaml;
+import io.quarkiverse.githubapp.GitHubConfigFileProvider;
+import io.quarkiverse.githubapp.runtime.UtilsProducer;
 import io.quarkiverse.githubapp.runtime.config.GitHubAppRuntimeConfig;
-import io.quarkiverse.githubapp.runtime.github.GitHubFileDownloader;
 
-@RequestScoped
-public class ConfigFileReader {
+@ApplicationScoped
+public class GitHubConfigFileProviderImpl implements GitHubConfigFileProvider {
 
     private static final List<String> YAML_EXTENSIONS = Arrays.asList(".yml", ".yaml");
     private static final List<String> JSON_EXTENSIONS = Collections.singletonList(".json");
@@ -31,8 +29,6 @@ public class ConfigFileReader {
     private static final String DEFAULT_DIRECTORY = ".github/";
     private static final String PARENT_DIRECTORY = "..";
     private static final String ROOT_DIRECTORY = "/";
-
-    private final Map<String, Object> cache = new ConcurrentHashMap<>();
 
     @Inject
     GitHubAppRuntimeConfig gitHubAppRuntimeConfig;
@@ -44,31 +40,19 @@ public class ConfigFileReader {
     ObjectMapper jsonObjectMapper;
 
     @Inject
-    @Yaml
+    @UtilsProducer.Yaml
     ObjectMapper yamlObjectMapper;
 
-    public Object getConfigObject(GHRepository ghRepository, String path, ConfigFile.Source source, Class<?> type) {
-        String fullPath = getFilePath(path.trim());
-        ConfigFile.Source effectiveSource = gitHubAppRuntimeConfig.getEffectiveSource(source);
-        String cacheKey = getCacheKey(ghRepository, fullPath, effectiveSource);
+    @Override
+    public <T> Optional<T> fetchConfigFile(GHRepository repository, String path, ConfigFile.Source source, Class<T> type) {
+        GHRepository configGHRepository = getConfigRepository(repository, source, path);
 
-        Object cachedObject = cache.get(cacheKey);
-        if (cachedObject != null) {
-            return cachedObject;
-        }
+        String fullPath = getFilePath(path);
 
-        return cache.computeIfAbsent(cacheKey, k -> readConfigFile(ghRepository, fullPath, effectiveSource, type));
-    }
-
-    private Object readConfigFile(GHRepository currentGhRepository, String fullPath, ConfigFile.Source source, Class<?> type) {
-        GHRepository ghRepository = getConfigRepository(currentGhRepository, source, fullPath);
-
-        Optional<String> contentOptional = gitHubFileDownloader.getFileContent(ghRepository, fullPath);
+        Optional<String> contentOptional = gitHubFileDownloader.getFileContent(configGHRepository, fullPath);
         if (contentOptional.isEmpty()) {
-            return null;
+            return Optional.empty();
         }
-
-        String content = contentOptional.get();
 
         if (matchExtensions(fullPath, TEXT_EXTENSIONS) && !String.class.equals(type)) {
             throw new IllegalArgumentException(
@@ -77,19 +61,28 @@ public class ConfigFileReader {
         }
 
         if (String.class.equals(type)) {
-            return content;
+            @SuppressWarnings("unchecked")
+            Optional<T> result = (Optional<T>) contentOptional;
+            return result;
         }
 
         try {
             ObjectMapper objectMapper = getObjectMapper(fullPath);
-            return objectMapper.readValue(content, type);
+            return Optional.ofNullable(objectMapper.readValue(contentOptional.get(), type));
         } catch (Exception e) {
             throw new IllegalStateException("Error deserializing config file " + fullPath + " to type " + type.getName(), e);
         }
     }
 
+    public ConfigFile.Source getEffectiveSource(ConfigFile.Source source) {
+        return (source == ConfigFile.Source.DEFAULT)
+                ? (gitHubAppRuntimeConfig.readConfigFilesFromSourceRepository ? ConfigFile.Source.SOURCE_REPOSITORY
+                        : ConfigFile.Source.CURRENT_REPOSITORY)
+                : source;
+    }
+
     private GHRepository getConfigRepository(GHRepository ghRepository, ConfigFile.Source source, String path) {
-        ConfigFile.Source effectiveSource = gitHubAppRuntimeConfig.getEffectiveSource(source);
+        ConfigFile.Source effectiveSource = getEffectiveSource(source);
 
         if (effectiveSource == ConfigFile.Source.CURRENT_REPOSITORY) {
             return ghRepository;
@@ -113,13 +106,6 @@ public class ConfigFileReader {
         }
     }
 
-    private static String getCacheKey(GHRepository ghRepository, String fullPath,
-            ConfigFile.Source effectiveSource) {
-        // we should only handle the config files of one repository in a given ConfigFileReader
-        // as it's request scoped but let's be on the safe side
-        return ghRepository.getFullName() + ":" + effectiveSource.name() + ":" + fullPath;
-    }
-
     private ObjectMapper getObjectMapper(String path) {
         if (matchExtensions(path, YAML_EXTENSIONS)) {
             return yamlObjectMapper;
@@ -139,15 +125,17 @@ public class ConfigFileReader {
         return false;
     }
 
-    private static String getFilePath(String path) {
-        if (path.contains(PARENT_DIRECTORY)) {
+    public static String getFilePath(String path) {
+        String trimmedPath = path.trim();
+
+        if (trimmedPath.contains(PARENT_DIRECTORY)) {
             throw new IllegalArgumentException("Config file paths containing '..' are not accepted: " + path);
         }
 
-        if (path.startsWith(ROOT_DIRECTORY)) {
+        if (trimmedPath.startsWith(ROOT_DIRECTORY)) {
             return path.substring(1);
         }
 
-        return DEFAULT_DIRECTORY + path;
+        return DEFAULT_DIRECTORY + trimmedPath;
     }
 }
