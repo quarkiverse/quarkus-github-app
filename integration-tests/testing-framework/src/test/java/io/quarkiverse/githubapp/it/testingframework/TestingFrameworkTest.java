@@ -28,6 +28,7 @@ import org.kohsuke.github.ReactionContent;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import io.quarkiverse.githubapp.ConfigFile;
 import io.quarkiverse.githubapp.testing.GitHubAppTest;
 import io.quarkus.test.junit.QuarkusTest;
 
@@ -52,7 +53,7 @@ public class TestingFrameworkTest {
                 .event(GHEvent.ISSUES)
                 .then().github(mocks -> {
                 }))
-                        .doesNotThrowAnyException();
+                .doesNotThrowAnyException();
         assertThat(capture[0]).isEqualTo("someValue");
     }
 
@@ -153,9 +154,9 @@ public class TestingFrameworkTest {
                             .addLabels("someValue");
                     verifyNoMoreInteractions(mocks.ghObjects());
                 }))
-                        .hasMessageContaining("The event handler threw an exception:")
-                        .hasMessageEndingWith("null")
-                        .hasStackTraceContaining("at org.kohsuke.github.GHIssue.getComments");
+                .hasMessageContaining("The event handler threw an exception:")
+                .hasMessageEndingWith("null")
+                .hasStackTraceContaining("at org.kohsuke.github.GHIssue.getComments");
     }
 
     @Test
@@ -182,17 +183,18 @@ public class TestingFrameworkTest {
         assertThatCode(() -> given()
                 .when().payloadFromClasspath("/pr-opened-dependabot.json")
                 .event(GHEvent.PULL_REQUEST))
-                        .doesNotThrowAnyException();
+                .doesNotThrowAnyException();
         assertThat(capture[0]).isEqualTo("dependabot[bot]");
     }
 
     @Test
     @ExtendWith(MockitoExtension.class) // To get strict stubs, which simplifies verifyNoMoreInteractions() (stubbed calls are verified automatically)
     void clientProvider() {
-        List<String> capture = new ArrayList<>();
+        String configFilePath = "foo.yml";
+        List<MyConfigFile> capture = new ArrayList<>();
         // Use case: a background processor goes through all installations of the app,
         // to perform an operation on every single repository.
-        BackgroundProcessor.behavior = (clientProvider) -> {
+        BackgroundProcessor.behavior = (clientProvider, configFileProvider) -> {
             for (GHAppInstallation installation : clientProvider.getApplicationClient().getApp().listInstallations()) {
                 for (GHRepository repository : installation.listRepositories()) {
                     GitHub installationClient = clientProvider.getInstallationClient(installation.getId());
@@ -201,7 +203,8 @@ public class TestingFrameworkTest {
                     // Simulate doing stuff with the repository.
                     // Normally that stuff would require enhanced permissions,
                     // but here's we're just calling getFullName() to simplify.
-                    capture.add(repository.getSshUrl());
+                    capture.add(configFileProvider.fetchConfigFile(repository, configFilePath, ConfigFile.Source.DEFAULT,
+                            MyConfigFile.class).orElse(null));
                 }
             }
         };
@@ -236,12 +239,12 @@ public class TestingFrameworkTest {
 
                     // Installation clients will return different Repository objects than the application client:
                     // that's expected.
-                    Mockito.when(mocks.repository("quarkusio/quarkus").getSshUrl())
-                            .thenReturn("ssh://github.com/quarkusio/quarkus.git");
-                    Mockito.when(mocks.repository("quarkiverse/quarkus-github-app").getSshUrl())
-                            .thenReturn("ssh://github.com/quarkiverse/quarkus-github-app");
-                    Mockito.when(mocks.repository("quarkiverse/quarkus-github-api").getSshUrl())
-                            .thenReturn("ssh://github.com/quarkiverse/quarkus-github-api");
+                    mocks.configFile(mocks.repository("quarkusio/quarkus"), configFilePath)
+                            .fromString("someProperty: \"quarkus with some text 42\"");
+                    mocks.configFile(mocks.repository("quarkiverse/quarkus-github-app"), configFilePath)
+                            .fromString("someProperty: \"quarkus-github-app with some text 43\"");
+                    mocks.configFile(mocks.repository("quarkiverse/quarkus-github-api"), configFilePath)
+                            .fromString("someProperty: \"quarkus-github-api with some text 44\"");
                 })
                 .when(backgroundProcessor::process)
                 .then().github(mocks -> {
@@ -249,11 +252,11 @@ public class TestingFrameworkTest {
                             installation2Repo2);
                     Mockito.verifyNoMoreInteractions(mocks.ghObjects());
                 }))
-                        .doesNotThrowAnyException();
+                .doesNotThrowAnyException();
         assertThat(capture).containsExactlyInAnyOrder(
-                "ssh://github.com/quarkusio/quarkus.git",
-                "ssh://github.com/quarkiverse/quarkus-github-app.git",
-                "ssh://github.com/quarkiverse/quarkus-github-api.git");
+                new MyConfigFile("quarkus with some text 42"),
+                new MyConfigFile("quarkus-github-app with some text 43"),
+                new MyConfigFile("quarkus-github-api with some text 44"));
     }
 
 }

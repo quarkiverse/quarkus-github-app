@@ -3,6 +3,7 @@ package io.quarkiverse.githubapp.testing.internal;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
@@ -33,6 +34,7 @@ import org.mockito.Mockito;
 import io.quarkiverse.githubapp.runtime.github.GitHubConfigFileProviderImpl;
 import io.quarkiverse.githubapp.runtime.github.GitHubFileDownloader;
 import io.quarkiverse.githubapp.runtime.github.GitHubService;
+import io.quarkiverse.githubapp.testing.dsl.GitHubMockConfigFileSetupContext;
 import io.quarkiverse.githubapp.testing.dsl.GitHubMockContext;
 import io.quarkiverse.githubapp.testing.dsl.GitHubMockSetupContext;
 import io.quarkiverse.githubapp.testing.dsl.GitHubMockVerificationContext;
@@ -91,14 +93,25 @@ public final class GitHubMockContextImpl implements GitHubMockContext, GitHubMoc
     }
 
     @Override
-    public void configFileFromClasspath(String pathInRepository, String pathInClassPath) throws IOException {
-        configFileFromString(pathInRepository, GitHubAppTestingContext.get().getFromClasspath(pathInClassPath));
+    public GitHubMockConfigFileSetupContext configFile(String pathInRepository) {
+        return configFile(null, pathInRepository);
     }
 
     @Override
-    public void configFileFromString(String pathInRepository, String configFile) {
-        when(fileDownloader.getFileContent(any(), eq(GitHubConfigFileProviderImpl.getFilePath(pathInRepository))))
-                .thenReturn(Optional.of(configFile));
+    public GitHubMockConfigFileSetupContext configFile(GHRepository repository, String pathInRepository) {
+        return new GitHubMockConfigFileSetupContext() {
+            @Override
+            public void fromClasspath(String pathInClasspath) throws IOException {
+                fromString(GitHubAppTestingContext.get().getFromClasspath(pathInClasspath));
+            }
+
+            @Override
+            public void fromString(String configFile) {
+                when(fileDownloader.getFileContent(repository == null ? any() : same(repository),
+                        eq(GitHubConfigFileProviderImpl.getFilePath(pathInRepository))))
+                        .thenReturn(Optional.of(configFile));
+            }
+        };
     }
 
     @Override

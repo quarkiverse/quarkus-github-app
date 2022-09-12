@@ -6,6 +6,7 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
 import io.quarkiverse.githubapp.GitHubClientProvider;
+import io.quarkiverse.githubapp.GitHubConfigFileProvider;
 
 @ApplicationScoped
 public class BackgroundProcessor {
@@ -15,11 +16,14 @@ public class BackgroundProcessor {
     @Inject
     GitHubClientProvider clientProvider;
 
+    @Inject
+    GitHubConfigFileProvider configFileProvider;
+
     public void process() throws IOException {
-        behavior.execute(clientProvider);
+        behavior.execute(clientProvider, configFileProvider);
     }
 
     public interface Behavior {
-        void execute(GitHubClientProvider clientProvider) throws IOException;
+        void execute(GitHubClientProvider clientProvider, GitHubConfigFileProvider configFileProvider) throws IOException;
     }
 }
