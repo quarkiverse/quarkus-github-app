@@ -18,7 +18,7 @@ import com.github.rvesse.airline.annotations.Cli;
 public @interface CliOptions {
 
     // Make sure to keep these consistent with the annotation defaults
-    ParseErrorStrategy DEFAULT_PARSE_ERROR_STRATEGY = ParseErrorStrategy.COMMENT_MESSAGE_HELP;
+    ParseErrorStrategy DEFAULT_PARSE_ERROR_STRATEGY = ParseErrorStrategy.COMMENT_MESSAGE_HELP_ERRORS;
     String DEFAULT_PARSE_ERROR_MESSAGE = ":warning: We were not able to parse command: %s";
 
     /**
@@ -29,7 +29,7 @@ public @interface CliOptions {
     /**
      * The error strategy when an error occurs parsing the command.
      */
-    ParseErrorStrategy parseErrorStrategy() default ParseErrorStrategy.COMMENT_MESSAGE_HELP;
+    ParseErrorStrategy parseErrorStrategy() default ParseErrorStrategy.COMMENT_MESSAGE_HELP_ERRORS;
 
     /**
      * The error message when an error occurs parsing the command.
