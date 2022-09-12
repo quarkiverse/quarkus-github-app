@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import java.security.PrivateKey;
 import java.util.Optional;
 
+import io.quarkiverse.githubapp.ConfigFile;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -69,6 +70,14 @@ public class GitHubAppRuntimeConfig {
      */
     @ConfigItem
     public Debug debug;
+
+    public ConfigFile.Source getEffectiveSource(ConfigFile.Source source) {
+        if (source == ConfigFile.Source.DEFAULT) {
+            return readConfigFilesFromSourceRepository ? ConfigFile.Source.SOURCE_REPOSITORY
+                    : ConfigFile.Source.CURRENT_REPOSITORY;
+        }
+        return source;
+    }
 
     @ConfigGroup
     public static class Debug {

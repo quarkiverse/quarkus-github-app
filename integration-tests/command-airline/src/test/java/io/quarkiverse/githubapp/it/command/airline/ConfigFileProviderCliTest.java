@@ -13,7 +13,7 @@ import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
 @GitHubAppTest
-public class ConfigFileReaderCliTest {
+public class ConfigFileProviderCliTest {
 
     public static final String HELLO = "hello from config file reader";
 

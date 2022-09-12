@@ -58,10 +58,10 @@ import io.quarkiverse.githubapp.deployment.DispatchingConfiguration.EventDispatc
 import io.quarkiverse.githubapp.deployment.DispatchingConfiguration.EventDispatchingMethod;
 import io.quarkiverse.githubapp.error.ErrorHandler;
 import io.quarkiverse.githubapp.event.Actions;
-import io.quarkiverse.githubapp.runtime.ConfigFileReader;
 import io.quarkiverse.githubapp.runtime.GitHubAppRecorder;
 import io.quarkiverse.githubapp.runtime.MultiplexedEvent;
 import io.quarkiverse.githubapp.runtime.Multiplexer;
+import io.quarkiverse.githubapp.runtime.RequestScopeCachingGitHubConfigFileProvider;
 import io.quarkiverse.githubapp.runtime.error.DefaultErrorHandler;
 import io.quarkiverse.githubapp.runtime.error.ErrorHandlerBridgeFunction;
 import io.quarkiverse.githubapp.runtime.github.GitHubFileDownloader;
@@ -676,7 +676,7 @@ class GitHubAppProcessor {
                     j++;
                 }
                 if (originalMethod.hasAnnotation(CONFIG_FILE)) {
-                    parameterTypes.add(ConfigFileReader.class.getName());
+                    parameterTypes.add(RequestScopeCachingGitHubConfigFileProvider.class.getName());
                 }
 
                 MethodCreator methodCreator = multiplexerClassCreator.getMethodCreator(
@@ -767,7 +767,8 @@ class GitHubAppProcessor {
                                 .ofMethod(PayloadHelper.class, "getRepository", GHRepository.class, GHEventPayload.class),
                                 payloadRh);
                         ResultHandle configObject = tryBlock.invokeVirtualMethod(
-                                MethodDescriptor.ofMethod(ConfigFileReader.class, "getConfigObject", Object.class,
+                                MethodDescriptor.ofMethod(RequestScopeCachingGitHubConfigFileProvider.class, "getConfigObject",
+                                        Object.class,
                                         GHRepository.class, String.class, ConfigFile.Source.class, Class.class),
                                 configFileReaderRh,
                                 ghRepositoryRh,

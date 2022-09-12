@@ -57,7 +57,11 @@ public interface GitHubMockContext {
         return installationGraphQLClient(installationId);
     }
 
-    GHRepository repository(String id);
+    /**
+     * @param fullName The full name of a GitHub repository, for instance {@code quarkusio/quarkus}.
+     * @return The mock for that repository.
+     */
+    GHRepository repository(String fullName);
 
     GHIssue issue(long id);
 
