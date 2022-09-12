@@ -70,10 +70,23 @@ public abstract class AbstractCommandDispatcher<C> {
         }
 
         String firstLine = firstLineOptional.get().trim();
-        List<String> commandLine = Commandline.translateCommandline(firstLine);
-        String cliName = commandLine.remove(0);
+        String cliName = firstLine.split(" ", 2)[0];
 
         if (!matches(cliName)) {
+            return Optional.empty();
+        }
+
+        List<String> commandLine;
+        try {
+            commandLine = Commandline.translateCommandline(firstLine);
+            commandLine.remove(0);
+        } catch (IllegalArgumentException e) {
+            handleParseError(issueCommentPayload, firstLine, null, e.getMessage());
+
+            if (cliConfig.getDefaultCommandConfig().getReactionStrategy().reactionOnError()) {
+                Reactions.createReaction(issueCommentPayload, ReactionContent.CONFUSED);
+            }
+
             return Optional.empty();
         }
 
@@ -116,7 +129,7 @@ public abstract class AbstractCommandDispatcher<C> {
             Reactions.createReaction(issueCommentPayload, ReactionContent.CONFUSED);
         }
 
-        handleParseError(issueCommentPayload, firstLine, commandLine, parseResult);
+        handleParseError(issueCommentPayload, firstLine, parseResult, null);
 
         return Optional.empty();
     }
@@ -177,8 +190,8 @@ public abstract class AbstractCommandDispatcher<C> {
                 cliConfig.getDefaultCommandConfig());
     }
 
-    private void handleParseError(IssueComment issueCommentPayload, String command, List<String> commandLine,
-            ParseResult<C> parseResult) {
+    private void handleParseError(IssueComment issueCommentPayload, String command,
+            ParseResult<C> parseResult, String error) {
         if (!cliConfig.getParseErrorStrategy().addMessage()) {
             return;
         }
@@ -187,9 +200,14 @@ public abstract class AbstractCommandDispatcher<C> {
         message.append(String.format(cliConfig.getParseErrorMessage(), command));
 
         if (cliConfig.getParseErrorStrategy().includeErrors()) {
-            message.append("\n\nErrors:\n\n");
-            for (ParseException error : parseResult.getErrors()) {
-                message.append("- " + error.getMessage());
+            message.append("\n\nErrors:\n");
+            if (error != null) {
+                message.append("\n- " + error);
+            }
+            if (parseResult != null) {
+                for (ParseException parseError : parseResult.getErrors()) {
+                    message.append("\n- " + parseError.getMessage());
+                }
             }
         }
 
@@ -197,7 +215,7 @@ public abstract class AbstractCommandDispatcher<C> {
             try {
                 ByteArrayOutputStream helpOs = new ByteArrayOutputStream();
 
-                if (parseResult.getState().getCommand() != null) {
+                if (parseResult != null && parseResult.getState().getCommand() != null) {
                     Help.help(parseResult.getState().getCommand(), helpOs);
                 } else {
                     Help.help(cli.getMetadata(), Collections.emptyList(), helpOs);
