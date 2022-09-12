@@ -21,7 +21,8 @@ public @interface ConfigFile {
 
     /**
      * @return The path to the file in the code repository,
-     * either absolute (if it starts with {@code /}) or relative to {@code /.github/} (if it doesn't start with {@code /}).
+     *         either absolute (if it starts with {@code /}) or relative to {@code /.github/} (if it doesn't start with
+     *         {@code /}).
      */
     String value();
 
@@ -38,10 +39,10 @@ public @interface ConfigFile {
         /**
          * Default behavior:
          * <ul>
-         *     <li>If {@code quarkus.github-app.read-config-files-from-source-repository}
-         *     is unset or set to {@code false}, behaves as {@link #CURRENT_REPOSITORY}</li>
-         *     <li>If {@code quarkus.github-app.read-config-files-from-source-repository}
-         *     is set to {@code true}, behaves as {@link #SOURCE_REPOSITORY}</li>
+         * <li>If {@code quarkus.github-app.read-config-files-from-source-repository}
+         * is unset or set to {@code false}, behaves as {@link #CURRENT_REPOSITORY}</li>
+         * <li>If {@code quarkus.github-app.read-config-files-from-source-repository}
+         * is set to {@code true}, behaves as {@link #SOURCE_REPOSITORY}</li>
          * </ul>
          */
         DEFAULT,

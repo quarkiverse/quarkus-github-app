@@ -48,21 +48,21 @@ public class ConfigFileReader {
     ObjectMapper yamlObjectMapper;
 
     public Object getConfigObject(GHRepository ghRepository, String path, ConfigFile.Source source, Class<?> type) {
-        GHRepository configGHRepository = getConfigRepository(ghRepository, source,
-                gitHubAppRuntimeConfig.readConfigFilesFromSourceRepository, path);
-
         String fullPath = getFilePath(path.trim());
-        String cacheKey = getCacheKey(configGHRepository, fullPath);
+        ConfigFile.Source effectiveSource = gitHubAppRuntimeConfig.getEffectiveSource(source);
+        String cacheKey = getCacheKey(ghRepository, fullPath, effectiveSource);
 
         Object cachedObject = cache.get(cacheKey);
         if (cachedObject != null) {
             return cachedObject;
         }
 
-        return cache.computeIfAbsent(cacheKey, k -> readConfigFile(configGHRepository, fullPath, type));
+        return cache.computeIfAbsent(cacheKey, k -> readConfigFile(ghRepository, fullPath, effectiveSource, type));
     }
 
-    private Object readConfigFile(GHRepository ghRepository, String fullPath, Class<?> type) {
+    private Object readConfigFile(GHRepository currentGhRepository, String fullPath, ConfigFile.Source source, Class<?> type) {
+        GHRepository ghRepository = getConfigRepository(currentGhRepository, source, fullPath);
+
         Optional<String> contentOptional = gitHubFileDownloader.getFileContent(ghRepository, fullPath);
         if (contentOptional.isEmpty()) {
             return null;
@@ -88,14 +88,8 @@ public class ConfigFileReader {
         }
     }
 
-    private static GHRepository getConfigRepository(GHRepository ghRepository,
-            ConfigFile.Source source,
-            boolean readConfigFilesFromSourceRepository,
-            String path) {
-        ConfigFile.Source effectiveSource = (source == ConfigFile.Source.DEFAULT)
-                ? (readConfigFilesFromSourceRepository ? ConfigFile.Source.SOURCE_REPOSITORY
-                        : ConfigFile.Source.CURRENT_REPOSITORY)
-                : source;
+    private GHRepository getConfigRepository(GHRepository ghRepository, ConfigFile.Source source, String path) {
+        ConfigFile.Source effectiveSource = gitHubAppRuntimeConfig.getEffectiveSource(source);
 
         if (effectiveSource == ConfigFile.Source.CURRENT_REPOSITORY) {
             return ghRepository;
@@ -119,10 +113,11 @@ public class ConfigFileReader {
         }
     }
 
-    private static String getCacheKey(GHRepository ghRepository, String fullPath) {
+    private static String getCacheKey(GHRepository ghRepository, String fullPath,
+            ConfigFile.Source effectiveSource) {
         // we should only handle the config files of one repository in a given ConfigFileReader
         // as it's request scoped but let's be on the safe side
-        return ghRepository.getFullName() + ROOT_DIRECTORY + fullPath;
+        return ghRepository.getFullName() + ":" + effectiveSource.name() + ":" + fullPath;
     }
 
     private ObjectMapper getObjectMapper(String path) {
