@@ -102,8 +102,8 @@ public final class GitHubMockContextImpl implements GitHubMockContext, GitHubMoc
     }
 
     @Override
-    public GHRepository repository(String id) {
-        return repositories.getOrCreate(id).mock();
+    public GHRepository repository(String fullName) {
+        return repositories.getOrCreate(fullName).mock();
     }
 
     @Override

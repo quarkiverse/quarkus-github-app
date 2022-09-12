@@ -52,7 +52,7 @@ public class TestingFrameworkTest {
                 .event(GHEvent.ISSUES)
                 .then().github(mocks -> {
                 }))
-                .doesNotThrowAnyException();
+                        .doesNotThrowAnyException();
         assertThat(capture[0]).isEqualTo("someValue");
     }
 
@@ -153,9 +153,9 @@ public class TestingFrameworkTest {
                             .addLabels("someValue");
                     verifyNoMoreInteractions(mocks.ghObjects());
                 }))
-                .hasMessageContaining("The event handler threw an exception:")
-                .hasMessageEndingWith("null")
-                .hasStackTraceContaining("at org.kohsuke.github.GHIssue.getComments");
+                        .hasMessageContaining("The event handler threw an exception:")
+                        .hasMessageEndingWith("null")
+                        .hasStackTraceContaining("at org.kohsuke.github.GHIssue.getComments");
     }
 
     @Test
@@ -182,7 +182,7 @@ public class TestingFrameworkTest {
         assertThatCode(() -> given()
                 .when().payloadFromClasspath("/pr-opened-dependabot.json")
                 .event(GHEvent.PULL_REQUEST))
-                .doesNotThrowAnyException();
+                        .doesNotThrowAnyException();
         assertThat(capture[0]).isEqualTo("dependabot[bot]");
     }
 
@@ -197,11 +197,11 @@ public class TestingFrameworkTest {
                 for (GHRepository repository : installation.listRepositories()) {
                     GitHub installationClient = clientProvider.getInstallationClient(installation.getId());
                     // Get the repository with enhanced permissions thanks to the installation client.
-                    repository = installationClient.getRepository(repository.getName());
+                    repository = installationClient.getRepository(repository.getFullName());
                     // Simulate doing stuff with the repository.
                     // Normally that stuff would require enhanced permissions,
                     // but here's we're just calling getFullName() to simplify.
-                    capture.add(repository.getFullName());
+                    capture.add(repository.getSshUrl());
                 }
             }
         };
@@ -222,13 +222,13 @@ public class TestingFrameworkTest {
                             installation2);
                     Mockito.when(app.listInstallations()).thenReturn(appInstallations);
 
-                    Mockito.when(installation1Repo1.getName()).thenReturn("quarkus");
+                    Mockito.when(installation1Repo1.getFullName()).thenReturn("quarkusio/quarkus");
                     PagedSearchIterable<GHRepository> installation1Repos = MockHelper.mockPagedIterable(installation1Repo1);
                     Mockito.when(installation1.listRepositories())
                             .thenReturn(installation1Repos);
 
-                    Mockito.when(installation2Repo1.getName()).thenReturn("quarkus-github-app");
-                    Mockito.when(installation2Repo2.getName()).thenReturn("quarkus-github-api");
+                    Mockito.when(installation2Repo1.getFullName()).thenReturn("quarkiverse/quarkus-github-app");
+                    Mockito.when(installation2Repo2.getFullName()).thenReturn("quarkiverse/quarkus-github-api");
                     PagedSearchIterable<GHRepository> installation2Repos = MockHelper.mockPagedIterable(installation2Repo1,
                             installation2Repo2);
                     Mockito.when(installation2.listRepositories())
@@ -236,11 +236,12 @@ public class TestingFrameworkTest {
 
                     // Installation clients will return different Repository objects than the application client:
                     // that's expected.
-                    Mockito.when(mocks.repository("quarkus").getFullName()).thenReturn("quarkusio/quarkus");
-                    Mockito.when(mocks.repository("quarkus-github-app").getFullName())
-                            .thenReturn("quarkiverse/quarkus-github-app");
-                    Mockito.when(mocks.repository("quarkus-github-api").getFullName())
-                            .thenReturn("quarkiverse/quarkus-github-api");
+                    Mockito.when(mocks.repository("quarkusio/quarkus").getSshUrl())
+                            .thenReturn("ssh://github.com/quarkusio/quarkus.git");
+                    Mockito.when(mocks.repository("quarkiverse/quarkus-github-app").getSshUrl())
+                            .thenReturn("ssh://github.com/quarkiverse/quarkus-github-app");
+                    Mockito.when(mocks.repository("quarkiverse/quarkus-github-api").getSshUrl())
+                            .thenReturn("ssh://github.com/quarkiverse/quarkus-github-api");
                 })
                 .when(backgroundProcessor::process)
                 .then().github(mocks -> {
@@ -248,11 +249,11 @@ public class TestingFrameworkTest {
                             installation2Repo2);
                     Mockito.verifyNoMoreInteractions(mocks.ghObjects());
                 }))
-                .doesNotThrowAnyException();
+                        .doesNotThrowAnyException();
         assertThat(capture).containsExactlyInAnyOrder(
-                "quarkusio/quarkus",
-                "quarkiverse/quarkus-github-app",
-                "quarkiverse/quarkus-github-api");
+                "ssh://github.com/quarkusio/quarkus.git",
+                "ssh://github.com/quarkiverse/quarkus-github-app.git",
+                "ssh://github.com/quarkiverse/quarkus-github-api.git");
     }
 
 }
