@@ -17,7 +17,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkiverse.githubapp.ConfigFile;
 import io.quarkiverse.githubapp.GitHubConfigFileProvider;
 import io.quarkiverse.githubapp.runtime.UtilsProducer;
-import io.quarkiverse.githubapp.runtime.config.GitHubAppRuntimeConfig;
+import io.quarkiverse.githubapp.runtime.config.CheckedConfigProvider;
 
 @ApplicationScoped
 public class GitHubConfigFileProviderImpl implements GitHubConfigFileProvider {
@@ -31,7 +31,7 @@ public class GitHubConfigFileProviderImpl implements GitHubConfigFileProvider {
     private static final String ROOT_DIRECTORY = "/";
 
     @Inject
-    GitHubAppRuntimeConfig gitHubAppRuntimeConfig;
+    CheckedConfigProvider checkedConfigProvider;
 
     @Inject
     GitHubFileDownloader gitHubFileDownloader;
@@ -80,15 +80,8 @@ public class GitHubConfigFileProviderImpl implements GitHubConfigFileProvider {
         }
     }
 
-    public ConfigFile.Source getEffectiveSource(ConfigFile.Source source) {
-        return (source == ConfigFile.Source.DEFAULT)
-                ? (gitHubAppRuntimeConfig.readConfigFilesFromSourceRepository ? ConfigFile.Source.SOURCE_REPOSITORY
-                        : ConfigFile.Source.CURRENT_REPOSITORY)
-                : source;
-    }
-
     private GHRepository getConfigRepository(GHRepository ghRepository, ConfigFile.Source source, String path) {
-        ConfigFile.Source effectiveSource = getEffectiveSource(source);
+        ConfigFile.Source effectiveSource = checkedConfigProvider.getEffectiveSource(source);
 
         if (effectiveSource == ConfigFile.Source.CURRENT_REPOSITORY) {
             return ghRepository;

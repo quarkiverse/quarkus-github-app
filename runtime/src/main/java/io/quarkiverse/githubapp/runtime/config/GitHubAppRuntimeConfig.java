@@ -4,7 +4,6 @@ import java.nio.file.Path;
 import java.security.PrivateKey;
 import java.util.Optional;
 
-import io.quarkiverse.githubapp.ConfigFile;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -20,7 +19,7 @@ public class GitHubAppRuntimeConfig {
      * Optional for tests, but mandatory in production and dev mode.
      */
     @ConfigItem
-    public Optional<String> appId;
+    Optional<String> appId;
 
     /**
      * The GitHub name of the application.
@@ -28,13 +27,13 @@ public class GitHubAppRuntimeConfig {
      * Optional, only used for improving the user experience.
      */
     @ConfigItem
-    public Optional<String> appName;
+    Optional<String> appName;
 
     /**
      * Read the configuration files from the source repository in case of a fork.
      */
     @ConfigItem(defaultValue = "false")
-    public boolean readConfigFilesFromSourceRepository;
+    boolean readConfigFilesFromSourceRepository;
 
     /**
      * The RSA private key.
@@ -43,19 +42,19 @@ public class GitHubAppRuntimeConfig {
      */
     @ConfigItem
     @ConvertWith(PrivateKeyConverter.class)
-    public Optional<PrivateKey> privateKey;
+    Optional<PrivateKey> privateKey;
 
     /**
      * The webhook secret if defined in the GitHub UI.
      */
     @ConfigItem
-    public Optional<String> webhookSecret;
+    Optional<String> webhookSecret;
 
     /**
      * The Smee.io proxy URL used when testing locally.
      */
     @ConfigItem
-    public Optional<String> webhookProxyUrl;
+    Optional<String> webhookProxyUrl;
 
     /**
      * The GitHub instance endpoint.
@@ -63,21 +62,13 @@ public class GitHubAppRuntimeConfig {
      * Defaults to the public github.com instance.
      */
     @ConfigItem(defaultValue = "https://api.github.com")
-    public String instanceEndpoint;
+    String instanceEndpoint;
 
     /**
      * Debug configuration.
      */
     @ConfigItem
-    public Debug debug;
-
-    public ConfigFile.Source getEffectiveSource(ConfigFile.Source source) {
-        if (source == ConfigFile.Source.DEFAULT) {
-            return readConfigFilesFromSourceRepository ? ConfigFile.Source.SOURCE_REPOSITORY
-                    : ConfigFile.Source.CURRENT_REPOSITORY;
-        }
-        return source;
-    }
+    Debug debug;
 
     @ConfigGroup
     public static class Debug {
