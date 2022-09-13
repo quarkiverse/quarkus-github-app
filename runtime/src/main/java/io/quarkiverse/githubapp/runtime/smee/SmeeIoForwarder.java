@@ -16,7 +16,7 @@ import com.launchdarkly.eventsource.EventHandler;
 import com.launchdarkly.eventsource.EventSource;
 import com.launchdarkly.eventsource.MessageEvent;
 
-import io.quarkiverse.githubapp.runtime.config.GitHubAppRuntimeConfig;
+import io.quarkiverse.githubapp.runtime.config.CheckedConfigProvider;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.Startup;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
@@ -37,15 +37,15 @@ public class SmeeIoForwarder {
     private final EventSource eventSource;
 
     @Inject
-    SmeeIoForwarder(GitHubAppRuntimeConfig gitHubAppRuntimeConfig, HttpConfiguration httpConfiguration,
+    SmeeIoForwarder(CheckedConfigProvider checkedConfigProvider, HttpConfiguration httpConfiguration,
             ObjectMapper objectMapper) {
-        if (!gitHubAppRuntimeConfig.webhookProxyUrl.isPresent()) {
+        if (!checkedConfigProvider.webhookProxyUrl().isPresent()) {
             this.eventSource = null;
             return;
         }
 
         String localUrl = "http://" + httpConfiguration.host + ":" + httpConfiguration.port + "/";
-        this.eventSource = startEventSource(gitHubAppRuntimeConfig.webhookProxyUrl.get(), localUrl, new OkHttpClient(),
+        this.eventSource = startEventSource(checkedConfigProvider.webhookProxyUrl().get(), localUrl, new OkHttpClient(),
                 objectMapper);
     }
 

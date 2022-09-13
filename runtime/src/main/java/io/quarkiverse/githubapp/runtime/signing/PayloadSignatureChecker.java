@@ -10,7 +10,7 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import javax.inject.Singleton;
 
-import io.quarkiverse.githubapp.runtime.config.GitHubAppRuntimeConfig;
+import io.quarkiverse.githubapp.runtime.config.CheckedConfigProvider;
 
 @Singleton
 public class PayloadSignatureChecker {
@@ -22,15 +22,15 @@ public class PayloadSignatureChecker {
     private final Mac sharedMac;
     private final boolean supportsClone;
 
-    PayloadSignatureChecker(GitHubAppRuntimeConfig gitHubAppRuntimeConfig) {
-        if (!gitHubAppRuntimeConfig.webhookSecret.isPresent()) {
+    PayloadSignatureChecker(CheckedConfigProvider checkedConfigProvider) {
+        if (!checkedConfigProvider.webhookSecret().isPresent()) {
             secretKeySpec = null;
             sharedMac = null;
             supportsClone = false;
             return;
         }
 
-        secretKeySpec = new SecretKeySpec(gitHubAppRuntimeConfig.webhookSecret.get().getBytes(UTF_8),
+        secretKeySpec = new SecretKeySpec(checkedConfigProvider.webhookSecret().get().getBytes(UTF_8),
                 HMAC_SHA256_ALGORITHM);
         sharedMac = createNewMacInstance(secretKeySpec);
         supportsClone = supportsClone(sharedMac);

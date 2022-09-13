@@ -10,14 +10,14 @@ import org.kohsuke.github.GHRepository;
 
 import io.quarkiverse.githubapp.ConfigFile;
 import io.quarkiverse.githubapp.GitHubConfigFileProvider;
-import io.quarkiverse.githubapp.runtime.config.GitHubAppRuntimeConfig;
+import io.quarkiverse.githubapp.runtime.config.CheckedConfigProvider;
 import io.quarkiverse.githubapp.runtime.github.GitHubConfigFileProviderImpl;
 
 @RequestScoped
 public class RequestScopeCachingGitHubConfigFileProvider {
 
     @Inject
-    GitHubAppRuntimeConfig gitHubAppRuntimeConfig;
+    CheckedConfigProvider checkedConfigProvider;
 
     @Inject
     GitHubConfigFileProvider gitHubConfigFileProvider;
@@ -39,7 +39,7 @@ public class RequestScopeCachingGitHubConfigFileProvider {
     private String getCacheKey(GHRepository ghRepository, String path,
             ConfigFile.Source source) {
         String fullPath = GitHubConfigFileProviderImpl.getFilePath(path.trim());
-        ConfigFile.Source effectiveSource = gitHubAppRuntimeConfig.getEffectiveSource(source);
+        ConfigFile.Source effectiveSource = checkedConfigProvider.getEffectiveSource(source);
         // we should only handle the config files of one repository in a given ConfigFileReader
         // as it's request scoped but let's be on the safe side
         return ghRepository.getFullName() + ":" + effectiveSource.name() + ":" + fullPath;

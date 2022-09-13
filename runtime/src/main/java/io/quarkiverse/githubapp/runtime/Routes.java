@@ -21,7 +21,7 @@ import javax.inject.Singleton;
 import org.jboss.logging.Logger;
 
 import io.quarkiverse.githubapp.GitHubEvent;
-import io.quarkiverse.githubapp.runtime.config.GitHubAppRuntimeConfig;
+import io.quarkiverse.githubapp.runtime.config.CheckedConfigProvider;
 import io.quarkiverse.githubapp.runtime.replay.ReplayEventsRoute;
 import io.quarkiverse.githubapp.runtime.signing.PayloadSignatureChecker;
 import io.quarkus.runtime.LaunchMode;
@@ -46,7 +46,7 @@ public class Routes {
     Event<GitHubEvent> gitHubEventEmitter;
 
     @Inject
-    GitHubAppRuntimeConfig gitHubAppRuntimeConfig;
+    CheckedConfigProvider checkedConfigProvider;
 
     @Inject
     PayloadSignatureChecker payloadSignatureChecker;
@@ -63,14 +63,10 @@ public class Routes {
     Path tmpDirectory;
 
     public void init(@Observes StartupEvent startupEvent) throws IOException {
-        if (gitHubAppRuntimeConfig.webhookSecret.isPresent() && launchMode.isDevOrTest()) {
-            LOG.info("Payload signature checking is disabled in dev and test modes.");
-        }
-
-        if (gitHubAppRuntimeConfig.debug.payloadDirectory.isPresent()) {
-            Files.createDirectories(gitHubAppRuntimeConfig.debug.payloadDirectory.get());
+        if (checkedConfigProvider.debug().payloadDirectory.isPresent()) {
+            Files.createDirectories(checkedConfigProvider.debug().payloadDirectory.get());
             LOG.warn("Payloads saved to: "
-                    + gitHubAppRuntimeConfig.debug.payloadDirectory.get().toAbsolutePath().toString());
+                    + checkedConfigProvider.debug().payloadDirectory.get().toAbsolutePath().toString());
         }
     }
 
@@ -98,22 +94,22 @@ public class Routes {
         byte[] bodyBytes = routingContext.body().buffer().getBytes();
         String action = body.getString("action");
 
-        if (!isBlank(deliveryId) && gitHubAppRuntimeConfig.debug.payloadDirectory.isPresent()) {
+        if (!isBlank(deliveryId) && checkedConfigProvider.debug().payloadDirectory.isPresent()) {
             String fileName = DATE_TIME_FORMATTER.format(LocalDateTime.now()) + "-" + event + "-"
                     + (!isBlank(action) ? action + "-" : "") + deliveryId + ".json";
-            Files.write(gitHubAppRuntimeConfig.debug.payloadDirectory.get().resolve(fileName), bodyBytes);
+            Files.write(checkedConfigProvider.debug().payloadDirectory.get().resolve(fileName), bodyBytes);
         }
 
         Long installationId = extractInstallationId(body);
         String repository = extractRepository(body);
-        GitHubEvent gitHubEvent = new GitHubEvent(installationId, gitHubAppRuntimeConfig.appName.orElse(null), deliveryId,
+        GitHubEvent gitHubEvent = new GitHubEvent(installationId, checkedConfigProvider.appName().orElse(null), deliveryId,
                 repository, event, action, routingContext.body().asString(), body, "true".equals(replayed) ? true : false);
 
         if (launchMode == LaunchMode.DEVELOPMENT && replayRouteInstance.isResolvable()) {
             replayRouteInstance.get().pushEvent(gitHubEvent);
         }
 
-        if (gitHubAppRuntimeConfig.webhookSecret.isPresent() && !launchMode.isDevOrTest()) {
+        if (checkedConfigProvider.webhookSecret().isPresent() && !launchMode.isDevOrTest()) {
             if (!payloadSignatureChecker.matches(bodyBytes, hubSignature)) {
                 StringBuilder signatureError = new StringBuilder("Invalid signature for delivery: ").append(deliveryId)
                         .append("\n");
