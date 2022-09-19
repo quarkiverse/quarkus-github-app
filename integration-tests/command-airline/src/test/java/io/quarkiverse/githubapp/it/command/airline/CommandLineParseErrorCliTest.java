@@ -25,7 +25,7 @@ public class CommandLineParseErrorCliTest {
                     verify(mocks.issue(1168785554))
                             .comment(
                                     "> `@command-line-parse-error invalid-command \"test\" \"foo`\n\n"
-                                            + ":warning: Unable to parse the command.\n"
+                                            + ":rotating_light: Unable to parse the command.\n"
                                             + "\n"
                                             + "Errors:\n"
                                             + "\n"

@@ -26,7 +26,7 @@ public class ExecutionErrorStrategyCliTest {
                             .createReaction(ReactionContent.ROCKET);
                     verify(mocks.issue(1168785554))
                             .comment("> `@execution-error-strategy command1`\n\n" +
-                                    ":warning: An error occurred while executing the command.");
+                                    ":rotating_light: An error occurred while executing the command.");
                     verify(mocks.issueComment(1093016219))
                             .createReaction(ReactionContent.MINUS_ONE);
                     verifyNoMoreInteractions(mocks.ghObjects());
