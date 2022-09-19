@@ -17,7 +17,12 @@ a| [[quarkus-github-app_quarkus.github-app.app-id]]`link:#quarkus-github-app_qua
 The numeric application id provided by GitHub. 
  Optional for tests, but mandatory in production and dev mode.
 
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_GITHUB_APP_APP_ID+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
 Environment variable: `+++QUARKUS_GITHUB_APP_APP_ID+++`
+endif::add-copy-button-to-env-var[]
 --|string 
 |
 
@@ -29,7 +34,12 @@ a| [[quarkus-github-app_quarkus.github-app.app-name]]`link:#quarkus-github-app_q
 The GitHub name of the application. 
  Optional, only used for improving the user experience.
 
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_GITHUB_APP_APP_NAME+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
 Environment variable: `+++QUARKUS_GITHUB_APP_APP_NAME+++`
+endif::add-copy-button-to-env-var[]
 --|string 
 |
 
@@ -40,7 +50,12 @@ a| [[quarkus-github-app_quarkus.github-app.read-config-files-from-source-reposit
 --
 Read the configuration files from the source repository in case of a fork.
 
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_GITHUB_APP_READ_CONFIG_FILES_FROM_SOURCE_REPOSITORY+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
 Environment variable: `+++QUARKUS_GITHUB_APP_READ_CONFIG_FILES_FROM_SOURCE_REPOSITORY+++`
+endif::add-copy-button-to-env-var[]
 --|boolean 
 |`false`
 
@@ -52,7 +67,12 @@ a| [[quarkus-github-app_quarkus.github-app.private-key]]`link:#quarkus-github-ap
 The RSA private key. 
  Optional for tests, but mandatory in production and dev mode.
 
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_GITHUB_APP_PRIVATE_KEY+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
 Environment variable: `+++QUARKUS_GITHUB_APP_PRIVATE_KEY+++`
+endif::add-copy-button-to-env-var[]
 --|link:https://docs.oracle.com/javase/8/docs/api/java/security/PrivateKey.html[PrivateKey]
  
 |
@@ -64,7 +84,12 @@ a| [[quarkus-github-app_quarkus.github-app.webhook-secret]]`link:#quarkus-github
 --
 The webhook secret if defined in the GitHub UI.
 
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_GITHUB_APP_WEBHOOK_SECRET+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
 Environment variable: `+++QUARKUS_GITHUB_APP_WEBHOOK_SECRET+++`
+endif::add-copy-button-to-env-var[]
 --|string 
 |
 
@@ -75,7 +100,12 @@ a| [[quarkus-github-app_quarkus.github-app.webhook-proxy-url]]`link:#quarkus-git
 --
 The Smee.io proxy URL used when testing locally.
 
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_GITHUB_APP_WEBHOOK_PROXY_URL+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
 Environment variable: `+++QUARKUS_GITHUB_APP_WEBHOOK_PROXY_URL+++`
+endif::add-copy-button-to-env-var[]
 --|string 
 |
 
@@ -87,7 +117,12 @@ a| [[quarkus-github-app_quarkus.github-app.instance-endpoint]]`link:#quarkus-git
 The GitHub instance endpoint. 
  Defaults to the public github.com instance.
 
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_GITHUB_APP_INSTANCE_ENDPOINT+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
 Environment variable: `+++QUARKUS_GITHUB_APP_INSTANCE_ENDPOINT+++`
+endif::add-copy-button-to-env-var[]
 --|string 
 |`https://api.github.com`
 
@@ -98,7 +133,12 @@ a| [[quarkus-github-app_quarkus.github-app.debug.payload-directory]]`link:#quark
 --
 A directory in which the payloads are saved.
 
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_GITHUB_APP_DEBUG_PAYLOAD_DIRECTORY+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
 Environment variable: `+++QUARKUS_GITHUB_APP_DEBUG_PAYLOAD_DIRECTORY+++`
+endif::add-copy-button-to-env-var[]
 --|path 
 |
 
