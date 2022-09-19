@@ -20,7 +20,7 @@ public @interface CommandOptions {
     // Make sure to keep these consistent with the annotation defaults
     CommandScope DEFAULT_SCOPE = CommandScope.ISSUES_AND_PULL_REQUESTS;
     ExecutionErrorStrategy DEFAULT_EXECUTION_ERROR_STRATEGY = ExecutionErrorStrategy.NONE;
-    String DEFAULT_EXECUTION_ERROR_MESSAGE = ":warning: An error occurred while executing command: %s";
+    String DEFAULT_EXECUTION_ERROR_MESSAGE = "> `%s`\n\n:warning: An error occurred while executing the command.";
     ReactionStrategy DEFAULT_REACTION_STRATEGY = ReactionStrategy.ALL;
 
     /**

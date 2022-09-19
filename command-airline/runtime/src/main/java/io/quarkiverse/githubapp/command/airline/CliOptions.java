@@ -19,7 +19,7 @@ public @interface CliOptions {
 
     // Make sure to keep these consistent with the annotation defaults
     ParseErrorStrategy DEFAULT_PARSE_ERROR_STRATEGY = ParseErrorStrategy.COMMENT_MESSAGE_HELP_ERRORS;
-    String DEFAULT_PARSE_ERROR_MESSAGE = ":warning: We were not able to parse command: %s";
+    String DEFAULT_PARSE_ERROR_MESSAGE = "> `%s`\n\n:warning: Unable to parse the command.";
 
     /**
      * The aliases of the command. They will be recognized as triggering this particular command set.

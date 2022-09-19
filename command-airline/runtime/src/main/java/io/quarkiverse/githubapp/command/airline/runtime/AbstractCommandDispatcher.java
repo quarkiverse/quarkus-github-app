@@ -211,7 +211,7 @@ public abstract class AbstractCommandDispatcher<C> {
             }
         }
 
-        if (cliConfig.getParseErrorStrategy().includeHelp()) {
+        if (error == null && cliConfig.getParseErrorStrategy().includeHelp()) {
             try {
                 ByteArrayOutputStream helpOs = new ByteArrayOutputStream();
 

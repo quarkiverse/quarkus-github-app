@@ -23,7 +23,8 @@ public class ParseErrorCliTest {
                 .event(GHEvent.ISSUE_COMMENT)
                 .then().github(mocks -> {
                     verify(mocks.issue(1168785554))
-                            .comment(":warning: We were not able to parse command: @parse-error invalid-command\n"
+                            .comment("> `@parse-error invalid-command`\n\n"
+                                    + ":warning: Unable to parse the command.\n"
                                     + "\n"
                                     + "Errors:\n"
                                     + "\n"

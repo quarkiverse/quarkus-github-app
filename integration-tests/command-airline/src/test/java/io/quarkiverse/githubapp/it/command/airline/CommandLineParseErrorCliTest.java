@@ -24,20 +24,12 @@ public class CommandLineParseErrorCliTest {
                 .then().github(mocks -> {
                     verify(mocks.issue(1168785554))
                             .comment(
-                                    ":warning: We were not able to parse command: @command-line-parse-error invalid-command \"test\" \"foo\n"
+                                    "> `@command-line-parse-error invalid-command \"test\" \"foo`\n\n"
+                                            + ":warning: Unable to parse the command.\n"
                                             + "\n"
                                             + "Errors:\n"
                                             + "\n"
-                                            + "- unbalanced quotes in @command-line-parse-error invalid-command \"test\" \"foo\n"
-                                            + "\n"
-                                            + "Help:\n"
-                                            + "\n"
-                                            + "```\n"
-                                            + "usage: @command-line-parse-error <command> [ <args> ]\n"
-                                            + "\n"
-                                            + "Commands are:\n"
-                                            + "    command1   Command 1\n"
-                                            + "```");
+                                            + "- Unbalanced quotes");
                     verify(mocks.issueComment(1093016219))
                             .createReaction(ReactionContent.CONFUSED);
                     verifyNoMoreInteractions(mocks.ghObjects());
