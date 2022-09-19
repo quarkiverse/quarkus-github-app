@@ -19,9 +19,7 @@ public class ConfigFileProviderCliTest {
 
     @Test
     void testConfigFileReader() throws IOException {
-        given().github(mocks -> mocks.configFileFromString(
-                "config-file-reader.yml",
-                "hello: " + HELLO))
+        given().github(mocks -> mocks.configFile("config-file-reader.yml").fromString("hello: " + HELLO))
                 .when().payloadFromClasspath("/issue-comment-config-file-reader-test.json")
                 .event(GHEvent.ISSUE_COMMENT)
                 .then().github(mocks -> {
