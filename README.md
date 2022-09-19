@@ -2,7 +2,7 @@
 
 [![Version](https://img.shields.io/maven-central/v/io.quarkiverse.githubapp/quarkus-github-app?logo=apache-maven&style=for-the-badge)](https://search.maven.org/artifact/io.quarkiverse.githubapp/quarkus-github-app)
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-5-orange.svg?style=for-the-badge)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-6-orange.svg?style=for-the-badge)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 <p align="center"><img src="https://design.jboss.org/quarkus/bot/final/images/quarkusbot_full.svg" width="128" height="128" /></p>
@@ -95,6 +95,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
       <td align="center"><a href="https://github.com/jtama"><img src="https://avatars.githubusercontent.com/u/39991688?v=4?s=100" width="100px;" alt=""/><br /><sub><b>jtama</b></sub></a><br /><a href="https://github.com/quarkiverse/quarkus-github-app/commits?author=jtama" title="Code">💻</a></td>
       <td align="center"><a href="https://github.com/joelmarty"><img src="https://avatars.githubusercontent.com/u/134835?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Joël Marty</b></sub></a><br /><a href="https://github.com/quarkiverse/quarkus-github-app/commits?author=joelmarty" title="Code">💻</a></td>
       <td align="center"><a href="https://hollycummins.com"><img src="https://avatars.githubusercontent.com/u/11509290?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Holly Cummins</b></sub></a><br /><a href="https://github.com/quarkiverse/quarkus-github-app/commits?author=holly-cummins" title="Code">💻</a></td>
+      <td align="center"><a href="https://stackoverflow.com/users/1392277/lppedd"><img src="https://avatars.githubusercontent.com/u/19871649?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Edoardo Luppi</b></sub></a><br /><a href="https://github.com/quarkiverse/quarkus-github-app/issues?q=author%3Alppedd" title="Bug reports">🐛</a></td>
     </tr>
   </tbody>
 </table>

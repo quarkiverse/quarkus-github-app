@@ -52,6 +52,15 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "lppedd",
+      "name": "Edoardo Luppi",
+      "avatar_url": "https://avatars.githubusercontent.com/u/19871649?v=4",
+      "profile": "https://stackoverflow.com/users/1392277/lppedd",
+      "contributions": [
+        "bug"
+      ]
     }
   ],
   "contributorsPerLine": 7,
