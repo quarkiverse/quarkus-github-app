@@ -95,7 +95,7 @@ public final class Commandline {
             result.add(current.toString());
         }
         if (state == inQuote || state == inDoubleQuote) {
-            throw new IllegalArgumentException("unbalanced quotes in " + toProcess);
+            throw new IllegalArgumentException("Unbalanced quotes");
         }
         return result;
     }
