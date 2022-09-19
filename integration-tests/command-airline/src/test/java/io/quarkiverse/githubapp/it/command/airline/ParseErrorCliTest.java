@@ -24,7 +24,7 @@ public class ParseErrorCliTest {
                 .then().github(mocks -> {
                     verify(mocks.issue(1168785554))
                             .comment("> `@parse-error invalid-command`\n\n"
-                                    + ":warning: Unable to parse the command.\n"
+                                    + ":rotating_light: Unable to parse the command.\n"
                                     + "\n"
                                     + "Errors:\n"
                                     + "\n"
