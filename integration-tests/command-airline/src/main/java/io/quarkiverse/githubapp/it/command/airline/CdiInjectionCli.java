@@ -1,7 +1,11 @@
 package io.quarkiverse.githubapp.it.command.airline;
 
 import java.io.IOException;
+import java.time.Clock;
+import java.time.ZoneOffset;
 
+import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -24,6 +28,9 @@ public class CdiInjectionCli {
 
         @Inject
         Service1 service1;
+
+        @Inject
+        Clock clock;
 
         @Override
         public void run(GHEventPayload.IssueComment issueCommentPayload, Service2 service2) throws IOException {
@@ -54,6 +61,15 @@ public class CdiInjectionCli {
 
         public String hello() {
             return HELLO;
+        }
+    }
+
+    @Singleton
+    public static class ClockProducer {
+        @Produces
+        @ApplicationScoped
+        public Clock clock() {
+            return Clock.system(ZoneOffset.UTC);
         }
     }
 }
