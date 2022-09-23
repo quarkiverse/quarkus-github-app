@@ -24,7 +24,7 @@ public class GitHubFileDownloader {
     @SuppressWarnings("deprecation")
     public Optional<String> getFileContent(GHRepository ghRepository, String ref, String fullPath) {
         try {
-            GHContent ghContent = ghRepository.getFileContent(fullPath);
+            GHContent ghContent = ghRepository.getFileContent(fullPath, ref);
 
             return Optional.of(ghContent.getContent());
         } catch (GHFileNotFoundException e) {
