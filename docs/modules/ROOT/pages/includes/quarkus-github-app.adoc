@@ -15,7 +15,7 @@ a| [[quarkus-github-app_quarkus.github-app.app-id]]`link:#quarkus-github-app_qua
 [.description]
 --
 The numeric application id provided by GitHub. 
- Optional for tests, but mandatory in production and dev mode.
+Optional for tests, but mandatory in production and dev mode.
 
 ifdef::add-copy-button-to-env-var[]
 Environment variable: env_var_with_copy_button:+++QUARKUS_GITHUB_APP_APP_ID+++[]
@@ -32,7 +32,7 @@ a| [[quarkus-github-app_quarkus.github-app.app-name]]`link:#quarkus-github-app_q
 [.description]
 --
 The GitHub name of the application. 
- Optional, only used for improving the user experience.
+Optional, only used for improving the user experience.
 
 ifdef::add-copy-button-to-env-var[]
 Environment variable: env_var_with_copy_button:+++QUARKUS_GITHUB_APP_APP_NAME+++[]
@@ -65,7 +65,7 @@ a| [[quarkus-github-app_quarkus.github-app.private-key]]`link:#quarkus-github-ap
 [.description]
 --
 The RSA private key. 
- Optional for tests, but mandatory in production and dev mode.
+Optional for tests, but mandatory in production and dev mode.
 
 ifdef::add-copy-button-to-env-var[]
 Environment variable: env_var_with_copy_button:+++QUARKUS_GITHUB_APP_PRIVATE_KEY+++[]
@@ -115,7 +115,7 @@ a| [[quarkus-github-app_quarkus.github-app.instance-endpoint]]`link:#quarkus-git
 [.description]
 --
 The GitHub instance endpoint. 
- Defaults to the public github.com instance.
+Defaults to the public github.com instance.
 
 ifdef::add-copy-button-to-env-var[]
 Environment variable: env_var_with_copy_button:+++QUARKUS_GITHUB_APP_INSTANCE_ENDPOINT+++[]
