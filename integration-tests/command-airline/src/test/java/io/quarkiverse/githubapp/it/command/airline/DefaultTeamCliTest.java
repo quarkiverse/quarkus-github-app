@@ -41,7 +41,7 @@ public class DefaultTeamCliTest {
                     Mockito.when(team2.hasMember(any(GHUser.class))).thenReturn(false);
                     teams.add(team2);
 
-                    Mockito.when(mocks.repository("quarkus-bot-java-playground").getTeams())
+                    Mockito.when(mocks.repository("gsmet/quarkus-bot-java-playground").getTeams())
                             .thenReturn(teams);
                 })
                 .when().payloadFromClasspath("/issue-comment-default-team-no-teams.json")
@@ -68,7 +68,7 @@ public class DefaultTeamCliTest {
                     Mockito.when(team2.hasMember(any(GHUser.class))).thenReturn(false);
                     teams.add(team2);
 
-                    Mockito.when(mocks.repository("quarkus-bot-java-playground").getTeams())
+                    Mockito.when(mocks.repository("gsmet/quarkus-bot-java-playground").getTeams())
                             .thenReturn(teams);
                 })
                 .when().payloadFromClasspath("/issue-comment-default-team-no-teams.json")
@@ -98,7 +98,7 @@ public class DefaultTeamCliTest {
                     Mockito.when(team2.hasMember(any(GHUser.class))).thenReturn(true);
                     teams.add(team2);
 
-                    Mockito.when(mocks.repository("quarkus-bot-java-playground").getTeams())
+                    Mockito.when(mocks.repository("gsmet/quarkus-bot-java-playground").getTeams())
                             .thenReturn(teams);
                 })
                 .when().payloadFromClasspath("/issue-comment-default-team-team2.json")
@@ -125,7 +125,7 @@ public class DefaultTeamCliTest {
                     Mockito.when(team2.hasMember(any(GHUser.class))).thenReturn(false);
                     teams.add(team2);
 
-                    Mockito.when(mocks.repository("quarkus-bot-java-playground").getTeams())
+                    Mockito.when(mocks.repository("gsmet/quarkus-bot-java-playground").getTeams())
                             .thenReturn(teams);
                 })
                 .when().payloadFromClasspath("/issue-comment-default-team-team2.json")
@@ -140,7 +140,7 @@ public class DefaultTeamCliTest {
     }
 
     private void verifyGetTeams(GitHubMockVerificationContext mocks) throws IOException {
-        verify(mocks.repository("quarkus-bot-java-playground")).getTeams();
+        verify(mocks.repository("gsmet/quarkus-bot-java-playground")).getTeams();
     }
 
     private void verifyGetSlug(GitHubMockVerificationContext mocks, long teamId) throws IOException {
