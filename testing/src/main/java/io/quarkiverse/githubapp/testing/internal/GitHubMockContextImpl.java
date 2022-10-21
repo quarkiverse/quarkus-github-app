@@ -208,7 +208,7 @@ public final class GitHubMockContextImpl implements GitHubMockContext, GitHubMoc
     private DefaultableMocking<? extends GHObject> ghObjectMocking(GHObject original) {
         Class<? extends GHObject> type = original.getClass();
         if (GHRepository.class.equals(type)) {
-            return repositories.getOrCreate(((GHRepository) original).getName());
+            return repositories.getOrCreate(((GHRepository) original).getFullName());
         } else {
             return nonRepositoryMockMap(type).getOrCreate(original.getId());
         }

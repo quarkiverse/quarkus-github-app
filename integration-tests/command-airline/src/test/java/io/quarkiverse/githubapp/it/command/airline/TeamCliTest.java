@@ -42,7 +42,7 @@ public class TeamCliTest {
                     Mockito.when(team2.hasMember(any(GHUser.class))).thenReturn(false);
                     teams.add(team2);
 
-                    Mockito.when(mocks.repository("quarkus-bot-java-playground").getTeams())
+                    Mockito.when(mocks.repository("gsmet/quarkus-bot-java-playground").getTeams())
                             .thenReturn(teams);
                 })
                 .when().payloadFromClasspath("/issue-comment-team-team1.json")
@@ -69,7 +69,7 @@ public class TeamCliTest {
                     Mockito.when(team2.hasMember(any(GHUser.class))).thenReturn(true);
                     teams.add(team2);
 
-                    Mockito.when(mocks.repository("quarkus-bot-java-playground").getTeams())
+                    Mockito.when(mocks.repository("gsmet/quarkus-bot-java-playground").getTeams())
                             .thenReturn(teams);
                 })
                 .when().payloadFromClasspath("/issue-comment-team-team1.json")
@@ -99,7 +99,7 @@ public class TeamCliTest {
                     Mockito.when(team2.hasMember(any(GHUser.class))).thenReturn(false);
                     teams.add(team2);
 
-                    Mockito.when(mocks.repository("quarkus-bot-java-playground").getTeams())
+                    Mockito.when(mocks.repository("gsmet/quarkus-bot-java-playground").getTeams())
                             .thenReturn(teams);
                 })
                 .when().payloadFromClasspath("/issue-comment-team-two-teams.json")
@@ -126,7 +126,7 @@ public class TeamCliTest {
                     Mockito.when(team2.hasMember(any(GHUser.class))).thenReturn(true);
                     teams.add(team2);
 
-                    Mockito.when(mocks.repository("quarkus-bot-java-playground").getTeams())
+                    Mockito.when(mocks.repository("gsmet/quarkus-bot-java-playground").getTeams())
                             .thenReturn(teams);
                 })
                 .when().payloadFromClasspath("/issue-comment-team-two-teams.json")
@@ -159,7 +159,7 @@ public class TeamCliTest {
                     Mockito.when(team3.hasMember(any(GHUser.class))).thenReturn(true);
                     teams.add(team3);
 
-                    Mockito.when(mocks.repository("quarkus-bot-java-playground").getTeams())
+                    Mockito.when(mocks.repository("gsmet/quarkus-bot-java-playground").getTeams())
                             .thenReturn(teams);
                 })
                 .when().payloadFromClasspath("/issue-comment-team-two-teams.json")
@@ -176,7 +176,7 @@ public class TeamCliTest {
     }
 
     private void verifyGetTeams(GitHubMockVerificationContext mocks) throws IOException {
-        verify(mocks.repository("quarkus-bot-java-playground")).getTeams();
+        verify(mocks.repository("gsmet/quarkus-bot-java-playground")).getTeams();
     }
 
     private void verifyGetSlug(GitHubMockVerificationContext mocks, long teamId) throws IOException {

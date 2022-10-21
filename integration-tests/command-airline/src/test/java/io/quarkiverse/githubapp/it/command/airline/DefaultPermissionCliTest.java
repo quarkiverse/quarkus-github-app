@@ -28,13 +28,13 @@ public class DefaultPermissionCliTest {
     void testNoPermissionSet() throws IOException {
         given()
                 .github(mocks -> {
-                    Mockito.when(mocks.repository("quarkus-bot-java-playground").hasPermission(any(GHUser.class),
+                    Mockito.when(mocks.repository("gsmet/quarkus-bot-java-playground").hasPermission(any(GHUser.class),
                             eq(GHPermissionType.READ)))
                             .thenReturn(true);
-                    Mockito.when(mocks.repository("quarkus-bot-java-playground").hasPermission(any(GHUser.class),
+                    Mockito.when(mocks.repository("gsmet/quarkus-bot-java-playground").hasPermission(any(GHUser.class),
                             eq(GHPermissionType.WRITE)))
                             .thenReturn(true);
-                    Mockito.when(mocks.repository("quarkus-bot-java-playground").hasPermission(any(GHUser.class),
+                    Mockito.when(mocks.repository("gsmet/quarkus-bot-java-playground").hasPermission(any(GHUser.class),
                             eq(GHPermissionType.ADMIN)))
                             .thenReturn(false);
                 })
@@ -47,13 +47,13 @@ public class DefaultPermissionCliTest {
 
         given()
                 .github(mocks -> {
-                    Mockito.when(mocks.repository("quarkus-bot-java-playground").hasPermission(any(GHUser.class),
+                    Mockito.when(mocks.repository("gsmet/quarkus-bot-java-playground").hasPermission(any(GHUser.class),
                             eq(GHPermissionType.READ)))
                             .thenReturn(true);
-                    Mockito.when(mocks.repository("quarkus-bot-java-playground").hasPermission(any(GHUser.class),
+                    Mockito.when(mocks.repository("gsmet/quarkus-bot-java-playground").hasPermission(any(GHUser.class),
                             eq(GHPermissionType.WRITE)))
                             .thenReturn(false);
-                    Mockito.when(mocks.repository("quarkus-bot-java-playground").hasPermission(any(GHUser.class),
+                    Mockito.when(mocks.repository("gsmet/quarkus-bot-java-playground").hasPermission(any(GHUser.class),
                             eq(GHPermissionType.ADMIN)))
                             .thenReturn(false);
                 })
@@ -69,13 +69,13 @@ public class DefaultPermissionCliTest {
     void testPermissionOverriddenRead() throws IOException {
         given()
                 .github(mocks -> {
-                    Mockito.when(mocks.repository("quarkus-bot-java-playground").hasPermission(any(GHUser.class),
+                    Mockito.when(mocks.repository("gsmet/quarkus-bot-java-playground").hasPermission(any(GHUser.class),
                             eq(GHPermissionType.READ)))
                             .thenReturn(true);
-                    Mockito.when(mocks.repository("quarkus-bot-java-playground").hasPermission(any(GHUser.class),
+                    Mockito.when(mocks.repository("gsmet/quarkus-bot-java-playground").hasPermission(any(GHUser.class),
                             eq(GHPermissionType.WRITE)))
                             .thenReturn(false);
-                    Mockito.when(mocks.repository("quarkus-bot-java-playground").hasPermission(any(GHUser.class),
+                    Mockito.when(mocks.repository("gsmet/quarkus-bot-java-playground").hasPermission(any(GHUser.class),
                             eq(GHPermissionType.ADMIN)))
                             .thenReturn(false);
                 })
@@ -88,13 +88,13 @@ public class DefaultPermissionCliTest {
 
         given()
                 .github(mocks -> {
-                    Mockito.when(mocks.repository("quarkus-bot-java-playground").hasPermission(any(GHUser.class),
+                    Mockito.when(mocks.repository("gsmet/quarkus-bot-java-playground").hasPermission(any(GHUser.class),
                             eq(GHPermissionType.READ)))
                             .thenReturn(false);
-                    Mockito.when(mocks.repository("quarkus-bot-java-playground").hasPermission(any(GHUser.class),
+                    Mockito.when(mocks.repository("gsmet/quarkus-bot-java-playground").hasPermission(any(GHUser.class),
                             eq(GHPermissionType.WRITE)))
                             .thenReturn(false);
-                    Mockito.when(mocks.repository("quarkus-bot-java-playground").hasPermission(any(GHUser.class),
+                    Mockito.when(mocks.repository("gsmet/quarkus-bot-java-playground").hasPermission(any(GHUser.class),
                             eq(GHPermissionType.ADMIN)))
                             .thenReturn(false);
                 })
@@ -110,13 +110,13 @@ public class DefaultPermissionCliTest {
     void testPermissionOverriddenAdmin() throws IOException {
         given()
                 .github(mocks -> {
-                    Mockito.when(mocks.repository("quarkus-bot-java-playground").hasPermission(any(GHUser.class),
+                    Mockito.when(mocks.repository("gsmet/quarkus-bot-java-playground").hasPermission(any(GHUser.class),
                             eq(GHPermissionType.READ)))
                             .thenReturn(true);
-                    Mockito.when(mocks.repository("quarkus-bot-java-playground").hasPermission(any(GHUser.class),
+                    Mockito.when(mocks.repository("gsmet/quarkus-bot-java-playground").hasPermission(any(GHUser.class),
                             eq(GHPermissionType.WRITE)))
                             .thenReturn(true);
-                    Mockito.when(mocks.repository("quarkus-bot-java-playground").hasPermission(any(GHUser.class),
+                    Mockito.when(mocks.repository("gsmet/quarkus-bot-java-playground").hasPermission(any(GHUser.class),
                             eq(GHPermissionType.ADMIN)))
                             .thenReturn(true);
                 })
@@ -129,13 +129,13 @@ public class DefaultPermissionCliTest {
 
         given()
                 .github(mocks -> {
-                    Mockito.when(mocks.repository("quarkus-bot-java-playground").hasPermission(any(GHUser.class),
+                    Mockito.when(mocks.repository("gsmet/quarkus-bot-java-playground").hasPermission(any(GHUser.class),
                             eq(GHPermissionType.READ)))
                             .thenReturn(true);
-                    Mockito.when(mocks.repository("quarkus-bot-java-playground").hasPermission(any(GHUser.class),
+                    Mockito.when(mocks.repository("gsmet/quarkus-bot-java-playground").hasPermission(any(GHUser.class),
                             eq(GHPermissionType.WRITE)))
                             .thenReturn(true);
-                    Mockito.when(mocks.repository("quarkus-bot-java-playground").hasPermission(any(GHUser.class),
+                    Mockito.when(mocks.repository("gsmet/quarkus-bot-java-playground").hasPermission(any(GHUser.class),
                             eq(GHPermissionType.ADMIN)))
                             .thenReturn(false);
                 })
@@ -148,7 +148,7 @@ public class DefaultPermissionCliTest {
     }
 
     private void verifyHasPermission(GitHubMockVerificationContext mocks) throws IOException {
-        verify(mocks.repository("quarkus-bot-java-playground")).hasPermission(any(GHUser.class),
+        verify(mocks.repository("gsmet/quarkus-bot-java-playground")).hasPermission(any(GHUser.class),
                 any(GHPermissionType.class));
     }
 
