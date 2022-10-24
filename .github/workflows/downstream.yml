@@ -39,6 +39,10 @@ jobs:
             organization: "hibernate",
             repository: "hibernate-github-bot"
           }
+          - {
+            organization: "quarkusio",
+            repository: "quarkus-github-lottery"
+          }
 
     steps:
     - uses: actions/checkout@v2
