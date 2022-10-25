@@ -385,3 +385,23 @@ include::{command-airline-examples-dir}/GroupCli.java[tag=include]
 Each group has a name and is composed of a list of commands.
 <2> To execute this command, add a comment with `@bot remote list`.
 <3> To execute this command, add a comment with `@bot remote show`.
+
+=== Injecting metadata
+
+You can inject Airline metadata instances (e.g. `GlobalMetadata`, `CommandMetadata`) into the commands:
+
+[source,java]
+----
+include::{command-airline-examples-dir}/InjectMetadataCli.java[tag=include]
+----
+<1> Use `@AirlineInject` to inject Airline metadata.
+
+=== Composition
+
+You can use composition to create reusable Airline components:
+
+[source,java]
+----
+include::{command-airline-examples-dir}/CompositionCli.java[tag=include]
+----
+<1> Use `@AirlineModule` to inject the reusable options into the command.

@@ -11,6 +11,7 @@ import com.github.rvesse.airline.annotations.Cli;
 import com.github.rvesse.airline.annotations.Command;
 import com.github.rvesse.airline.model.GlobalMetadata;
 
+import io.quarkiverse.githubapp.command.airline.AirlineInject;
 import io.quarkiverse.githubapp.it.command.airline.CdiInjectionCli.TestCommand;
 
 @Cli(name = "@cdi-injection", commands = { TestCommand.class })
@@ -19,7 +20,7 @@ public class CdiInjectionCli {
     @Command(name = "test")
     static class TestCommand implements CdiInjectionCommand {
 
-        @Inject
+        @AirlineInject
         GlobalMetadata<CdiInjectionCommand> globalMetadata;
 
         @Inject

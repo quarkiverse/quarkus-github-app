@@ -6,8 +6,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.inject.Inject;
-
 import org.kohsuke.github.GHEventPayload;
 
 import com.github.rvesse.airline.annotations.Arguments;
@@ -16,7 +14,7 @@ import com.github.rvesse.airline.model.GlobalMetadata;
 
 public class AbstractHelpCommand {
 
-    @Inject
+    @AirlineInject
     public GlobalMetadata<?> global;
 
     @Arguments
