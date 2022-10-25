@@ -19,6 +19,7 @@ import org.kohsuke.github.GHUser;
 import org.kohsuke.github.ReactionContent;
 
 import com.github.rvesse.airline.Cli;
+import com.github.rvesse.airline.annotations.AirlineModule;
 import com.github.rvesse.airline.builder.ParserBuilder;
 import com.github.rvesse.airline.help.Help;
 import com.github.rvesse.airline.model.MetadataLoader;
@@ -26,6 +27,7 @@ import com.github.rvesse.airline.parser.ParseResult;
 import com.github.rvesse.airline.parser.errors.ParseException;
 import com.github.rvesse.airline.parser.errors.handlers.CollectAll;
 
+import io.quarkiverse.githubapp.command.airline.AirlineInject;
 import io.quarkiverse.githubapp.command.airline.runtime.util.Commandline;
 import io.quarkiverse.githubapp.command.airline.runtime.util.Reactions;
 
@@ -43,6 +45,7 @@ public abstract class AbstractCommandDispatcher<C> {
         ParserBuilder<C> parserBuilder = new ParserBuilder<C>();
         parserBuilder.withCommandFactory(new ArcCommandFactory<>());
         parserBuilder.withErrorHandler(new CollectAll());
+        parserBuilder.withCompositionAnnotations(AirlineModule.class.getName(), AirlineInject.class.getName());
 
         this.cli = new Cli<>(MetadataLoader.loadGlobal(cliClass, parserBuilder.build()));
         this.cliConfig = cliConfig;

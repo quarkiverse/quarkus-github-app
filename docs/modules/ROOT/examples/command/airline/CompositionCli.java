@@ -1,32 +1,32 @@
-package io.quarkiverse.githubapp.it.command.airline;
+package command.airline;
 
 import java.io.IOException;
 
-import javax.inject.Inject;
-
 import org.kohsuke.github.GHEventPayload;
 
+import com.github.rvesse.airline.annotations.AirlineModule;
 import com.github.rvesse.airline.annotations.Cli;
 import com.github.rvesse.airline.annotations.Command;
 import com.github.rvesse.airline.annotations.Option;
 
-import io.quarkiverse.githubapp.it.command.airline.InjectCompositionCli.TestInjectCompositionCommand;
+import command.airline.CompositionCli.TestCompositionCommand;
 
-@Cli(name = "@inject-composition", commands = { TestInjectCompositionCommand.class })
-public class InjectCompositionCli {
+// tag::include[]
+@Cli(name = "@composition", commands = { TestCompositionCommand.class })
+public class CompositionCli {
 
     @Command(name = "test")
-    static class TestInjectCompositionCommand implements DefaultCommand {
+    static class TestCompositionCommand implements DefaultCommand {
 
-        @Inject
+        @AirlineModule // <1>
         VerboseModule verboseModule = new VerboseModule();
 
         @Override
         public void run(GHEventPayload.IssueComment issueCommentPayload) throws IOException {
             if (verboseModule.verbose) {
-                issueCommentPayload.getIssue().comment("hello from @inject-composition test - verbose");
+                issueCommentPayload.getIssue().comment("hello from @composition test - verbose");
             } else {
-                issueCommentPayload.getIssue().comment("hello from @inject-composition test");
+                issueCommentPayload.getIssue().comment("hello from @composition test");
             }
         }
     }
@@ -42,3 +42,4 @@ public class InjectCompositionCli {
         void run(GHEventPayload.IssueComment issueCommentPayload) throws IOException;
     }
 }
+// end::include[]

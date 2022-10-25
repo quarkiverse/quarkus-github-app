@@ -1,7 +1,11 @@
 package io.quarkiverse.githubapp.it.command.airline;
 
 import java.io.IOException;
+import java.time.Clock;
+import java.time.ZoneOffset;
 
+import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -11,6 +15,7 @@ import com.github.rvesse.airline.annotations.Cli;
 import com.github.rvesse.airline.annotations.Command;
 import com.github.rvesse.airline.model.GlobalMetadata;
 
+import io.quarkiverse.githubapp.command.airline.AirlineInject;
 import io.quarkiverse.githubapp.it.command.airline.CdiInjectionCli.TestCommand;
 
 @Cli(name = "@cdi-injection", commands = { TestCommand.class })
@@ -19,11 +24,14 @@ public class CdiInjectionCli {
     @Command(name = "test")
     static class TestCommand implements CdiInjectionCommand {
 
-        @Inject
+        @AirlineInject
         GlobalMetadata<CdiInjectionCommand> globalMetadata;
 
         @Inject
         Service1 service1;
+
+        @Inject
+        Clock clock;
 
         @Override
         public void run(GHEventPayload.IssueComment issueCommentPayload, Service2 service2) throws IOException {
@@ -54,6 +62,15 @@ public class CdiInjectionCli {
 
         public String hello() {
             return HELLO;
+        }
+    }
+
+    @Singleton
+    public static class ClockProducer {
+        @Produces
+        @ApplicationScoped
+        public Clock clock() {
+            return Clock.system(ZoneOffset.UTC);
         }
     }
 }
