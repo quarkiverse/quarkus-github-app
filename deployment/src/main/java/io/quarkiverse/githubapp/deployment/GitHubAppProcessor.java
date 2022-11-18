@@ -576,7 +576,7 @@ class GitHubAppProcessor {
                 multiplexerClassCreator.addAnnotation(Singleton.class);
             }
 
-            for (AnnotationInstance classAnnotation : declaringClass.classAnnotations()) {
+            for (AnnotationInstance classAnnotation : declaringClass.declaredAnnotations()) {
                 multiplexerClassCreator.addAnnotation(classAnnotation);
             }
 

@@ -293,7 +293,7 @@ class GitHubAppCommandAirlineProcessor {
                 .newInstance(MethodDescriptor.ofConstructor(HashMap.class));
 
         for (ClassInfo command : allCommands) {
-            AnnotationInstance commandOptionsAnnotation = command.classAnnotation(COMMAND_OPTIONS);
+            AnnotationInstance commandOptionsAnnotation = command.declaredAnnotation(COMMAND_OPTIONS);
 
             if (commandOptionsAnnotation != null) {
                 getCommandConfigsMethodCreator.invokeVirtualMethod(
@@ -317,7 +317,7 @@ class GitHubAppCommandAirlineProcessor {
                 .newInstance(MethodDescriptor.ofConstructor(HashMap.class));
 
         for (ClassInfo command : allCommands) {
-            AnnotationInstance permissionAnnotation = command.classAnnotation(PERMISSION);
+            AnnotationInstance permissionAnnotation = command.declaredAnnotation(PERMISSION);
 
             if (permissionAnnotation != null) {
                 getCommandPermissionConfigsMethodCreator.invokeVirtualMethod(
@@ -355,7 +355,7 @@ class GitHubAppCommandAirlineProcessor {
                 .newInstance(MethodDescriptor.ofConstructor(HashMap.class));
 
         for (ClassInfo command : allCommands) {
-            AnnotationInstance teamAnnotation = command.classAnnotation(TEAM);
+            AnnotationInstance teamAnnotation = command.declaredAnnotation(TEAM);
 
             if (teamAnnotation != null) {
                 getCommandTeamConfigsMethodCreator.invokeVirtualMethod(
@@ -394,15 +394,15 @@ class GitHubAppCommandAirlineProcessor {
 
         ResultHandle aliasesRh = toResultHandle(constructorMethodCreator, aliases);
         ResultHandle cliConfigRh;
-        AnnotationInstance cliOptionsAnnotation = cliClassInfo.classAnnotation(CLI_OPTIONS);
+        AnnotationInstance cliOptionsAnnotation = cliClassInfo.declaredAnnotation(CLI_OPTIONS);
 
         ResultHandle defaultCommandConfigRh = getCommandConfig(constructorMethodCreator, index,
                 cliOptionsAnnotation != null ? cliOptionsAnnotation.valueWithDefault(index, "defaultCommandOptions").asNested()
                         : null);
         ResultHandle defaultCommandPermissionConfigRh = getCommandPermissionConfig(constructorMethodCreator,
-                cliClassInfo.classAnnotation(PERMISSION));
+                cliClassInfo.declaredAnnotation(PERMISSION));
         ResultHandle defaultCommandTeamConfigRh = getCommandTeamConfig(constructorMethodCreator,
-                cliClassInfo.classAnnotation(TEAM));
+                cliClassInfo.declaredAnnotation(TEAM));
 
         if (cliOptionsAnnotation != null) {
             cliConfigRh = constructorMethodCreator.newInstance(
@@ -460,12 +460,12 @@ class GitHubAppCommandAirlineProcessor {
         List<String> cliAliases = new ArrayList<>();
         cliAliases.add(cliAnnotationInstance.value("name").asString());
 
-        AnnotationInstance aliasAnnotation = cliAnnotationInstance.target().asClass().classAnnotation(ALIAS);
+        AnnotationInstance aliasAnnotation = cliAnnotationInstance.target().asClass().declaredAnnotation(ALIAS);
         if (aliasAnnotation != null) {
             cliAliases.add(aliasAnnotation.value("name").asString());
         }
 
-        AnnotationInstance cliOptionsAnnotation = cliAnnotationInstance.target().asClass().classAnnotation(CLI_OPTIONS);
+        AnnotationInstance cliOptionsAnnotation = cliAnnotationInstance.target().asClass().declaredAnnotation(CLI_OPTIONS);
         if (cliOptionsAnnotation != null) {
             AnnotationValue aliases = cliOptionsAnnotation.value("aliases");
             if (aliases != null) {
