@@ -95,7 +95,16 @@ public class SmeeIoForwarder {
                 return;
             }
 
-            JsonNode rootNode = objectMapper.readTree(messageEvent.getData());
+            int startOfJsonObject = messageEvent.getData().indexOf('{');
+            if (startOfJsonObject == -1) {
+                return;
+            }
+
+            // for some reason, the message coming from smee.io sometimes includes a 'id: 123' at the beginning of the message
+            // let's be safe and drop anything before the start of the JSON object.
+            String data = messageEvent.getData().substring(startOfJsonObject);
+
+            JsonNode rootNode = objectMapper.readTree(data);
             JsonNode body = rootNode.get("body");
 
             if (body != null) {
