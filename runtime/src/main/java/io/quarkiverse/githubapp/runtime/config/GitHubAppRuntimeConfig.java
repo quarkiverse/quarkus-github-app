@@ -65,6 +65,22 @@ public class GitHubAppRuntimeConfig {
     String instanceEndpoint;
 
     /**
+     * The REST API endpoint.
+     * <p>
+     * Defaults to the public github.com instance REST API endpoint.
+     */
+    @ConfigItem(defaultValue = "${quarkus.github-app.instance-endpoint}")
+    String restApiEndpoint;
+
+    /**
+     * The GraphQL API endpoint.
+     * <p>
+     * Defaults to the public github.com instance GraphQL endpoint.
+     */
+    @ConfigItem(defaultValue = "${quarkus.github-app.instance-endpoint}/graphql")
+    String graphqlApiEndpoint;
+
+    /**
      * Debug configuration.
      */
     @ConfigItem

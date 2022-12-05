@@ -120,7 +120,7 @@ public class GitHubService implements GitHubClientProvider {
 
         final GitHubBuilder gitHubBuilder = new GitHubBuilder()
                 .withAppInstallationToken(installationToken.getToken())
-                .withEndpoint(checkedConfigProvider.instanceEndpoint());
+                .withEndpoint(checkedConfigProvider.restApiEndpoint());
 
         GitHub gitHub = gitHubBuilder.build();
 
@@ -135,7 +135,7 @@ public class GitHubService implements GitHubClientProvider {
         CachedInstallationToken installationToken = installationTokenCache.get(installationId);
 
         DynamicGraphQLClient graphQLClient = DynamicGraphQLClientBuilder.newBuilder()
-                .url(checkedConfigProvider.instanceEndpoint() + "/graphql")
+                .url(checkedConfigProvider.graphqlApiEndpoint())
                 .header(AUTHORIZATION_HEADER, String.format(AUTHORIZATION_HEADER_BEARER, installationToken.getToken()))
                 .build();
 
@@ -187,7 +187,7 @@ public class GitHubService implements GitHubClientProvider {
         try {
             final GitHubBuilder gitHubBuilder = new GitHubBuilder()
                     .withJwtToken(jwtToken)
-                    .withEndpoint(checkedConfigProvider.instanceEndpoint());
+                    .withEndpoint(checkedConfigProvider.restApiEndpoint());
 
             return gitHubBuilder.build();
         } catch (IOException e) {
