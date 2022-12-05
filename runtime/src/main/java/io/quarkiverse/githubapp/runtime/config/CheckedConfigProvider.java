@@ -82,8 +82,12 @@ public class CheckedConfigProvider {
         return gitHubAppRuntimeConfig.webhookProxyUrl;
     }
 
-    public String instanceEndpoint() {
-        return gitHubAppRuntimeConfig.instanceEndpoint;
+    public String restApiEndpoint() {
+        return gitHubAppRuntimeConfig.restApiEndpoint;
+    }
+
+    public String graphqlApiEndpoint() {
+        return gitHubAppRuntimeConfig.graphqlApiEndpoint;
     }
 
     public Debug debug() {

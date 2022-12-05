@@ -127,6 +127,40 @@ endif::add-copy-button-to-env-var[]
 |`https://api.github.com`
 
 
+a| [[quarkus-github-app_quarkus.github-app.rest-api-endpoint]]`link:#quarkus-github-app_quarkus.github-app.rest-api-endpoint[quarkus.github-app.rest-api-endpoint]`
+
+[.description]
+--
+The REST API endpoint. 
+Defaults to the public github.com instance REST API endpoint.
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_GITHUB_APP_REST_API_ENDPOINT+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_GITHUB_APP_REST_API_ENDPOINT+++`
+endif::add-copy-button-to-env-var[]
+--|string 
+|`${quarkus.github-app.instance-endpoint}`
+
+
+a| [[quarkus-github-app_quarkus.github-app.graphql-api-endpoint]]`link:#quarkus-github-app_quarkus.github-app.graphql-api-endpoint[quarkus.github-app.graphql-api-endpoint]`
+
+[.description]
+--
+The GraphQL API endpoint. 
+Defaults to the public github.com instance GraphQL endpoint.
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_GITHUB_APP_GRAPHQL_API_ENDPOINT+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_GITHUB_APP_GRAPHQL_API_ENDPOINT+++`
+endif::add-copy-button-to-env-var[]
+--|string 
+|`${quarkus.github-app.instance-endpoint}/graphql`
+
+
 a| [[quarkus-github-app_quarkus.github-app.debug.payload-directory]]`link:#quarkus-github-app_quarkus.github-app.debug.payload-directory[quarkus.github-app.debug.payload-directory]`
 
 [.description]
