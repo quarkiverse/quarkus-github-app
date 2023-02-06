@@ -3,7 +3,7 @@ package io.quarkiverse.githubapp.runtime.replay;
 import java.time.Duration;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import io.quarkiverse.githubapp.GitHubEvent;
 import io.quarkus.arc.profile.IfBuildProfile;

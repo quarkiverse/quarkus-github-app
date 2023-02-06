@@ -4,10 +4,10 @@ import java.io.IOException;
 import java.time.Clock;
 import java.time.ZoneOffset;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Produces;
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import org.kohsuke.github.GHEventPayload;
 

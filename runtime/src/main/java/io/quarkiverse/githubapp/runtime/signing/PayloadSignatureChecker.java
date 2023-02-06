@@ -8,7 +8,8 @@ import java.security.NoSuchAlgorithmException;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-import javax.inject.Singleton;
+
+import jakarta.inject.Singleton;
 
 import io.quarkiverse.githubapp.runtime.config.CheckedConfigProvider;
 

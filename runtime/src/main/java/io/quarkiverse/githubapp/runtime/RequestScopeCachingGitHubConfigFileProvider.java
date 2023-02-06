@@ -3,8 +3,8 @@ package io.quarkiverse.githubapp.runtime;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.enterprise.context.RequestScoped;
-import javax.inject.Inject;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.inject.Inject;
 
 import org.kohsuke.github.GHRepository;
 
