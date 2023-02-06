@@ -128,7 +128,7 @@ It is recommended to use field injection to avoid cluttering the `run()` method:
 ----
 include::{command-airline-examples-dir}/CdiInjectionCli.java[tag=include]
 ----
-<1> You can inject the `@ApplicationScoped` `CdiBean` via the CDI `javax.inject.Inject` annotation.
+<1> You can inject the `@ApplicationScoped` `CdiBean` via the CDI `jakarta.inject.Inject` annotation.
 
 == Additional options
 

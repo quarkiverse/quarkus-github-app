@@ -1,8 +1,8 @@
 package io.quarkiverse.githubapp.deployment.junit;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.inject.Singleton;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import jakarta.inject.Singleton;
 
 import io.quarkiverse.githubapp.runtime.github.GitHubFileDownloader;
 import io.quarkiverse.githubapp.runtime.github.GitHubService;

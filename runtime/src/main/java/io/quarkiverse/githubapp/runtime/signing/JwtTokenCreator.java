@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.PrivateKey;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import io.smallrye.jwt.build.Jwt;
 

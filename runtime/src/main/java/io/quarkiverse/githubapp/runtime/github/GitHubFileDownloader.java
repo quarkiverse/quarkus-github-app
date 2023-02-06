@@ -3,8 +3,8 @@ package io.quarkiverse.githubapp.runtime.github;
 import java.io.IOException;
 import java.util.Optional;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import org.jboss.logging.Logger;
 import org.kohsuke.github.GHContent;

@@ -2,7 +2,7 @@ package command.airline;
 
 import java.io.IOException;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.kohsuke.github.GHEventPayload;
 

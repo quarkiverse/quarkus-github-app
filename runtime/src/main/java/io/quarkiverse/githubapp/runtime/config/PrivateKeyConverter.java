@@ -6,7 +6,7 @@ import java.io.Serializable;
 import java.security.GeneralSecurityException;
 import java.security.PrivateKey;
 
-import javax.annotation.Priority;
+import jakarta.annotation.Priority;
 
 import org.eclipse.microprofile.config.spi.Converter;
 

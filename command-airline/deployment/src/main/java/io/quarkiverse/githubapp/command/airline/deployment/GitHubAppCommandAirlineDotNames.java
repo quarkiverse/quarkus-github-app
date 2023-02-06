@@ -1,6 +1,6 @@
 package io.quarkiverse.githubapp.command.airline.deployment;
 
-import javax.enterprise.context.Dependent;
+import jakarta.enterprise.context.Dependent;
 
 import org.jboss.jandex.DotName;
 import org.kohsuke.github.GHEventPayload;
