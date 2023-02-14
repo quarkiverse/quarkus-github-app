@@ -43,9 +43,20 @@ Finally, it comes with a nice and searchable Replay UI:
 
 > ![Replay UI](/docs/modules/ROOT/assets/images/replay-ui.png?raw=true "Replay UI")
 
+## Compatibility
+
+Quarkus GitHub App provides two different version streams, one compatible with Quarkus 2.x and the other compatible with Quarkus 3.x.
+
+| Quarkus | Quarkus GitHub App | Documentation                                                                                     |
+|---------|--------------------|---------------------------------------------------------------------------------------------------|
+| 2.x     | 1.6.x              | [Documentation](https://quarkiverse.github.io/quarkiverse-docs/quarkus-github-app/1.x/index.html) |
+| 3.x     | 2.x                | [Documentation](https://quarkiverse.github.io/quarkiverse-docs/quarkus-github-app/dev/index.html) |
+
+Use the latest version of the corresponding stream, [the list of versions is available on Maven Central](https://search.maven.org/artifact/io.quarkiverse.githubapp/quarkus-github-app).
+
 ## Documentation
 
-To get you started (and more!), please refer to [the extensive documentation](https://quarkiverse.github.io/quarkiverse-docs/quarkus-github-app/dev/index.html).
+To get you started (and more!), please refer to [the extensive documentation](https://quarkiverse.github.io/quarkiverse-docs/quarkus-github-app/1.x/index.html) - or for https://quarkiverse.github.io/quarkiverse-docs/quarkus-github-app/dev/index.html[a version compatible with Quarkus 3].
 
 Anything unclear or missing in the documentation? Please [open an issue](https://github.com/quarkiverse/quarkus-github-app/issues/new).
 
