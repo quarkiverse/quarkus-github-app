@@ -16,6 +16,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -49,7 +50,6 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
-import io.quarkiverse.githubapi.deployment.GitHubApiClassWithBridgeMethodsBuildItem;
 import io.quarkiverse.githubapp.ConfigFile;
 import io.quarkiverse.githubapp.GitHubEvent;
 import io.quarkiverse.githubapp.deployment.DispatchingConfiguration.EventAnnotation;
@@ -130,6 +130,9 @@ class GitHubAppProcessor {
     private static final MethodDescriptor COMPLETABLE_FUTURE_JOIN = MethodDescriptor.ofMethod(CompletableFuture.class,
             "join", Object.class);
 
+    private static final DotName WITH_BRIDGE_METHODS = DotName
+            .createSimple("com.infradna.tool.bridge_method_injector.WithBridgeMethods");
+
     private static final GACT QUARKIVERSE_GITHUB_APP_GACT = new GACT("io.quarkiverse.githubapp",
             "quarkus-github-app-deployment", null, "jar");
     private static final String REPLAY_UI_RESOURCES_PREFIX = "META-INF/resources/replay-ui/";
@@ -191,14 +194,26 @@ class GitHubAppProcessor {
      */
     @BuildStep
     void removeCompatibilityBridgeMethodsFromGitHubApi(
-            BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformers,
-            List<GitHubApiClassWithBridgeMethodsBuildItem> gitHubApiClassesWithBridgeMethods) {
-        for (GitHubApiClassWithBridgeMethodsBuildItem gitHubApiClassWithBridgeMethods : gitHubApiClassesWithBridgeMethods) {
+            CombinedIndexBuildItem combinedIndex,
+            BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformers) {
+        Map<String, Set<String>> bridgeMethodsByClassName = new HashMap<>();
+
+        for (AnnotationInstance bridgeAnnotation : combinedIndex.getIndex().getAnnotations(WITH_BRIDGE_METHODS)) {
+            if (bridgeAnnotation.target().kind() != Kind.METHOD) {
+                continue;
+            }
+
+            String className = bridgeAnnotation.target().asMethod().declaringClass().name().toString();
+            bridgeMethodsByClassName.computeIfAbsent(className, cn -> new HashSet<>())
+                    .add(bridgeAnnotation.target().asMethod().name());
+        }
+
+        for (Entry<String, Set<String>> bridgeMethodsByClassNameEntry : bridgeMethodsByClassName.entrySet()) {
             bytecodeTransformers.produce(new BytecodeTransformerBuildItem.Builder()
-                    .setClassToTransform(gitHubApiClassWithBridgeMethods.getClassName())
+                    .setClassToTransform(bridgeMethodsByClassNameEntry.getKey())
                     .setVisitorFunction((ignored, visitor) -> new RemoveBridgeMethodsClassVisitor(visitor,
-                            gitHubApiClassWithBridgeMethods.getClassName(),
-                            gitHubApiClassWithBridgeMethods.getMethodsWithBridges()))
+                            bridgeMethodsByClassNameEntry.getKey(),
+                            bridgeMethodsByClassNameEntry.getValue()))
                     .build());
         }
     }
@@ -865,9 +880,11 @@ class GitHubAppProcessor {
             if (methodsWithBridges.contains(name) && ((access & Opcodes.ACC_BRIDGE) != 0)
                     && ((access & Opcodes.ACC_SYNTHETIC) != 0)) {
 
-                LOG.debugf("Class %1$s - Removing method %2$s %3$s(%4$s)", className,
-                        org.objectweb.asm.Type.getReturnType(descriptor), name,
-                        Arrays.toString(org.objectweb.asm.Type.getArgumentTypes(descriptor)));
+                if (LOG.isDebugEnabled()) {
+                    LOG.debugf("Class %1$s - Removing method %2$s %3$s(%4$s)", className,
+                            org.objectweb.asm.Type.getReturnType(descriptor), name,
+                            Arrays.toString(org.objectweb.asm.Type.getArgumentTypes(descriptor)));
+                }
 
                 return null;
             }
