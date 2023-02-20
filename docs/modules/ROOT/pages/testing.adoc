@@ -86,9 +86,9 @@ See the `GitHubMockContext` interface for a detailed list of methods.
 
 Just run `./mvnw test` from the commandline.
 
-== Mockito features
+== More advanced Mockito features
 
-You can use most Mockito features on the GitHub object mocks;
+You can use most https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Mockito.html[Mockito features] on the GitHub object mocks;
 that includes defining their behavior before the event is simulated:
 
 [source, java]
@@ -100,15 +100,15 @@ class CreateCommentTest {
     void testIssueOpened() throws IOException {
         GitHubAppTesting.given() // <1>
                 .github(mocks -> { // <2>
-                    Mockito.doThrow(new RuntimeException()) // <3>
+                    Mockito.doThrow(new RuntimeException("Simulated exception")) // <3>
                             .when(mocks.issue(750705278))
                             .comment(Mockito.any());
                 })
                 .when().payloadFromClasspath("/issue-opened.json")
                 .event(GHEvent.ISSUES)
-                .then().github(mocks -> {
-                    Mockito.verify(mocks.issue(750705278))
-                            .comment("Hello from my GitHub App");
+                .then().github(mocks -> { // <4>
+                    Mockito.verify(mocks.issue(750705278)) // <5>
+                            .createReaction(ReactionContent.CONFUSED);
                 });
     }
 }
@@ -116,7 +116,54 @@ class CreateCommentTest {
 <1> Use given().github(...) to configure mocks.
 <2> The given `mocks` object gives access to mocks of GitHub objects, indexed by their identifier,
     just like in `.then().github(...)`.
+    This can be used to configure the behavior of objects referenced in the event payload,
+    such as (here) the `GHIssue`.
 <3> Here we're configuring the mock to throw an exception when the application tries to comment on the issue.
+<4> We can still use `.then().github(mocks -> ...)` to perform assertions on GitHub objects involved in the event handling.
+<5> Here we're verifying that the application caught the runtime exception and added a `confused` reaction to the GitHub issue.
+
+You can also use the class `GitHubAppMockito` to simplify mocking for some common scenarios:
+
+[source, java]
+----
+@QuarkusTest
+@GitHubAppTest
+class CreateCommentTest {
+    @Test
+    void testIssueEdited() throws IOException {
+        var queryCommentsBuilder = GitHubAppMockito.mockBuilder(GHIssueCommentQueryBuilder.class); // <1>
+        GitHubAppTesting.given()
+                .github(mocks -> {
+                    Mockito.when(mocks.issue(750705278).queryComments())
+                            .thenReturn(queryCommentsBuilder);
+                    var previousCommentFromBotMock = mocks.ghObject(GHIssueComment.class, 2);
+                    var commentsMock = GitHubAppMockito.mockPagedIterable(previousCommentFromBotMock); // <2>
+                    Mockito.when(queryCommentsBuilder.list()) // <3>
+                            .thenReturn(commentsMock);
+                })
+                .when().payloadFromClasspath("/issue-edited.json")
+                .event(GHEvent.ISSUES)
+                .then().github(mocks -> {
+                    Mockito.verify(mocks.issue(750705278)).queryComments();
+                    // The bot already commented , it should not comment again.
+                    Mockito.verifyNoMoreInteractions(mocks.issue(750705278));
+                });
+    }
+}
+----
+<1> Use `GitHubAppMockito.mockBuilder` to easily mock builders from the GitHub API.
+It will mock the builder by setting its default answer to just `return this;`,
+which is convenient since most methods in builders do that.
++
+Here we're mocking the builder returned by `GHIssue#queryComments()`.
+<2> Use `GitHubAppMockito.mockPagedIterable` to easily mock `PagedIterable` from the GitHub API,
+which is the return type from many query or listing methods.
++
+Here we're mocking the list of comments returned when querying issue comments,
+so that it includes exactly one (mocked) comment.
+<3> When mocking builders, don't forget to define the behavior of the "build method" (`list()`/`create()`/...),
+because the default answer set by `GitHubAppMockito.mockBuilder` (returning `this`)
+will not work for that method.
 
 == Mocking the configuration file
 
@@ -132,10 +179,8 @@ class CreateCommentTest {
     void testIssueOpened() throws IOException {
         GitHubAppTesting.given() // <1>
                 .github(mocks -> { // <2>
-                    mocks.configFileFromString( // <3>
-                        "my-bot.yml",
-                        "greeting.message: \"some custom message\""
-                    );
+                    mocks.configFile("my-bot.yml") // <3>
+                            .fromString("greeting.message: \"some custom message\"");
                 })
                 .when()
                 .payloadFromClasspath("/issue-opened.json")
@@ -164,10 +209,8 @@ class CreateCommentTest {
     void testIssueOpened() throws IOException {
         GitHubAppTesting.given() // <1>
                 .github(mocks -> { // <2>
-                    mocks.configFileFromClasspath( // <3>
-                        "my-bot.yml",
-                        "/my-bot-some-custom-message.yml"
-                    );
+                    mocks.configFile("my-bot.yml") // <3>
+                            .fromClasspath("/my-bot-some-custom-message.yml");
                 })
                 .when()
                 .payloadFromClasspath("/issue-opened.json")

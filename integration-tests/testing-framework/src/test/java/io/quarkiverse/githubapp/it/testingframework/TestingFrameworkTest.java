@@ -1,5 +1,6 @@
 package io.quarkiverse.githubapp.it.testingframework;
 
+import static io.quarkiverse.githubapp.testing.GitHubAppMockito.mockBuilder;
 import static io.quarkiverse.githubapp.testing.GitHubAppMockito.mockPagedIterable;
 import static io.quarkiverse.githubapp.testing.GitHubAppTesting.given;
 import static io.quarkiverse.githubapp.testing.GitHubAppTesting.when;
@@ -21,6 +22,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.kohsuke.github.GHApp;
 import org.kohsuke.github.GHAppInstallation;
 import org.kohsuke.github.GHEvent;
+import org.kohsuke.github.GHIssueComment;
+import org.kohsuke.github.GHIssueCommentQueryBuilder;
 import org.kohsuke.github.GHPullRequest;
 import org.kohsuke.github.GHRepository;
 import org.kohsuke.github.GitHub;
@@ -56,36 +59,111 @@ public class TestingFrameworkTest {
                     Mockito.when(mocks.issue(750705278).getBody()).thenReturn("someValue");
                 })
                 .when().payloadFromClasspath("/issue-opened.json")
-                .event(GHEvent.ISSUES)
-                .then().github(mocks -> {
-                }))
+                .event(GHEvent.ISSUES))
                 .doesNotThrowAnyException();
         assertThat(capture[0]).isEqualTo("someValue");
     }
 
     @Test
     void ghObjectVerify() {
-        ThrowingCallable assertion = () -> when().payloadFromClasspath("/issue-opened.json")
+        // Do not change this, the documentation includes the exact same code
+        ThrowingCallable assertion = () -> when()
+                .payloadFromClasspath("/issue-opened.json")
                 .event(GHEvent.ISSUES)
-                .then().github(mocks -> {
-                    verify(mocks.issue(750705278))
-                            .addLabels("someValue");
+                .then().github(mocks -> { // <4>
+                    Mockito.verify(mocks.issue(750705278))
+                            .comment("Hello from my GitHub App");
                 });
 
         // Success
         IssueEventListener.behavior = (payload, configFile) -> {
-            payload.getIssue().addLabels("someValue");
+            payload.getIssue().comment("Hello from my GitHub App");
         };
         assertThatCode(assertion).doesNotThrowAnyException();
 
         // Failure
         IssueEventListener.behavior = (payload, configFile) -> {
-            payload.getIssue().addLabels("otherValue");
+            payload.getIssue().comment("otherValue");
         };
         assertThatThrownBy(assertion)
                 .isInstanceOf(AssertionError.class)
                 .hasMessageContaining("Actual invocations have different arguments:\n" +
-                        "GHIssue#750705278.addLabels(\"otherValue\");");
+                        "GHIssue#750705278.comment(\n    \"otherValue\"\n);");
+    }
+
+    @Test
+    void ghObjectMockAndVerify() {
+        // Do not change this, the documentation includes the exact same code
+        ThrowingCallable assertion = () -> given()
+                .github(mocks -> {
+                    Mockito.doThrow(new RuntimeException("Simulated exception"))
+                            .when(mocks.issue(750705278))
+                            .comment(Mockito.any());
+                })
+                .when().payloadFromClasspath("/issue-opened.json")
+                .event(GHEvent.ISSUES)
+                .then().github(mocks -> {
+                    Mockito.verify(mocks.issue(750705278))
+                            .createReaction(ReactionContent.CONFUSED);
+                });
+
+        // Success
+        IssueEventListener.behavior = (payload, configFile) -> {
+            try {
+                payload.getIssue().comment("Hello from my GitHub App");
+            } catch (RuntimeException e) {
+                payload.getIssue().createReaction(ReactionContent.CONFUSED);
+            }
+        };
+        assertThatCode(assertion).doesNotThrowAnyException();
+
+        // Failure
+        IssueEventListener.behavior = (payload, configFile) -> {
+            payload.getIssue().comment("Hello from my GitHub App");
+        };
+        assertThatThrownBy(assertion)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("The event handler threw an exception: Simulated exception");
+    }
+
+    @Test
+    void ghAppMockUtils() {
+        // Do not change this, the documentation includes the exact same code
+        var queryCommentsBuilder = mockBuilder(GHIssueCommentQueryBuilder.class);
+        ThrowingCallable assertion = () -> given()
+                .github(mocks -> {
+                    Mockito.when(mocks.issue(750705278).queryComments())
+                            .thenReturn(queryCommentsBuilder);
+                    var previousCommentFromBotMock = mocks.ghObject(GHIssueComment.class, 2);
+                    var commentsMock = mockPagedIterable(previousCommentFromBotMock);
+                    Mockito.when(queryCommentsBuilder.list())
+                            .thenReturn(commentsMock);
+                })
+                .when().payloadFromClasspath("/issue-opened.json")
+                .event(GHEvent.ISSUES)
+                .then().github(mocks -> {
+                    Mockito.verify(mocks.issue(750705278)).queryComments();
+                    // The bot already commented, it should not comment again.
+                    Mockito.verifyNoMoreInteractions(mocks.issue(750705278));
+                });
+
+        // Success
+        IssueEventListener.behavior = (payload, configFile) -> {
+            if (!payload.getIssue().queryComments().list().iterator().hasNext()) {
+                payload.getIssue().comment("Hello from my GitHub App");
+            }
+        };
+        assertThatCode(assertion).doesNotThrowAnyException();
+
+        // Failure
+        IssueEventListener.behavior = (payload, configFile) -> {
+            boolean ignored = !payload.getIssue().queryComments().list().iterator().hasNext();
+            // Comment regardless
+            payload.getIssue().comment("Hello from my GitHub App");
+        };
+        assertThatThrownBy(assertion)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("No interactions wanted here");
     }
 
     @Test
