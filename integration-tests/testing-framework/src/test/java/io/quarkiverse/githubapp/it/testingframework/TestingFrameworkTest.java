@@ -1,5 +1,6 @@
 package io.quarkiverse.githubapp.it.testingframework;
 
+import static io.quarkiverse.githubapp.testing.GitHubAppMockito.mockPagedIterable;
 import static io.quarkiverse.githubapp.testing.GitHubAppTesting.given;
 import static io.quarkiverse.githubapp.testing.GitHubAppTesting.when;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -276,18 +277,17 @@ public class TestingFrameworkTest {
                     Mockito.when(mocks.applicationClient().getApp()).thenReturn(app);
                     Mockito.when(installation1.getId()).thenReturn(1L);
                     Mockito.when(installation2.getId()).thenReturn(2L);
-                    PagedIterable<GHAppInstallation> appInstallations = MockHelper.mockPagedIterable(installation1,
-                            installation2);
+                    PagedIterable<GHAppInstallation> appInstallations = mockPagedIterable(installation1, installation2);
                     Mockito.when(app.listInstallations()).thenReturn(appInstallations);
 
                     Mockito.when(installation1Repo1.getFullName()).thenReturn("quarkusio/quarkus");
-                    PagedSearchIterable<GHRepository> installation1Repos = MockHelper.mockPagedIterable(installation1Repo1);
+                    PagedSearchIterable<GHRepository> installation1Repos = mockPagedIterable(installation1Repo1);
                     Mockito.when(installation1.listRepositories())
                             .thenReturn(installation1Repos);
 
                     Mockito.when(installation2Repo1.getFullName()).thenReturn("quarkiverse/quarkus-github-app");
                     Mockito.when(installation2Repo2.getFullName()).thenReturn("quarkiverse/quarkus-github-api");
-                    PagedSearchIterable<GHRepository> installation2Repos = MockHelper.mockPagedIterable(installation2Repo1,
+                    PagedSearchIterable<GHRepository> installation2Repos = mockPagedIterable(installation2Repo1,
                             installation2Repo2);
                     Mockito.when(installation2.listRepositories())
                             .thenReturn(installation2Repos);
