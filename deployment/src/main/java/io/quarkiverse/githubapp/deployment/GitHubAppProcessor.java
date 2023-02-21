@@ -167,9 +167,11 @@ class GitHubAppProcessor {
         }
 
         // Caffeine
-        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true,
-                "com.github.benmanes.caffeine.cache.SSMSA",
-                "com.github.benmanes.caffeine.cache.PSWMS"));
+        reflectiveClasses.produce(ReflectiveClassBuildItem
+                .builder("com.github.benmanes.caffeine.cache.SSMSA", "com.github.benmanes.caffeine.cache.PSWMS")
+                .methods(true)
+                .fields(true)
+                .build());
     }
 
     @BuildStep
@@ -421,7 +423,7 @@ class GitHubAppProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
         String dispatcherClassName = GitHubEvent.class.getName() + "DispatcherImpl";
 
-        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, dispatcherClassName));
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(dispatcherClassName).methods(true).fields(true).build());
 
         ClassCreator dispatcherClassCreator = ClassCreator.builder().classOutput(beanClassOutput)
                 .className(dispatcherClassName)
@@ -575,10 +577,12 @@ class GitHubAppProcessor {
             TreeSet<EventDispatchingMethod> eventDispatchingMethods = eventDispatchingMethodsEntry.getValue();
             ClassInfo declaringClass = eventDispatchingMethods.iterator().next().getMethod().declaringClass();
 
-            reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, declaringClassName.toString()));
+            reflectiveClasses.produce(
+                    ReflectiveClassBuildItem.builder(declaringClassName.toString()).methods(true).fields(true).build());
 
             String multiplexerClassName = declaringClassName + "_Multiplexer";
-            reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, multiplexerClassName));
+            reflectiveClasses
+                    .produce(ReflectiveClassBuildItem.builder(multiplexerClassName).methods(true).fields(true).build());
 
             ClassCreator multiplexerClassCreator = ClassCreator.builder().classOutput(beanClassOutput)
                     .className(multiplexerClassName)
