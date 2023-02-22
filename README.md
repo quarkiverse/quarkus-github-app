@@ -117,3 +117,13 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
 <!-- ALL-CONTRIBUTORS-LIST:END -->
 
 This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind welcome!
+
+## Acknowledgements
+
+Quarkus GitHub App uses the following Open Source projects:
+
+* [Quarkus](https://quarkus.io)
+* [Hub4j GitHub API](https://github.com/hub4j/github-api)
+* [Airline](https://rvesse.github.io/airline/)
+* [Event Stream Client for Server-Sent Events](https://github.com/LupCode/java-sse-client)
+* And for the Replay UI: [Fomantic UI](https://fomantic-ui.com), [Vue.js](https://vuejs.org) and [jQuery](https://jquery.com)

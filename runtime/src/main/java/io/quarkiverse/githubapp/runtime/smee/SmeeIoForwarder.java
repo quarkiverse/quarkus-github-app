@@ -3,6 +3,11 @@ package io.quarkiverse.githubapp.runtime.smee;
 import static io.quarkiverse.githubapp.runtime.Headers.FORWARDED_HEADERS;
 
 import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse;
+import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
 import java.util.Locale;
 
@@ -10,126 +15,117 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 
+import org.jboss.logging.Logger;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.launchdarkly.eventsource.EventHandler;
-import com.launchdarkly.eventsource.EventSource;
-import com.launchdarkly.eventsource.MessageEvent;
 
 import io.quarkiverse.githubapp.runtime.config.CheckedConfigProvider;
+import io.quarkiverse.githubapp.runtime.sse.EventStreamListener;
+import io.quarkiverse.githubapp.runtime.sse.HttpEventStreamClient;
+import io.quarkiverse.githubapp.runtime.sse.HttpEventStreamClient.Event;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.Startup;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
-import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
 
 @ApplicationScoped
 @Startup
 public class SmeeIoForwarder {
 
+    private static final Logger LOG = Logger.getLogger(SmeeIoForwarder.class);
+
     private static final String EMPTY_MESSAGE = "{}";
 
-    private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
-
-    private final EventSource eventSource;
+    private final HttpEventStreamClient eventStreamClient;
 
     @Inject
     SmeeIoForwarder(CheckedConfigProvider checkedConfigProvider, HttpConfiguration httpConfiguration,
             ObjectMapper objectMapper) {
         if (!checkedConfigProvider.webhookProxyUrl().isPresent()) {
-            this.eventSource = null;
+            this.eventStreamClient = null;
             return;
         }
 
-        String localUrl = "http://" + httpConfiguration.host + ":" + httpConfiguration.port + "/";
-        this.eventSource = startEventSource(checkedConfigProvider.webhookProxyUrl().get(), localUrl, new OkHttpClient(),
-                objectMapper);
+        URI localUrl = URI.create("http://" + httpConfiguration.host + ":" + httpConfiguration.port + "/");
+
+        this.eventStreamClient = new HttpEventStreamClient(checkedConfigProvider.webhookProxyUrl().get(),
+                new ReplayEventStreamAdapter(checkedConfigProvider.webhookProxyUrl().get(), localUrl, objectMapper));
+        this.eventStreamClient.setRetryCooldown(3000);
+        this.eventStreamClient.start();
     }
 
     void stopEventSource(@Observes ShutdownEvent shutdownEvent) {
-        if (eventSource != null) {
-            eventSource.close();
+        if (this.eventStreamClient != null) {
+            this.eventStreamClient.stop();
         }
     }
 
-    private static EventSource startEventSource(String webhookProxyUrl, String localUrl, OkHttpClient client,
-            ObjectMapper objectMapper) {
-        EventSource.Builder builder = new EventSource.Builder(new SimpleEventHandler(localUrl, client, objectMapper),
-                URI.create(webhookProxyUrl))
-                .reconnectTime(Duration.ofMillis(3000));
+    private static class ReplayEventStreamAdapter implements EventStreamListener {
 
-        EventSource eventSource = builder.build();
-        eventSource.start();
-
-        return eventSource;
-    }
-
-    private static class SimpleEventHandler implements EventHandler {
-
-        private final OkHttpClient client;
-
-        private final String localUrl;
-
+        private final String proxyUrl;
+        private final URI localUrl;
         private final ObjectMapper objectMapper;
+        private final HttpClient forwardingHttpClient;
 
-        private SimpleEventHandler(String localUrl, OkHttpClient client, ObjectMapper objectMapper) {
-            this.client = client;
+        private ReplayEventStreamAdapter(String proxyUrl, URI localUrl, ObjectMapper objectMapper) {
+            this.proxyUrl = proxyUrl;
             this.localUrl = localUrl;
             this.objectMapper = objectMapper;
+            this.forwardingHttpClient = HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofSeconds(2))
+                    .build();
         }
 
         @Override
-        public void onOpen() throws Exception {
-        }
-
-        @Override
-        public void onClosed() throws Exception {
-        }
-
-        @Override
-        public void onMessage(String event, MessageEvent messageEvent) throws Exception {
-            if (EMPTY_MESSAGE.equals(messageEvent.getData())) {
+        public void onEvent(HttpEventStreamClient client, Event event) {
+            if (EMPTY_MESSAGE.equals(event.getData())) {
                 return;
             }
 
-            int startOfJsonObject = messageEvent.getData().indexOf('{');
+            int startOfJsonObject = event.getData().indexOf('{');
             if (startOfJsonObject == -1) {
                 return;
             }
 
             // for some reason, the message coming from smee.io sometimes includes a 'id: 123' at the beginning of the message
             // let's be safe and drop anything before the start of the JSON object.
-            String data = messageEvent.getData().substring(startOfJsonObject);
+            String data = event.getData().substring(startOfJsonObject);
 
-            JsonNode rootNode = objectMapper.readTree(data);
-            JsonNode body = rootNode.get("body");
+            try {
+                JsonNode rootNode = objectMapper.readTree(data);
+                JsonNode body = rootNode.get("body");
 
-            if (body != null) {
-                Request.Builder requestBuilder = new Request.Builder()
-                        .url(localUrl)
-                        .post(RequestBody.create(JSON, objectMapper.writeValueAsString(rootNode.get("body"))));
+                if (body != null) {
+                    HttpRequest.Builder requestBuilder = HttpRequest.newBuilder(localUrl)
+                            .POST(BodyPublishers.ofString(objectMapper.writeValueAsString(rootNode.get("body"))));
 
-                for (String forwardedHeader : FORWARDED_HEADERS) {
-                    JsonNode headerValue = rootNode.get(forwardedHeader.toLowerCase(Locale.ROOT));
-                    if (headerValue != null && headerValue.isTextual()) {
-                        requestBuilder.addHeader(forwardedHeader, headerValue.textValue());
+                    for (String forwardedHeader : FORWARDED_HEADERS) {
+                        JsonNode headerValue = rootNode.get(forwardedHeader.toLowerCase(Locale.ROOT));
+                        if (headerValue != null && headerValue.isTextual()) {
+                            requestBuilder.header(forwardedHeader, headerValue.textValue());
+                        }
                     }
-                }
 
-                try (Response response = client.newCall(requestBuilder.build()).execute()) {
+                    forwardingHttpClient.send(requestBuilder.build(), BodyHandlers.discarding());
                 }
+            } catch (Exception e) {
+                LOG.error("An error occurred while forwarding a payload to the local application running in dev mode", e);
             }
         }
 
         @Override
-        public void onComment(String comment) throws Exception {
+        public void onReconnect(HttpEventStreamClient client, HttpResponse<Void> response, boolean hasReceivedEvents,
+                long lastEventID) {
+            LOG.info("Reconnected to " + proxyUrl);
         }
 
         @Override
-        public void onError(Throwable t) {
+        public void onError(HttpEventStreamClient client, Throwable throwable) {
+            LOG.error("An error occurred with Smee.io proxying", throwable);
+        }
+
+        @Override
+        public void onClose(HttpEventStreamClient client, HttpResponse<Void> response) {
         }
     }
 }

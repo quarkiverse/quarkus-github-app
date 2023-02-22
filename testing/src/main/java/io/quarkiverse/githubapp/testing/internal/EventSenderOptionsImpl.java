@@ -1,6 +1,11 @@
 package io.quarkiverse.githubapp.testing.internal;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
 import java.util.Locale;
 import java.util.UUID;
@@ -14,32 +19,26 @@ import io.quarkiverse.githubapp.runtime.Routes;
 import io.quarkiverse.githubapp.testing.dsl.EventSenderOptions;
 import io.quarkus.arc.Arc;
 import io.vertx.core.json.JsonObject;
-import okhttp3.Call;
-import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
 
 final class EventSenderOptionsImpl implements EventSenderOptions {
 
-    private static final MediaType DEFAULT_MEDIA_TYPE = MediaType.get("application/json");
+    private static final String DEFAULT_CONTENT_TYPE = "application/json";
 
     private final GitHubAppTestingContext testingContext;
-    private final OkHttpClient.Builder clientBuilder = new OkHttpClient.Builder();
+    private final HttpClient httpClient;
 
     private UUID requestId;
     private UUID deliveryId;
     private long installationId;
-    private RequestBody requestBody;
+    private String payload;
+    private String contentType;
 
     EventSenderOptionsImpl(GitHubAppTestingContext testingContext) {
         this.testingContext = testingContext;
         Duration forever = Duration.ofDays(1);
-        // For debugging
-        clientBuilder
-                .readTimeout(forever)
-                .callTimeout(forever)
-                .writeTimeout(forever);
+        this.httpClient = HttpClient.newBuilder()
+                .connectTimeout(forever)
+                .build();
     }
 
     @Override
@@ -56,32 +55,27 @@ final class EventSenderOptionsImpl implements EventSenderOptions {
 
     @Override
     public EventSenderOptions payloadFromString(String payload) {
-        return payloadFromString(payload, DEFAULT_MEDIA_TYPE);
+        return payloadFromString(payload, DEFAULT_CONTENT_TYPE);
     }
 
     @Override
     public EventSenderOptions payloadFromString(String payload, String contentType) {
-        return payloadFromString(payload, MediaType.get(contentType));
-    }
+        this.payload = payload;
+        this.contentType = contentType;
 
-    private EventSenderOptionsImpl payloadFromString(String payload, MediaType contentType) {
         JsonObject payloadAsJsonObject = new JsonObject(payload);
         installationId = Arc.container().instance(Routes.class).get().extractInstallationId(payloadAsJsonObject);
-        requestBody = RequestBody.create(contentType, payload);
+
         return this;
     }
 
     @Override
-    public EventSenderOptionsImpl payloadFromClasspath(String path) throws IOException {
-        return payloadFromClasspath(path, DEFAULT_MEDIA_TYPE);
+    public EventSenderOptions payloadFromClasspath(String path) throws IOException {
+        return payloadFromClasspath(path, DEFAULT_CONTENT_TYPE);
     }
 
     @Override
     public EventSenderOptions payloadFromClasspath(String path, String contentType) throws IOException {
-        return payloadFromClasspath(path, MediaType.get(contentType));
-    }
-
-    private EventSenderOptionsImpl payloadFromClasspath(String path, MediaType contentType) throws IOException {
         return payloadFromString(testingContext.getFromClasspath(path), contentType);
     }
 
@@ -92,14 +86,13 @@ final class EventSenderOptionsImpl implements EventSenderOptions {
 
     @Override
     public EventHandlingResponseImpl event(GHEvent event, boolean ignoreExceptions) {
-        OkHttpClient httpClient = clientBuilder.build();
-        Call call = httpClient.newCall(new Request.Builder()
-                .url(buildUrl())
-                .post(requestBody)
-                .addHeader(Headers.X_REQUEST_ID, (requestId == null ? UUID.randomUUID() : requestId).toString())
-                .addHeader(Headers.X_GITHUB_DELIVERY, (deliveryId == null ? UUID.randomUUID() : deliveryId).toString())
-                .addHeader(Headers.X_GITHUB_EVENT, symbol(event))
-                .build());
+        HttpRequest request = HttpRequest.newBuilder(buildUrl())
+                .POST(BodyPublishers.ofString(payload))
+                .header(Headers.CONTENT_TYPE, contentType)
+                .header(Headers.X_REQUEST_ID, (requestId == null ? UUID.randomUUID() : requestId).toString())
+                .header(Headers.X_GITHUB_DELIVERY, (deliveryId == null ? UUID.randomUUID() : deliveryId).toString())
+                .header(Headers.X_GITHUB_EVENT, symbol(event))
+                .build();
 
         // Only stub these methods when we know they are going to get called;
         // otherwise tests might throw a UnnecessaryStubbingException when using Mockito's "strict-stubs" mode
@@ -109,7 +102,7 @@ final class EventSenderOptionsImpl implements EventSenderOptions {
         testingContext.errorHandler.captured = null;
         AssertionError callAssertionError = null;
         try {
-            call.execute().close();
+            httpClient.send(request, BodyHandlers.discarding());
         } catch (Throwable e) {
             callAssertionError = new AssertionError("The HTTP call threw an exception: " + e.getMessage(), e);
         }
@@ -143,11 +136,11 @@ final class EventSenderOptionsImpl implements EventSenderOptions {
         }
     }
 
-    private String buildUrl() {
+    private URI buildUrl() {
         int port = ConfigProvider.getConfig().getOptionalValue("quarkus.http.test-port", Integer.class)
                 .orElse(8081);
         String path = "/";
-        return "http://localhost:" + port + path;
+        return URI.create("http://localhost:" + port + path);
     }
 
     private String symbol(GHEvent event) {
