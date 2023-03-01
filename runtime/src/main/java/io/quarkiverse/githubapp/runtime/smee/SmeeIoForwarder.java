@@ -121,7 +121,7 @@ public class SmeeIoForwarder {
 
         @Override
         public void onError(HttpEventStreamClient client, Throwable throwable) {
-            LOG.error("An error occurred with Smee.io proxying", throwable);
+            LOG.debug("An error occurred with Smee.io proxying", throwable);
         }
 
         @Override
