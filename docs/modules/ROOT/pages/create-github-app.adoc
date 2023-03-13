@@ -11,6 +11,7 @@ You can create one including the Quarkus GitHub App extension with the following
 [source, bash, subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+    -DplatformVersion={quarkus-version} \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=my-github-app \
     -Dextensions="io.quarkiverse.githubapp:quarkus-github-app:{quarkus-github-app-version}" \
