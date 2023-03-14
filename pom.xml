@@ -25,7 +25,7 @@
         <resource-plugin.version>3.3.0</resource-plugin.version>
         <dependency-plugin.version>3.5.0</dependency-plugin.version>
         <surefire-plugin.version>3.0.0-M7</surefire-plugin.version>
-        <jandex-plugin.version>1.2.3</jandex-plugin.version>
+        <jandex-plugin.version>3.0.5</jandex-plugin.version>
         <assertj.version>3.24.2</assertj.version>
 
         <quarkus-github-api.version>1.314.0</quarkus-github-api.version>
@@ -119,7 +119,7 @@
                     <version>${dependency-plugin.version}</version>
                 </plugin>
                 <plugin>
-                    <groupId>org.jboss.jandex</groupId>
+                    <groupId>io.smallrye</groupId>
                     <artifactId>jandex-maven-plugin</artifactId>
                     <version>${jandex-plugin.version}</version>
                     <executions>
