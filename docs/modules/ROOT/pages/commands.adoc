@@ -318,6 +318,11 @@ include::{command-airline-examples-dir}/TeamPermissionCli.java[tag=include]
 ----
 <1> The command will be executed only if the user is part of `my-team1` or `my-team2`.
 
+[WARNING]
+====
+When using team permissions, the GitHub App requires the `read` permission on the repository and the organization so that it can read the permissions.
+====
+
 [[reactions]]
 == Reaction based feedback
 
