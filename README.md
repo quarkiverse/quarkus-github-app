@@ -56,7 +56,7 @@ Use the latest version of the corresponding stream, [the list of versions is ava
 
 ## Documentation
 
-To get you started (and more!), please refer to [the extensive documentation](https://quarkiverse.github.io/quarkiverse-docs/quarkus-github-app/1.x/index.html) - or for [a version compatible with Quarkus 3](https://quarkiverse.github.io/quarkiverse-docs/quarkus-github-app/dev/index.html).
+To get you started (and more!), please refer to [the extensive documentation](https://quarkiverse.github.io/quarkiverse-docs/quarkus-github-app/dev/index.html) - or for [a version compatible with Quarkus 2.x](https://quarkiverse.github.io/quarkiverse-docs/quarkus-github-app/1.x/index.html).
 
 Anything unclear or missing in the documentation? Please [open an issue](https://github.com/quarkiverse/quarkus-github-app/issues/new).
 
