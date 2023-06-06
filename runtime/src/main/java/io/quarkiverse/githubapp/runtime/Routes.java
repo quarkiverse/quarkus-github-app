@@ -84,6 +84,25 @@ public class Routes {
             return;
         }
 
+        if (routingContext.body().buffer() == null) {
+            routingExchange.ok().end();
+            return;
+        }
+
+        byte[] bodyBytes = routingContext.body().buffer().getBytes();
+
+        if (checkedConfigProvider.webhookSecret().isPresent() && !launchMode.isDevOrTest()) {
+            if (!payloadSignatureChecker.matches(bodyBytes, hubSignature)) {
+                StringBuilder signatureError = new StringBuilder("Invalid signature for delivery: ").append(deliveryId)
+                        .append("\n");
+                signatureError.append("› Signature: ").append(hubSignature);
+                LOG.error(signatureError.toString());
+
+                routingExchange.response().setStatusCode(400).end("Invalid signature.");
+                return;
+            }
+        }
+
         JsonObject body = routingContext.body().asJsonObject();
 
         if (body == null) {
@@ -91,7 +110,6 @@ public class Routes {
             return;
         }
 
-        byte[] bodyBytes = routingContext.body().buffer().getBytes();
         String action = body.getString("action");
 
         if (!isBlank(deliveryId) && checkedConfigProvider.debug().payloadDirectory.isPresent()) {
@@ -107,18 +125,6 @@ public class Routes {
 
         if (launchMode == LaunchMode.DEVELOPMENT && replayRouteInstance.isResolvable()) {
             replayRouteInstance.get().pushEvent(gitHubEvent);
-        }
-
-        if (checkedConfigProvider.webhookSecret().isPresent() && !launchMode.isDevOrTest()) {
-            if (!payloadSignatureChecker.matches(bodyBytes, hubSignature)) {
-                StringBuilder signatureError = new StringBuilder("Invalid signature for delivery: ").append(deliveryId)
-                        .append("\n");
-                signatureError.append("› Signature: ").append(hubSignature);
-                LOG.error(signatureError.toString());
-
-                routingExchange.response().setStatusCode(400).end("Invalid signature.");
-                return;
-            }
         }
 
         gitHubEventEmitter.fire(gitHubEvent);
