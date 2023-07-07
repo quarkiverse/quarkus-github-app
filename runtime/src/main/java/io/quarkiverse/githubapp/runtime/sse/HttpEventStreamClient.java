@@ -840,11 +840,13 @@ public class HttpEventStreamClient {
         running = null;
         HttpResponse<Void> response = null;
         if (run != null) {
-            if (run.isDone())
-                if (!run.isCancelled() && !run.isCompletedExceptionally())
+            if (run.isDone()) {
+                if (!run.isCancelled() && !run.isCompletedExceptionally()) {
                     response = run.getNow(null);
-                else
-                    run.cancel(true);
+                }
+            } else {
+                run.cancel(true);
+            }
         }
         for (InternalEventStreamAdapter listener : internalListeners)
             try {

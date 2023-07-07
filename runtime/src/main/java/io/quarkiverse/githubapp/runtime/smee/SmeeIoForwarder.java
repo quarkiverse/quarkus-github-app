@@ -37,24 +37,33 @@ public class SmeeIoForwarder {
     private static final String EMPTY_MESSAGE = "{}";
 
     private final HttpEventStreamClient eventStreamClient;
+    private final ReplayEventStreamAdapter replayEventStreamAdapter;
 
     @Inject
     SmeeIoForwarder(CheckedConfigProvider checkedConfigProvider, HttpConfiguration httpConfiguration,
             ObjectMapper objectMapper) {
         if (!checkedConfigProvider.webhookProxyUrl().isPresent()) {
+            this.replayEventStreamAdapter = null;
             this.eventStreamClient = null;
             return;
         }
 
+        LOG.info("Listening to events coming from " + checkedConfigProvider.webhookProxyUrl().get());
+
         URI localUrl = URI.create("http://" + httpConfiguration.host + ":" + httpConfiguration.port + "/");
 
+        this.replayEventStreamAdapter = new ReplayEventStreamAdapter(checkedConfigProvider.webhookProxyUrl().get(), localUrl,
+                objectMapper);
         this.eventStreamClient = new HttpEventStreamClient(checkedConfigProvider.webhookProxyUrl().get(),
-                new ReplayEventStreamAdapter(checkedConfigProvider.webhookProxyUrl().get(), localUrl, objectMapper));
+                this.replayEventStreamAdapter);
         this.eventStreamClient.setRetryCooldown(3000);
         this.eventStreamClient.start();
     }
 
     void stopEventSource(@Observes ShutdownEvent shutdownEvent) {
+        if (this.replayEventStreamAdapter != null) {
+            this.replayEventStreamAdapter.stop();
+        }
         if (this.eventStreamClient != null) {
             this.eventStreamClient.stop();
         }
@@ -67,6 +76,8 @@ public class SmeeIoForwarder {
         private final ObjectMapper objectMapper;
         private final HttpClient forwardingHttpClient;
 
+        private volatile boolean stopped = false;
+
         private ReplayEventStreamAdapter(String proxyUrl, URI localUrl, ObjectMapper objectMapper) {
             this.proxyUrl = proxyUrl;
             this.localUrl = localUrl;
@@ -78,6 +89,10 @@ public class SmeeIoForwarder {
 
         @Override
         public void onEvent(HttpEventStreamClient client, Event event) {
+            if (stopped) {
+                return;
+            }
+
             if (EMPTY_MESSAGE.equals(event.getData())) {
                 return;
             }
@@ -116,16 +131,28 @@ public class SmeeIoForwarder {
         @Override
         public void onReconnect(HttpEventStreamClient client, HttpResponse<Void> response, boolean hasReceivedEvents,
                 long lastEventID) {
+            if (stopped) {
+                return;
+            }
+
             LOG.info("Reconnected to " + proxyUrl);
         }
 
         @Override
         public void onError(HttpEventStreamClient client, Throwable throwable) {
-            LOG.debug("An error occurred with Smee.io proxying", throwable);
+            if (stopped) {
+                return;
+            }
+
+            LOG.error("An error occurred with Smee.io proxying", throwable);
         }
 
         @Override
         public void onClose(HttpEventStreamClient client, HttpResponse<Void> response) {
+        }
+
+        public void stop() {
+            this.stopped = true;
         }
     }
 }
