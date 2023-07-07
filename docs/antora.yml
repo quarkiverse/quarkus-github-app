@@ -1,5 +1,5 @@
 name: quarkus-github-app
-title: Quarkus GitHub App
+title: GitHub App
 version: dev
 nav:
-- modules/ROOT/nav.adoc
+  - modules/ROOT/nav.adoc
