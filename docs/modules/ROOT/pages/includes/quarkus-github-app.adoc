@@ -14,7 +14,8 @@ a| [[quarkus-github-app_quarkus.github-app.app-id]]`link:#quarkus-github-app_qua
 
 [.description]
 --
-The numeric application id provided by GitHub. 
+The numeric application id provided by GitHub.
+
 Optional for tests, but mandatory in production and dev mode.
 
 ifdef::add-copy-button-to-env-var[]
@@ -31,7 +32,8 @@ a| [[quarkus-github-app_quarkus.github-app.app-name]]`link:#quarkus-github-app_q
 
 [.description]
 --
-The GitHub name of the application. 
+The GitHub name of the application.
+
 Optional, only used for improving the user experience.
 
 ifdef::add-copy-button-to-env-var[]
@@ -64,7 +66,8 @@ a| [[quarkus-github-app_quarkus.github-app.private-key]]`link:#quarkus-github-ap
 
 [.description]
 --
-The RSA private key. 
+The RSA private key.
+
 Optional for tests, but mandatory in production and dev mode.
 
 ifdef::add-copy-button-to-env-var[]
@@ -114,7 +117,8 @@ a| [[quarkus-github-app_quarkus.github-app.instance-endpoint]]`link:#quarkus-git
 
 [.description]
 --
-The GitHub instance endpoint. 
+The GitHub instance endpoint.
+
 Defaults to the public github.com instance.
 
 ifdef::add-copy-button-to-env-var[]
@@ -131,7 +135,8 @@ a| [[quarkus-github-app_quarkus.github-app.rest-api-endpoint]]`link:#quarkus-git
 
 [.description]
 --
-The REST API endpoint. 
+The REST API endpoint.
+
 Defaults to the public github.com instance REST API endpoint.
 
 ifdef::add-copy-button-to-env-var[]
@@ -148,7 +153,8 @@ a| [[quarkus-github-app_quarkus.github-app.graphql-api-endpoint]]`link:#quarkus-
 
 [.description]
 --
-The GraphQL API endpoint. 
+The GraphQL API endpoint.
+
 Defaults to the public github.com instance GraphQL endpoint.
 
 ifdef::add-copy-button-to-env-var[]
