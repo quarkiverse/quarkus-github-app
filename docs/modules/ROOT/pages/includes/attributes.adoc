@@ -1,4 +1,4 @@
-:quarkus-version: 3.2.0.Final
+:quarkus-version: 3.2.1.Final
 :quarkus-github-app-version: 2.0.3
 
 :github-api-javadoc-root-url: https://github-api.kohsuke.org/apidocs/org/kohsuke/github
