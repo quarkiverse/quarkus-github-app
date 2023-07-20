@@ -34,13 +34,13 @@ public class CheckedConfigProvider {
         this.launchMode = launchMode;
 
         if (gitHubAppRuntimeConfig.appId.isEmpty()) {
-            missingPropertyKeys.add("quarkus.github-app.app-id (QUARKUS_GITHUB_APP_APP_ID)");
+            missingPropertyKeys.add("quarkus.github-app.app-id (.env: QUARKUS_GITHUB_APP_APP_ID)");
         }
         if (gitHubAppRuntimeConfig.privateKey.isEmpty()) {
-            missingPropertyKeys.add("quarkus.github-app.private-key (QUARKUS_GITHUB_APP_PRIVATE_KEY)");
+            missingPropertyKeys.add("quarkus.github-app.private-key (.env: QUARKUS_GITHUB_APP_PRIVATE_KEY)");
         }
         if (launchMode == LaunchMode.NORMAL && gitHubAppRuntimeConfig.webhookSecret.isEmpty()) {
-            missingPropertyKeys.add("quarkus.github-app.webhook-secret (QUARKUS_GITHUB_APP_WEBHOOK_SECRET)");
+            missingPropertyKeys.add("quarkus.github-app.webhook-secret (.env: QUARKUS_GITHUB_APP_WEBHOOK_SECRET)");
         }
 
         if (launchMode != LaunchMode.TEST) {
@@ -110,14 +110,16 @@ public class CheckedConfigProvider {
         String errorMessage;
 
         if (launchMode == LaunchMode.TEST) {
-            errorMessage = "Missing value for configuration properties: " + missingPropertyKeys + "."
-                    + " This configuration is necessary to create the GitHub clients."
-                    + " It is optional in tests only if GitHub clients are being mocked using quarkus-github-app-testing"
-                    + " (see https://quarkiverse.github.io/quarkiverse-docs/quarkus-github-app/dev/testing.html).";
+            errorMessage = "\n\nMissing values for configuration properties:\n- " + String.join("\n- ", missingPropertyKeys)
+                    + "\n\n"
+                    + "This configuration is necessary to create the GitHub clients."
+                    + "It is optional in tests only if GitHub clients are being mocked using quarkus-github-app-testing.\n\n"
+                    + "For more information, see https://docs.quarkiverse.io/quarkus-github-app/dev/testing.html.";
         } else {
-            errorMessage = "Missing value for configuration properties: " + missingPropertyKeys + "."
-                    + " This configuration is required in " + (launchMode == LaunchMode.NORMAL ? "prod" : "dev")
-                    + " mode.";
+            errorMessage = "\n\nMissing values for configuration properties:\n- " + String.join("\n- ", missingPropertyKeys)
+                    + "\n\n"
+                    + "This configuration is required in " + (launchMode == LaunchMode.NORMAL ? "prod" : "dev") + " mode.\n\n"
+                    + "For more information, see:\n- https://docs.quarkiverse.io/quarkus-github-app/dev/register-github-app.html\n- https://docs.quarkiverse.io/quarkus-github-app/dev/create-github-app.html#_initialize_the_configuration";
         }
 
         throw new GitHubAppConfigurationException(errorMessage);

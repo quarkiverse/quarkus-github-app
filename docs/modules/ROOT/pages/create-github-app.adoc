@@ -6,22 +6,57 @@ include::./includes/attributes.adoc[]
 
 A Quarkus GitHub App is a standard Quarkus application.
 
-You can create one including the Quarkus GitHub App extension with the following command:
+You can create one including the Quarkus GitHub App extension using the following https://quarkus.io/guides/cli-tooling[Quarkus CLI] command:
+
+WARNING: Make sure you use the `📋` button to copy the command.
+
+[source, bash, subs=attributes+]
+----
+quarkus create app \
+    -x quarkus-github-app \ <1>
+    org.acme:my-github-app \ <2>
+    --no-code <3>
+----
+<1> The Quarkus GitHub App extension.
+<2> The GA of your Maven project.
+<3> Do not include unrelated generated code in the project.
+
+[TIP]
+====
+On Windows and macOS, it is recommended to concatenate all the options on one line (without `\`),
+as the `\` might not be correctly interpreted.
+====
+
+[NOTE]
+======
+We highly recommend the usage of the https://quarkus.io/guides/cli-tooling[Quarkus CLI] but if you cannot install it or prefer using Maven,
+you can create a Quarkus GitHub Action project using the following Maven command:
+
+WARNING: Make sure you use the `📋` button to copy the command.
 
 [source, bash, subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DplatformVersion={quarkus-version} \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=my-github-app \
-    -Dextensions="io.quarkiverse.githubapp:quarkus-github-app:{quarkus-github-app-version}" \
-    -DnoCode
+    -DprojectGroupId=org.acme \ <1>
+    -DprojectArtifactId=my-github-app \ <2>
+    -Dextensions="io.quarkiverse.githubapp:quarkus-github-app:{quarkus-github-app-version}" \ <3>
+    -DnoCode <4>
 ----
+<1> The groupId of your Maven project.
+<2> The artifactId of your Maven project.
+<3> The Quarkus GitHub App extension.
+<4> Do not include unrelated generated code in the project.
 
 [TIP]
 ====
-Maven 3.8.1+ is required for this to work.
+On Windows and macOS, it is recommended to concatenate all the options on one line (without `\`),
+as the `\` might not be correctly interpreted.
 ====
+======
+
+This command creates a regular Quarkus Maven project.
+You can add additional Quarkus extensions or Java dependencies.
 
 Once the project is created, go to the `my-github-app` directory.
 
@@ -69,7 +104,7 @@ Just execute the following command to start Quarkus in dev mode:
 
 [source]
 ----
-./mvnw quarkus:dev
+quarkus dev
 ----
 
 [TIP]
@@ -99,42 +134,12 @@ From now on, every time you create an issue in your GitHub project, a comment wi
 
 In details:
 
-* No need for `public` modifier, your classes and methods can be package protected.
+* No need for the `public` modifier, your classes and methods can be package protected.
 * We listen to the `@Issue.Opened` event i.e. this method will be called for each issue opened.
 * A payload of type `GHEventPayload.Issue` will be injected in our method automatically.
   This class is provided by the https://github.com/hub4j/github-api[Hub4j GitHub API].
 
-== Compiling to a native executable
-
-One of the great benefits of Quarkus is that you can easily build a native executable from your Java applications.
-Native executables offer faster boot and lower memory footprint.
-
-Your GitHub App is no exception and you can build a native executable using GraalVM with:
-
-[source, bash]
-----
-./mvnw package -Dnative
-----
-
-[TIP]
-====
-For this to work, you will need GraalVM installed.
-See https://quarkus.io/guides/building-native-image[Building a native executable on the Quarkus website] for more information.
-====
-
-[TIP]
-====
-Building a native executable takes a while and is both CPU and memory intensive.
-====
-
-You can then start the native executable with:
-
-[source, bash]
-----
-./target/my-github-app-1.0.0-SNAPSHOT-runner
-----
-
-== And more
+== That's all folks!
 
 You are done developing your first Quarkus GitHub App.
 

@@ -7,14 +7,71 @@ include::./includes/attributes.adoc[]
 There is a good chance you will continue to develop your GitHub App to add features and fix issues.
 A good practice is to register a new GitHub App specific to production instead of reusing the one you created for development.
 
-To do so, please follow the instructions in xref:register-github-app.adoc[Register a GitHub App].
+To do so, please follow the instructions in xref:register-github-app.adoc[Register a GitHub App] again.
 
-== Production configuration
+== Deploy your application
 
-For a production configuration:
+=== As a jar
+
+You can build your application as a jar using the following command:
+
+[source, bash]
+----
+quarkus build
+----
+
+The application can be easily deployed to a Kubernetes or OpenShift cluster using the https://quarkus.io/guides/deploying-to-kubernetes[Kubernetes/OpenShift extensions].
+
+Or you can simply build a container using the https://quarkus.io/guides/container-image[Container image extensions].
+
+=== As a native executable
+
+One of the great benefits of Quarkus is that you can easily build a native executable from your Java applications.
+Native executables offer faster boot and lower memory footprint.
+
+GitHub Apps are good candidates for native executables (but deploying as a jar is also perfectly valid).
+
+Your GitHub App is no exception and you can build a native executable using GraalVM with:
+
+[source, bash]
+----
+quarkus build --native
+----
+
+[TIP]
+====
+Building a native executable takes a while and is both CPU and memory intensive.
+====
+
+You can then start the native executable with:
+
+[source, bash]
+----
+./target/my-github-app-1.0.0-SNAPSHOT-runner
+----
+
+[TIP]
+====
+For more information about building native executables,
+see https://quarkus.io/guides/building-native-image[Building a native executable on the Quarkus website].
+
+This particular guide also covers deploying native applications as containers.
+====
+
+== Configure your GitHub App for production
+
+There are some specific requirements for production:
 
  * The webhook URL points to the root of your deployed GitHub App.
+ * Your GitHub App must be publicly available.
  * You have to define a webhook secret.
+
+[WARNING]
+====
+Do not use the Smee.io service for your production GitHub App.
+
+Use it only for testing purposes.
+====
 
 == Keep your secrets secret
 
