@@ -64,11 +64,20 @@ import io.quarkiverse.githubapp.runtime.GitHubAppRecorder;
 import io.quarkiverse.githubapp.runtime.MultiplexedEvent;
 import io.quarkiverse.githubapp.runtime.Multiplexer;
 import io.quarkiverse.githubapp.runtime.RequestScopeCachingGitHubConfigFileProvider;
+import io.quarkiverse.githubapp.runtime.Routes;
+import io.quarkiverse.githubapp.runtime.UtilsProducer;
+import io.quarkiverse.githubapp.runtime.config.CheckedConfigProvider;
 import io.quarkiverse.githubapp.runtime.error.DefaultErrorHandler;
 import io.quarkiverse.githubapp.runtime.error.ErrorHandlerBridgeFunction;
+import io.quarkiverse.githubapp.runtime.github.GitHubConfigFileProviderImpl;
 import io.quarkiverse.githubapp.runtime.github.GitHubFileDownloader;
 import io.quarkiverse.githubapp.runtime.github.GitHubService;
 import io.quarkiverse.githubapp.runtime.github.PayloadHelper;
+import io.quarkiverse.githubapp.runtime.replay.ReplayEvent;
+import io.quarkiverse.githubapp.runtime.replay.ReplayEventsRoute;
+import io.quarkiverse.githubapp.runtime.signing.JwtTokenCreator;
+import io.quarkiverse.githubapp.runtime.signing.PayloadSignatureChecker;
+import io.quarkiverse.githubapp.runtime.smee.SmeeIoForwarder;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
@@ -77,10 +86,12 @@ import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.MethodDescriptors;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
+import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -147,6 +158,13 @@ class GitHubAppProcessor {
     }
 
     @BuildStep
+    AdditionalIndexedClassesBuildItem additionalIndexedClasses() {
+        return new AdditionalIndexedClassesBuildItem(GitHubEvent.class.getName(),
+                ReplayEvent.class.getName(),
+                ConfigFile.class.getName());
+    }
+
+    @BuildStep
     void registerForReflection(CombinedIndexBuildItem combinedIndex,
             List<AdditionalEventDispatchingClassesIndexBuildItem> additionalEventDispatchingIndexes,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
@@ -180,14 +198,32 @@ class GitHubAppProcessor {
     @BuildStep
     void additionalBeans(CombinedIndexBuildItem index, BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         AdditionalBeanBuildItem.Builder additionalBeanBuildItemBuilder = new AdditionalBeanBuildItem.Builder().addBeanClasses(
+                Routes.class,
+                UtilsProducer.class,
+                RequestScopeCachingGitHubConfigFileProvider.class,
+                Multiplexer.class,
+                SmeeIoForwarder.class,
+                PayloadSignatureChecker.class,
+                JwtTokenCreator.class,
                 GitHubService.class,
                 DefaultErrorHandler.class,
-                GitHubFileDownloader.class)
+                GitHubFileDownloader.class,
+                GitHubConfigFileProviderImpl.class,
+                CheckedConfigProvider.class)
                 .setUnremovable();
 
         for (ClassInfo errorHandler : index.getIndex().getAllKnownImplementors(GitHubAppDotNames.ERROR_HANDLER)) {
             additionalBeanBuildItemBuilder.addBeanClass(errorHandler.name().toString());
         }
+
+        additionalBeans.produce(additionalBeanBuildItemBuilder.build());
+    }
+
+    @BuildStep(onlyIf = IsDevelopment.class)
+    void additionalBeansDevMode(CombinedIndexBuildItem index, BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        AdditionalBeanBuildItem.Builder additionalBeanBuildItemBuilder = new AdditionalBeanBuildItem.Builder().addBeanClasses(
+                ReplayEventsRoute.class)
+                .setUnremovable();
 
         additionalBeans.produce(additionalBeanBuildItemBuilder.build());
     }
