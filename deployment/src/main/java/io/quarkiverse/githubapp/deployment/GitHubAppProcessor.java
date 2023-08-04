@@ -193,6 +193,10 @@ class GitHubAppProcessor {
                 .methods(true)
                 .fields(true)
                 .build());
+        reflectiveClasses.produce(ReflectiveClassBuildItem
+                .builder(GitHubService.class.getName() + "$CreateInstallationToken")
+                .methods(true)
+                .build());
     }
 
     @BuildStep
