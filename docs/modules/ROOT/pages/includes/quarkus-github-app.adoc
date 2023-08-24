@@ -12,6 +12,7 @@ h|Default
 
 a| [[quarkus-github-app_quarkus.github-app.app-id]]`link:#quarkus-github-app_quarkus.github-app.app-id[quarkus.github-app.app-id]`
 
+
 [.description]
 --
 The numeric application id provided by GitHub.
@@ -29,6 +30,7 @@ endif::add-copy-button-to-env-var[]
 
 
 a| [[quarkus-github-app_quarkus.github-app.app-name]]`link:#quarkus-github-app_quarkus.github-app.app-name[quarkus.github-app.app-name]`
+
 
 [.description]
 --
@@ -48,6 +50,7 @@ endif::add-copy-button-to-env-var[]
 
 a| [[quarkus-github-app_quarkus.github-app.read-config-files-from-source-repository]]`link:#quarkus-github-app_quarkus.github-app.read-config-files-from-source-repository[quarkus.github-app.read-config-files-from-source-repository]`
 
+
 [.description]
 --
 Read the configuration files from the source repository in case of a fork.
@@ -63,6 +66,7 @@ endif::add-copy-button-to-env-var[]
 
 
 a| [[quarkus-github-app_quarkus.github-app.private-key]]`link:#quarkus-github-app_quarkus.github-app.private-key[quarkus.github-app.private-key]`
+
 
 [.description]
 --
@@ -83,6 +87,7 @@ endif::add-copy-button-to-env-var[]
 
 a| [[quarkus-github-app_quarkus.github-app.webhook-secret]]`link:#quarkus-github-app_quarkus.github-app.webhook-secret[quarkus.github-app.webhook-secret]`
 
+
 [.description]
 --
 The webhook secret if defined in the GitHub UI.
@@ -99,6 +104,7 @@ endif::add-copy-button-to-env-var[]
 
 a| [[quarkus-github-app_quarkus.github-app.webhook-proxy-url]]`link:#quarkus-github-app_quarkus.github-app.webhook-proxy-url[quarkus.github-app.webhook-proxy-url]`
 
+
 [.description]
 --
 The Smee.io proxy URL used when testing locally.
@@ -114,6 +120,7 @@ endif::add-copy-button-to-env-var[]
 
 
 a| [[quarkus-github-app_quarkus.github-app.instance-endpoint]]`link:#quarkus-github-app_quarkus.github-app.instance-endpoint[quarkus.github-app.instance-endpoint]`
+
 
 [.description]
 --
@@ -133,6 +140,7 @@ endif::add-copy-button-to-env-var[]
 
 a| [[quarkus-github-app_quarkus.github-app.rest-api-endpoint]]`link:#quarkus-github-app_quarkus.github-app.rest-api-endpoint[quarkus.github-app.rest-api-endpoint]`
 
+
 [.description]
 --
 The REST API endpoint.
@@ -151,6 +159,7 @@ endif::add-copy-button-to-env-var[]
 
 a| [[quarkus-github-app_quarkus.github-app.graphql-api-endpoint]]`link:#quarkus-github-app_quarkus.github-app.graphql-api-endpoint[quarkus.github-app.graphql-api-endpoint]`
 
+
 [.description]
 --
 The GraphQL API endpoint.
@@ -168,6 +177,7 @@ endif::add-copy-button-to-env-var[]
 
 
 a| [[quarkus-github-app_quarkus.github-app.debug.payload-directory]]`link:#quarkus-github-app_quarkus.github-app.debug.payload-directory[quarkus.github-app.debug.payload-directory]`
+
 
 [.description]
 --
