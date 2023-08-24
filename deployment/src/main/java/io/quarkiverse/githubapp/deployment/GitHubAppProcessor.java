@@ -52,6 +52,8 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
+import com.github.benmanes.caffeine.cache.CacheLoader;
+
 import io.quarkiverse.githubapp.ConfigFile;
 import io.quarkiverse.githubapp.GitHubEvent;
 import io.quarkiverse.githubapp.deployment.DispatchingConfiguration.EventAnnotation;
@@ -192,6 +194,10 @@ class GitHubAppProcessor {
                 .builder("com.github.benmanes.caffeine.cache.SSMSA", "com.github.benmanes.caffeine.cache.PSWMS")
                 .methods(true)
                 .fields(true)
+                .build());
+        reflectiveClasses.produce(ReflectiveClassBuildItem
+                .builder(CacheLoader.class)
+                .methods(true)
                 .build());
         reflectiveClasses.produce(ReflectiveClassBuildItem
                 .builder(GitHubService.class.getName() + "$CreateInstallationToken")
