@@ -28,7 +28,7 @@ jobs:
         run: sudo add-apt-repository ppa:rmescandon/yq && sudo apt update && sudo apt install yq -y
 
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           path: current-repo
 
@@ -39,7 +39,7 @@ jobs:
           distribution: temurin
 
       - name: Checkout Ecosystem
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: ${{ env.ECOSYSTEM_CI_REPO }}
           path: ecosystem-ci
