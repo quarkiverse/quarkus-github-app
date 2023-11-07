@@ -4,6 +4,8 @@ import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.CONFIG_FILE;
 import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.DYNAMIC_GRAPHQL_CLIENT;
 import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.EVENT;
 import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.GITHUB;
+import static io.quarkus.gizmo.Type.classType;
+import static io.quarkus.gizmo.Type.parameterizedType;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -98,6 +100,7 @@ import io.quarkus.gizmo.Gizmo;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo.SignatureBuilder;
 import io.quarkus.gizmo.TryBlock;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.runtime.LaunchMode;
@@ -417,6 +420,9 @@ class GitHubAppProcessor {
         FieldCreator eventFieldCreator = dispatcherClassCreator.getFieldCreator(EVENT_EMITTER_FIELD, Event.class);
         eventFieldCreator.addAnnotation(Inject.class);
         eventFieldCreator.setModifiers(Modifier.PROTECTED);
+        eventFieldCreator.setSignature(SignatureBuilder.forField()
+                .setType(parameterizedType(classType(Event.class), classType(MultiplexedEvent.class)))
+                .build());
 
         FieldCreator gitHubServiceFieldCreator = dispatcherClassCreator.getFieldCreator(GITHUB_SERVICE_FIELD,
                 GitHubService.class);
