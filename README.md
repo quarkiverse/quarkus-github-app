@@ -45,20 +45,15 @@ Finally, it comes with a nice and searchable Replay UI:
 
 ## Compatibility
 
-Quarkus GitHub App provides two different version streams, one compatible with Quarkus 2.x and the other compatible with Quarkus 3.x.
+Quarkus GitHub App 2.x is compatible with Quarkus 3.x.
 
-| Quarkus | Quarkus GitHub App | Documentation                                                                                     |
-|---------|--------------------|---------------------------------------------------------------------------------------------------|
-| 3.x     | 2.x                | [Documentation](https://docs.quarkiverse.io/quarkus-github-app/dev/index.html) |
-| 2.x     | 1.17.x             | [Documentation](https://docs.quarkiverse.io/quarkus-github-app/1.x/index.html) |
-
-Use the latest version of the corresponding stream, [the list of versions is available on Maven Central](https://search.maven.org/artifact/io.quarkiverse.githubapp/quarkus-github-app).
+We recommend using the latest versions of both for the best experience.
 
 ## Documentation
 
-To get you started (and more!), please refer to [the extensive documentation](https://quarkiverse.github.io/quarkiverse-docs/quarkus-github-app/dev/index.html) - or for [a version compatible with Quarkus 2.x](https://quarkiverse.github.io/quarkiverse-docs/quarkus-github-app/1.x/index.html).
+To get you started (and more!), please refer to [the extensive documentation](https://quarkiverse.github.io/quarkiverse-docs/quarkus-github-app/dev/index.html).
 
-Anything unclear or missing in the documentation? Please [open an issue](https://github.com/quarkiverse/quarkus-github-app/issues/new).
+Anything unclear or missing in the documentation? Please [open an issue](https://github.com/quarkiverse/quarkus-github-app/issues/new), we will address it quickly.
 
 ## Examples
 
