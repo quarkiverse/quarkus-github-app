@@ -24,7 +24,7 @@
         <compiler-plugin.version>3.10.1</compiler-plugin.version>
         <resource-plugin.version>3.3.1</resource-plugin.version>
         <dependency-plugin.version>3.6.1</dependency-plugin.version>
-        <surefire-plugin.version>3.2.3</surefire-plugin.version>
+        <surefire-plugin.version>3.2.5</surefire-plugin.version>
         <jandex-plugin.version>3.1.6</jandex-plugin.version>
         <assertj.version>3.25.1</assertj.version>
 
