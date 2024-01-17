@@ -37,6 +37,15 @@ public @interface Discussion {
         String NAME = Actions.CATEGORY_CHANGED;
     }
 
+    @Discussion(Closed.NAME)
+    @Target(PARAMETER)
+    @Retention(RUNTIME)
+    @Qualifier
+    public @interface Closed {
+
+        String NAME = Actions.CLOSED;
+    }
+
     @Discussion(Created.NAME)
     @Target(PARAMETER)
     @Retention(RUNTIME)
@@ -89,6 +98,15 @@ public @interface Discussion {
     public @interface Pinned {
 
         String NAME = Actions.PINNED;
+    }
+
+    @Discussion(Reopened.NAME)
+    @Target(PARAMETER)
+    @Retention(RUNTIME)
+    @Qualifier
+    public @interface Reopened {
+
+        String NAME = Actions.REOPENED;
     }
 
     @Discussion(Transferred.NAME)
