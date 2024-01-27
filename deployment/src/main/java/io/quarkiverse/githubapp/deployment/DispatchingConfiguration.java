@@ -1,6 +1,7 @@
 package io.quarkiverse.githubapp.deployment;
 
 import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.DYNAMIC_GRAPHQL_CLIENT;
+import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.GITHUB_EVENT;
 
 import java.util.HashSet;
 import java.util.List;
@@ -18,8 +19,14 @@ import org.jboss.jandex.MethodInfo;
 
 class DispatchingConfiguration {
 
+    /**
+     * The key is the name of the event (e.g. pull_request)
+     */
     private final Map<String, EventDispatchingConfiguration> eventConfigurations = new TreeMap<>();
 
+    /**
+     * The key is the name of the declaring class.
+     */
     private final Map<DotName, TreeSet<EventDispatchingMethod>> methods = new TreeMap<>();
 
     public Map<String, EventDispatchingConfiguration> getEventConfigurations() {
@@ -27,7 +34,16 @@ class DispatchingConfiguration {
     }
 
     public EventDispatchingConfiguration getOrCreateEventConfiguration(String event, String payloadType) {
-        return eventConfigurations.computeIfAbsent(event, et -> new EventDispatchingConfiguration(event, payloadType));
+        EventDispatchingConfiguration eventDispatchingConfiguration = eventConfigurations.computeIfAbsent(event,
+                et -> new EventDispatchingConfiguration(event));
+
+        // we are also collecting raw events here and their payload type is null
+        if (eventDispatchingConfiguration.getPayloadType() == null
+                && payloadType != null && !GITHUB_EVENT.toString().equals(payloadType)) {
+            eventDispatchingConfiguration.setPayloadType(payloadType);
+        }
+
+        return eventDispatchingConfiguration;
     }
 
     public Map<DotName, TreeSet<EventDispatchingMethod>> getMethods() {
@@ -54,39 +70,50 @@ class DispatchingConfiguration {
 
         private final String event;
 
-        private final String payloadType;
+        private String payloadType;
 
-        private final TreeMap<String, EventAnnotation> eventAnnotations = new TreeMap<>();
+        /**
+         * The key is the name of the action.
+         * <p>
+         * There can be more than one EventAnnotation for a given action as we might have a {@code @RawEvent} annotation.
+         */
+        private final TreeMap<String, Set<EventAnnotation>> eventAnnotations = new TreeMap<>();
 
-        EventDispatchingConfiguration(String event, String payloadType) {
+        EventDispatchingConfiguration(String event) {
             this.event = event;
-            this.payloadType = payloadType;
         }
 
         public String getEvent() {
             return event;
         }
 
+        public void setPayloadType(String payloadType) {
+            this.payloadType = payloadType;
+        }
+
         public String getPayloadType() {
             return payloadType;
         }
 
-        public TreeMap<String, EventAnnotation> getEventAnnotations() {
+        public TreeMap<String, Set<EventAnnotation>> getEventAnnotations() {
             return eventAnnotations;
         }
 
         public Set<EventAnnotationLiteral> getEventAnnotationLiterals() {
             Set<EventAnnotationLiteral> literals = new HashSet<>();
-            for (EventAnnotation eventAnnotation : eventAnnotations.values()) {
-                literals.add(new EventAnnotationLiteral(eventAnnotation.getName(),
-                        eventAnnotation.getValues().stream().map(av -> av.name()).collect(Collectors.toList())));
+            for (Set<EventAnnotation> eventAnnotations : eventAnnotations.values()) {
+                for (EventAnnotation eventAnnotation : eventAnnotations) {
+                    literals.add(new EventAnnotationLiteral(eventAnnotation.getName(),
+                            eventAnnotation.getValues().stream().map(av -> av.name()).collect(Collectors.toList())));
+                }
             }
             return literals;
         }
 
         public EventDispatchingConfiguration addEventAnnotation(String action, AnnotationInstance annotationInstance,
                 List<AnnotationValue> values) {
-            eventAnnotations.put(action, new EventAnnotation(annotationInstance.name(), values));
+            eventAnnotations.computeIfAbsent(action, a -> new TreeSet<>())
+                    .add(new EventAnnotation(annotationInstance.name(), values));
             return this;
         }
     }
@@ -104,6 +131,10 @@ class DispatchingConfiguration {
 
         public DotName getName() {
             return name;
+        }
+
+        public boolean isRawEvent() {
+            return GitHubAppDotNames.RAW_EVENT.equals(name);
         }
 
         public List<AnnotationValue> getValues() {
@@ -129,6 +160,25 @@ class DispatchingConfiguration {
             }
 
             return 0;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(name, values);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+
+            EventAnnotation other = (EventAnnotation) o;
+
+            return Objects.equals(this.name, other.name) && Objects.equals(this.values, other.values);
         }
     }
 

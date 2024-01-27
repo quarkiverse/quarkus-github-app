@@ -91,6 +91,10 @@ Here are all the events currently supported, together with the type of the paylo
 |`@DeploymentStatus.Created`
 |link:{github-api-javadoc-root-url}/GHEventPayload.DeploymentStatus.html[`GHEventPayload.DeploymentStatus`]
 
+|link:{webhook-documentation-url}#discussion[`discussion`]
+|`@Discussion.Answered`, `@Discussion.CategoryChanged`, `@Discussion.Closed`, `@Discussion.Created`, `@Discussion.Deleted`, `@Discussion.Edited`, `@Discussion.Labeled`, `@Discussion.Locked`, `@Discussion.Pinned`, `@Discussion.Reopened`, `@Discussion.Transferred`, `@Discussion.Unanswered`, `@Discussion.Unlabeled`, `@Discussion.Unlocked`, `@Discussion.Unpinned`
+|link:{github-api-javadoc-root-url}/GHEventPayload.Discussion.html[`GHEventPayload.Discussion`]
+
 |link:{webhook-documentation-url}#fork[`fork`]
 |`@Fork`
 |link:{github-api-javadoc-root-url}/GHEventPayload.Fork.html[`GHEventPayload.Fork`]
@@ -160,16 +164,69 @@ Here are all the events currently supported, together with the type of the paylo
 |link:{github-api-javadoc-root-url}/GHEventPayload.WorkflowRun.html[`GHEventPayload.WorkflowRun`]
 |===
 
+If you want to access the low level JSON payload, you can use the raw `GitHubEvent`, either by substituting it to the API payload:
+
+[source,java]
+----
+class TriageIssue {
+
+    void triageIssue(@Issue.Opened GitHubEvent gitHubEvent) {
+        // do something
+    }
+}
+----
+
+Or by adding it as an additional parameter:
+
+[source,java]
+----
+class TriageIssue {
+
+    void triageIssue(@Issue.Opened GHEventPayload.Issue issuePayload, GitHubEvent gitHubEvent) {
+        // do something
+    }
+}
+----
+
+The `GitHubEvent` exposes the raw JSON either as a string or as a Vert.x `JsonObject`,
+together with some additional information like the installation id, the event or the action.
+
+If you miss an event type, it is also possible to listen to events by using the `@RawEvent` annotation.
+The `@RawEvent` annotation allows you to listen to all events/actions, and you may also specify the event and the action you want to listen to.
+
+When using the `@RawEvent` annotation, the only allowed payload parameter type is `GitHubEvent`.
+
+[source,java]
+----
+class ActOnDeploymentProtectionRule {
+
+    void onDeploymentProtectionRule(@RawEvent(event = "deployment_protection_rule", action = "requested") GitHubEvent gitHubEvent) {
+        // do something
+    }
+}
+----
+
+Both `event` and `action` are optional and you can listen to all events by using the following code:
+
+[source,java]
+----
+class CatchAll {
+
+    void catchAll(@RawEvent GitHubEvent gitHubEvent) {
+        // do something
+    }
+}
+----
+
 [TIP]
 ====
-Miss an event type?
+If you miss an event type, please report it by https://github.com/quarkiverse/quarkus-github-app/issues/new[creating an issue].
+We try to add to contribute to the https://github.com/hub4j/github-api[Hub4j GitHub API] all the event types that are useful.
 
-It is easy to add support for a new one:
+When missing an event type, there are two options:
 
-* Contribute the `GHEventPayload` subclass to the https://github.com/hub4j/github-api[Hub4j GitHub API].
-* Create a new annotation in https://github.com/quarkiverse/quarkus-github-app/tree/main/runtime/src/main/java/io/quarkiverse/githubapp/event[Quarkus GitHub App].
-* Add the appropriate documentation in the https://github.com/quarkiverse/quarkus-github-app/blob/main/docs/modules/ROOT/pages/developer-reference.adoc#event-types[Developer reference page]
-* The annotation will be automatically taken into account.
+* Either it is not available in the https://github.com/hub4j/github-api[Hub4j GitHub API] and in this case, it needs to be implemented there first in `GHEventPayload`.
+* Or it is available in the https://github.com/hub4j/github-api[Hub4j GitHub API] and it is just a matter of adding a new annotation in https://github.com/quarkiverse/quarkus-github-app/tree/main/runtime/src/main/java/io/quarkiverse/githubapp/event[Quarkus GitHub App] and the appropriate documentation in the https://github.com/quarkiverse/quarkus-github-app/blob/main/docs/modules/ROOT/pages/developer-reference.adoc#event-types[Developer reference page]. The annotation will be automatically taken into account.
 ====
 
 == Configuration file

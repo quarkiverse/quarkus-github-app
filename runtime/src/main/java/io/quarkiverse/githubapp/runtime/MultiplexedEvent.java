@@ -29,6 +29,9 @@ public class MultiplexedEvent {
     }
 
     public GHEventPayload getPayload() {
+        if (payload == null) {
+            throw new IllegalStateException("The payload has not been initialized and should not be accessed.");
+        }
         return payload;
     }
 

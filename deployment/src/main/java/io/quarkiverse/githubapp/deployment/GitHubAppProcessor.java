@@ -5,6 +5,7 @@ import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.DYNAMIC_GRAP
 import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.EVENT;
 import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.GITHUB;
 import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.GITHUB_EVENT;
+import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.RAW_EVENT;
 import static io.quarkus.gizmo.Type.classType;
 import static io.quarkus.gizmo.Type.parameterizedType;
 
@@ -63,6 +64,7 @@ import io.quarkiverse.githubapp.deployment.DispatchingConfiguration.EventDispatc
 import io.quarkiverse.githubapp.deployment.DispatchingConfiguration.EventDispatchingMethod;
 import io.quarkiverse.githubapp.error.ErrorHandler;
 import io.quarkiverse.githubapp.event.Actions;
+import io.quarkiverse.githubapp.event.Events;
 import io.quarkiverse.githubapp.runtime.GitHubAppRecorder;
 import io.quarkiverse.githubapp.runtime.MultiplexedEvent;
 import io.quarkiverse.githubapp.runtime.Multiplexer;
@@ -394,11 +396,13 @@ class GitHubAppProcessor {
                 MethodInfo methodInfo = annotatedParameter.method();
                 DotName annotatedParameterType = annotatedParameter.method().parameterTypes().get(annotatedParameter.position())
                         .name();
-                if (!eventDefinition.getPayloadType().equals(annotatedParameterType)) {
+                if (!eventDefinition.getPayloadType().equals(annotatedParameterType)
+                        && !GITHUB_EVENT.equals(annotatedParameterType)) {
                     throw new IllegalStateException(
                             "Parameter subscribing to a GitHub '" + eventDefinition.getEvent()
-                                    + "' event should be of type '" + eventDefinition.getPayloadType()
-                                    + "'. Offending method: " + methodInfo.declaringClass().name() + "#" + methodInfo);
+                                    + "' event must be of type '" + eventDefinition.getPayloadType()
+                                    + "' or '" + GITHUB_EVENT + "'. Offending method: " + methodInfo.declaringClass().name()
+                                    + "#" + methodInfo);
                 }
 
                 configuration
@@ -406,6 +410,34 @@ class GitHubAppProcessor {
                         .addEventAnnotation(action, eventSubscriberInstance, eventSubscriberInstance.valuesWithDefaults(index));
                 configuration.addEventDispatchingMethod(new EventDispatchingMethod(eventSubscriberInstance, methodInfo));
             }
+        }
+
+        // Handle raw events
+        Collection<AnnotationInstance> rawEventSubscriberInstances = index.getAnnotations(RAW_EVENT)
+                .stream()
+                .filter(ai -> ai.target().kind() == Kind.METHOD_PARAMETER)
+                .filter(ai -> !Modifier.isInterface(ai.target().asMethodParameter().method().declaringClass().flags()))
+                .collect(Collectors.toList());
+        for (AnnotationInstance rawEventSubscriberInstance : rawEventSubscriberInstances) {
+            String event = rawEventSubscriberInstance.valueWithDefault(index, "event").asString();
+            String action = rawEventSubscriberInstance.valueWithDefault(index, "action").asString();
+
+            MethodParameterInfo annotatedParameter = rawEventSubscriberInstance.target().asMethodParameter();
+            MethodInfo methodInfo = annotatedParameter.method();
+            DotName annotatedParameterType = annotatedParameter.method().parameterTypes().get(annotatedParameter.position())
+                    .name();
+            if (!GITHUB_EVENT.equals(annotatedParameterType)) {
+                throw new IllegalStateException(
+                        "Parameter subscribing to a GitHub "
+                                + "raw event must be of type '" + GITHUB_EVENT
+                                + "'. Offending method: " + methodInfo.declaringClass().name() + "#" + methodInfo);
+            }
+
+            configuration
+                    .getOrCreateEventConfiguration(event, null)
+                    .addEventAnnotation(action, rawEventSubscriberInstance,
+                            rawEventSubscriberInstance.valuesWithDefaults(index));
+            configuration.addEventDispatchingMethod(new EventDispatchingMethod(rawEventSubscriberInstance, methodInfo));
         }
 
         return configuration;
@@ -544,53 +576,66 @@ class GitHubAppProcessor {
             ResultHandle eventRh = tryBlock.load(eventDispatchingConfiguration.getEvent());
             String payloadType = eventDispatchingConfiguration.getPayloadType();
 
-            BytecodeCreator eventMatchesCreator = tryBlock
-                    .ifTrue(tryBlock.invokeVirtualMethod(MethodDescriptors.OBJECT_EQUALS, eventRh,
-                            dispatchedEventRh))
-                    .trueBranch();
+            BytecodeCreator eventMatchesCreator;
 
-            ResultHandle payloadInstanceRh = eventMatchesCreator.invokeVirtualMethod(
-                    MethodDescriptor.ofMethod(GitHub.class, "parseEventPayload", GHEventPayload.class, Reader.class,
-                            Class.class),
-                    gitHubRh,
-                    eventMatchesCreator.newInstance(MethodDescriptor.ofConstructor(StringReader.class, String.class),
-                            dispatchedPayloadRh),
-                    eventMatchesCreator.loadClass(payloadType));
+            if (Events.ALL.equals(eventDispatchingConfiguration.getEvent())) {
+                eventMatchesCreator = tryBlock;
+            } else {
+                eventMatchesCreator = tryBlock
+                        .ifTrue(tryBlock.invokeVirtualMethod(MethodDescriptors.OBJECT_EQUALS, eventRh,
+                                dispatchedEventRh))
+                        .trueBranch();
+            }
+
+            ResultHandle payloadInstanceRh;
+            if (payloadType != null) {
+                payloadInstanceRh = eventMatchesCreator.invokeVirtualMethod(
+                        MethodDescriptor.ofMethod(GitHub.class, "parseEventPayload", GHEventPayload.class, Reader.class,
+                                Class.class),
+                        gitHubRh,
+                        eventMatchesCreator.newInstance(MethodDescriptor.ofConstructor(StringReader.class, String.class),
+                                dispatchedPayloadRh),
+                        eventMatchesCreator.loadClass(payloadType));
+            } else {
+                // all events are raw, no need to actually parse the payload
+                payloadInstanceRh = eventMatchesCreator.loadNull();
+            }
 
             ResultHandle multiplexedEventRh = eventMatchesCreator.newInstance(MethodDescriptor
                     .ofConstructor(MultiplexedEvent.class, GitHubEvent.class, GHEventPayload.class, GitHub.class,
                             DynamicGraphQLClient.class),
                     gitHubEventRh, payloadInstanceRh, gitHubRh, gitHubGraphQLClientRh);
 
-            for (Entry<String, EventAnnotation> eventAnnotationEntry : eventDispatchingConfiguration.getEventAnnotations()
+            for (Entry<String, Set<EventAnnotation>> eventAnnotationsEntry : eventDispatchingConfiguration.getEventAnnotations()
                     .entrySet()) {
-                String action = eventAnnotationEntry.getKey();
-                EventAnnotation eventAnnotation = eventAnnotationEntry.getValue();
+                String action = eventAnnotationsEntry.getKey();
 
-                Class<?>[] literalParameterTypes = new Class<?>[eventAnnotation.getValues().size()];
-                Arrays.fill(literalParameterTypes, String.class);
-                List<ResultHandle> literalParameters = new ArrayList<>();
-                for (AnnotationValue eventAnnotationValue : eventAnnotation.getValues()) {
-                    literalParameters.add(eventMatchesCreator.load(eventAnnotationValue.asString()));
-                }
+                for (EventAnnotation eventAnnotation : eventAnnotationsEntry.getValue()) {
+                    Class<?>[] literalParameterTypes = new Class<?>[eventAnnotation.getValues().size()];
+                    Arrays.fill(literalParameterTypes, String.class);
+                    List<ResultHandle> literalParameters = new ArrayList<>();
+                    for (AnnotationValue eventAnnotationValue : eventAnnotation.getValues()) {
+                        literalParameters.add(eventMatchesCreator.load(eventAnnotationValue.asString()));
+                    }
 
-                ResultHandle annotationLiteralRh = eventMatchesCreator.newInstance(MethodDescriptor
-                        .ofConstructor(getLiteralClassName(eventAnnotation.getName()), (Object[]) literalParameterTypes),
-                        literalParameters.toArray(ResultHandle[]::new));
-                ResultHandle annotationLiteralArrayRh = eventMatchesCreator.newArray(Annotation.class, 1);
-                eventMatchesCreator.writeArrayValue(annotationLiteralArrayRh, 0, annotationLiteralRh);
+                    ResultHandle annotationLiteralRh = eventMatchesCreator.newInstance(MethodDescriptor
+                            .ofConstructor(getLiteralClassName(eventAnnotation.getName()), (Object[]) literalParameterTypes),
+                            literalParameters.toArray(ResultHandle[]::new));
+                    ResultHandle annotationLiteralArrayRh = eventMatchesCreator.newArray(Annotation.class, 1);
+                    eventMatchesCreator.writeArrayValue(annotationLiteralArrayRh, 0, annotationLiteralRh);
 
-                if (Actions.ALL.equals(action)) {
-                    fireAsyncAction(eventMatchesCreator, launchMode.getLaunchMode(), dispatcherClassCreator.getClassName(),
-                            gitHubEventRh, multiplexedEventRh, annotationLiteralArrayRh);
-                } else {
-                    BytecodeCreator actionMatchesCreator = eventMatchesCreator
-                            .ifTrue(eventMatchesCreator.invokeVirtualMethod(MethodDescriptors.OBJECT_EQUALS,
-                                    eventMatchesCreator.load(action), dispatchedActionRh))
-                            .trueBranch();
+                    if (Actions.ALL.equals(action)) {
+                        fireAsyncAction(eventMatchesCreator, launchMode.getLaunchMode(), dispatcherClassCreator.getClassName(),
+                                gitHubEventRh, multiplexedEventRh, annotationLiteralArrayRh);
+                    } else {
+                        BytecodeCreator actionMatchesCreator = eventMatchesCreator
+                                .ifTrue(eventMatchesCreator.invokeVirtualMethod(MethodDescriptors.OBJECT_EQUALS,
+                                        eventMatchesCreator.load(action), dispatchedActionRh))
+                                .trueBranch();
 
-                    fireAsyncAction(actionMatchesCreator, launchMode.getLaunchMode(), dispatcherClassCreator.getClassName(),
-                            gitHubEventRh, multiplexedEventRh, annotationLiteralArrayRh);
+                        fireAsyncAction(actionMatchesCreator, launchMode.getLaunchMode(), dispatcherClassCreator.getClassName(),
+                                gitHubEventRh, multiplexedEventRh, annotationLiteralArrayRh);
+                    }
                 }
             }
         }
@@ -715,14 +760,22 @@ class GitHubAppProcessor {
                 List<Type> originalMethodParameterTypes = originalMethod.parameterTypes();
 
                 // detect the parameter that is a payload
-                short payloadParameterPosition = 0;
+                short payloadParameterPosition = -1;
+                boolean isPayloadGitHubEvent = false;
                 for (short i = 0; i < originalMethodParameterTypes.size(); i++) {
                     List<AnnotationInstance> parameterAnnotations = originalMethodParameterAnnotationMapping.getOrDefault(i,
                             Collections.emptyList());
                     if (parameterAnnotations.stream().anyMatch(ai -> ai.name().equals(eventSubscriberInstance.name()))) {
                         payloadParameterPosition = i;
+                        isPayloadGitHubEvent = GITHUB_EVENT
+                                .equals(originalMethodParameterTypes.get(payloadParameterPosition).name());
                         break;
                     }
+                }
+
+                if (payloadParameterPosition == -1) {
+                    throw new IllegalStateException("Unable to find the payload parameter position. Offending method: "
+                            + originalMethod.declaringClass().name() + "#" + originalMethod);
                 }
 
                 short j = 0;
@@ -732,7 +785,8 @@ class GitHubAppProcessor {
                             .getOrDefault(i, Collections.emptyList());
                     if (originalMethodAnnotations.stream().anyMatch(ai -> CONFIG_FILE.equals(ai.name())) ||
                             GITHUB.equals(originalMethodParameterTypes.get(i).name()) ||
-                            GITHUB_EVENT.equals(originalMethodParameterTypes.get(i).name()) ||
+                            (GITHUB_EVENT.equals(originalMethodParameterTypes.get(i).name()) && i != payloadParameterPosition)
+                            ||
                             DYNAMIC_GRAPHQL_CLIENT.equals(originalMethodParameterTypes.get(i).name())) {
                         // if the parameter is annotated with @ConfigFile or is of type GitHub, GitHubEvent or DynamicGraphQLClient, we skip it
                         continue;
@@ -792,9 +846,17 @@ class GitHubAppProcessor {
                 }
 
                 ResultHandle multiplexedEventRh = methodCreator.getMethodParam(parameterMapping.get(payloadParameterPosition));
-                ResultHandle payloadRh = methodCreator.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(MultiplexedEvent.class, "getPayload", GHEventPayload.class),
+                ResultHandle gitHubEventRh = methodCreator.invokeVirtualMethod(
+                        MethodDescriptor.ofMethod(MultiplexedEvent.class, "getGitHubEvent", GitHubEvent.class),
                         multiplexedEventRh);
+                ResultHandle payloadRh;
+                if (!isPayloadGitHubEvent) {
+                    payloadRh = methodCreator.invokeVirtualMethod(
+                            MethodDescriptor.ofMethod(MultiplexedEvent.class, "getPayload", GHEventPayload.class),
+                            multiplexedEventRh);
+                } else {
+                    payloadRh = methodCreator.loadNull();
+                }
 
                 TryBlock tryBlock = methodCreator.tryBlock();
 
@@ -805,22 +867,20 @@ class GitHubAppProcessor {
                             originalMethodParameterIndex,
                             Collections.emptyList());
                     Short multiplexerMethodParameterIndex = parameterMapping.get(originalMethodParameterIndex);
-                    if (originalMethodParameterIndex == payloadParameterPosition) {
+                    if (originalMethodParameterIndex == payloadParameterPosition && !isPayloadGitHubEvent) {
                         parameterValues[originalMethodParameterIndex] = payloadRh;
                     } else if (GITHUB.equals(originalMethodParameterTypes.get(originalMethodParameterIndex).name())) {
                         parameterValues[originalMethodParameterIndex] = tryBlock.invokeVirtualMethod(
                                 MethodDescriptor.ofMethod(MultiplexedEvent.class, "getGitHub", GitHub.class),
-                                tryBlock.getMethodParam(parameterMapping.get(payloadParameterPosition)));
+                                multiplexedEventRh);
                     } else if (GITHUB_EVENT.equals(originalMethodParameterTypes.get(originalMethodParameterIndex).name())) {
-                        parameterValues[originalMethodParameterIndex] = tryBlock.invokeVirtualMethod(
-                                MethodDescriptor.ofMethod(MultiplexedEvent.class, "getGitHubEvent", GitHubEvent.class),
-                                tryBlock.getMethodParam(parameterMapping.get(payloadParameterPosition)));
+                        parameterValues[originalMethodParameterIndex] = gitHubEventRh;
                     } else if (DYNAMIC_GRAPHQL_CLIENT
                             .equals(originalMethodParameterTypes.get(originalMethodParameterIndex).name())) {
                         parameterValues[originalMethodParameterIndex] = tryBlock.invokeVirtualMethod(
                                 MethodDescriptor.ofMethod(MultiplexedEvent.class, "getGitHubGraphQLClient",
                                         DynamicGraphQLClient.class),
-                                tryBlock.getMethodParam(parameterMapping.get(payloadParameterPosition)));
+                                multiplexedEventRh);
                     } else if (parameterAnnotations.stream().anyMatch(ai -> ai.name().equals(CONFIG_FILE))) {
                         AnnotationInstance configFileAnnotationInstance = parameterAnnotations.stream()
                                 .filter(ai -> ai.name().equals(CONFIG_FILE)).findFirst().get();
@@ -842,9 +902,18 @@ class GitHubAppProcessor {
 
                         // it's a config file, we will use the ConfigFileReader (last parameter of the method) and inject the result
                         ResultHandle configFileReaderRh = tryBlock.getMethodParam(parameterTypes.size() - 1);
-                        ResultHandle ghRepositoryRh = tryBlock.invokeStaticMethod(MethodDescriptor
-                                .ofMethod(PayloadHelper.class, "getRepository", GHRepository.class, GHEventPayload.class),
-                                payloadRh);
+                        ResultHandle ghRepositoryRh;
+                        if (!isPayloadGitHubEvent) {
+                            ghRepositoryRh = tryBlock.invokeStaticMethod(MethodDescriptor
+                                    .ofMethod(PayloadHelper.class, "getRepository", GHRepository.class, GHEventPayload.class),
+                                    payloadRh);
+                        } else {
+                            ghRepositoryRh = tryBlock.invokeStaticMethod(MethodDescriptor
+                                    .ofMethod(GitHub.class, "getRepository", GHRepository.class, String.class),
+                                    tryBlock.invokeVirtualMethod(
+                                            MethodDescriptor.ofMethod(GitHubEvent.class, "getRepositoryOrThrow", String.class),
+                                            gitHubEventRh));
+                        }
                         ResultHandle configObject = tryBlock.invokeVirtualMethod(
                                 MethodDescriptor.ofMethod(RequestScopeCachingGitHubConfigFileProvider.class, "getConfigObject",
                                         Object.class,
@@ -879,12 +948,8 @@ class GitHubAppProcessor {
                         MethodDescriptor.ofMethod(ErrorHandler.class, "handleError", void.class, GitHubEvent.class,
                                 GHEventPayload.class, Throwable.class),
                         catchBlock.readInstanceField(errorHandlerFieldDescriptor, catchBlock.getThis()),
-                        catchBlock.invokeVirtualMethod(
-                                MethodDescriptor.ofMethod(MultiplexedEvent.class, "getGitHubEvent", GitHubEvent.class),
-                                multiplexedEventRh),
-                        catchBlock.invokeVirtualMethod(
-                                MethodDescriptor.ofMethod(MultiplexedEvent.class, "getPayload", GHEventPayload.class),
-                                multiplexedEventRh),
+                        gitHubEventRh,
+                        payloadRh,
                         catchBlock.getCaughtException());
                 catchBlock.returnValue(null);
             }
