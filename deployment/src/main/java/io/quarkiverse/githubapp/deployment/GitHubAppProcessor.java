@@ -4,6 +4,7 @@ import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.CONFIG_FILE;
 import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.DYNAMIC_GRAPHQL_CLIENT;
 import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.EVENT;
 import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.GITHUB;
+import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.GITHUB_EVENT;
 import static io.quarkus.gizmo.Type.classType;
 import static io.quarkus.gizmo.Type.parameterizedType;
 
@@ -731,8 +732,9 @@ class GitHubAppProcessor {
                             .getOrDefault(i, Collections.emptyList());
                     if (originalMethodAnnotations.stream().anyMatch(ai -> CONFIG_FILE.equals(ai.name())) ||
                             GITHUB.equals(originalMethodParameterTypes.get(i).name()) ||
+                            GITHUB_EVENT.equals(originalMethodParameterTypes.get(i).name()) ||
                             DYNAMIC_GRAPHQL_CLIENT.equals(originalMethodParameterTypes.get(i).name())) {
-                        // if the parameter is annotated with @ConfigFile or is of type GitHub or DynamicGraphQLClient, we skip it
+                        // if the parameter is annotated with @ConfigFile or is of type GitHub, GitHubEvent or DynamicGraphQLClient, we skip it
                         continue;
                     }
 
@@ -808,6 +810,10 @@ class GitHubAppProcessor {
                     } else if (GITHUB.equals(originalMethodParameterTypes.get(originalMethodParameterIndex).name())) {
                         parameterValues[originalMethodParameterIndex] = tryBlock.invokeVirtualMethod(
                                 MethodDescriptor.ofMethod(MultiplexedEvent.class, "getGitHub", GitHub.class),
+                                tryBlock.getMethodParam(parameterMapping.get(payloadParameterPosition)));
+                    } else if (GITHUB_EVENT.equals(originalMethodParameterTypes.get(originalMethodParameterIndex).name())) {
+                        parameterValues[originalMethodParameterIndex] = tryBlock.invokeVirtualMethod(
+                                MethodDescriptor.ofMethod(MultiplexedEvent.class, "getGitHubEvent", GitHubEvent.class),
                                 tryBlock.getMethodParam(parameterMapping.get(payloadParameterPosition)));
                     } else if (DYNAMIC_GRAPHQL_CLIENT
                             .equals(originalMethodParameterTypes.get(originalMethodParameterIndex).name())) {
