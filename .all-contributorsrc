@@ -61,6 +61,15 @@
       "contributions": [
         "bug"
       ]
+    },
+    {
+      "login": "ebullient",
+      "name": "Erin Schnabel",
+      "avatar_url": "https://avatars.githubusercontent.com/u/808713?v=4",
+      "profile": "https://www.ebullient.dev",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "contributorsPerLine": 7,
@@ -68,5 +77,7 @@
   "projectOwner": "quarkiverse",
   "repoType": "github",
   "repoHost": "https://github.com",
-  "skipCi": true
+  "skipCi": true,
+  "commitType": "docs",
+  "commitConvention": "angular"
 }
