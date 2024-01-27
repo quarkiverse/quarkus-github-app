@@ -8,7 +8,9 @@ import org.kohsuke.github.GHEventPayload;
 import org.kohsuke.github.GitHub;
 
 import io.quarkiverse.githubapp.ConfigFile;
+import io.quarkiverse.githubapp.GitHubEvent;
 import io.quarkiverse.githubapp.event.Label;
+import io.quarkiverse.githubapp.event.RawEvent;
 import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.graphql.client.dynamic.api.DynamicGraphQLClient;
 
@@ -36,6 +38,11 @@ public class GitHubGraphQLClientInjectionTest {
 
         void deleteLabel(@ConfigFile("my-config-file.txt") String configuration,
                 @Label.Deleted GHEventPayload.Label labelPayload, DynamicGraphQLClient gitHubGraphQLClient, GitHub gitHub) {
+        }
+
+        void rawEvent(@ConfigFile("my-config-file.txt") String configuration,
+                @RawEvent(event = "pull_request", action = "opened") GitHubEvent gitHubEvent,
+                DynamicGraphQLClient gitHubGraphQLClient, GitHub gitHub) {
         }
     }
 }

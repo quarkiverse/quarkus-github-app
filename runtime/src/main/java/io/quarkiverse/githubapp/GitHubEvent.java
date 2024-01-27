@@ -53,6 +53,11 @@ public class GitHubEvent {
         return repository;
     }
 
+    public String getRepositoryOrThrow() {
+        return repository
+                .orElseThrow(() -> new IllegalStateException("The payload did not provide any repository information"));
+    }
+
     public String getEvent() {
         return event;
     }
