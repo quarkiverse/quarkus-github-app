@@ -31,10 +31,10 @@ jobs:
       matrix:
         java:
           - {
-            version: "11"
+            version: "17"
           }
           - {
-            version: "17"
+            version: "21"
           }
 
     steps:
