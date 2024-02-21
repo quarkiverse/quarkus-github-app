@@ -95,6 +95,10 @@ Here are all the events currently supported, together with the type of the paylo
 |`@Discussion.Answered`, `@Discussion.CategoryChanged`, `@Discussion.Closed`, `@Discussion.Created`, `@Discussion.Deleted`, `@Discussion.Edited`, `@Discussion.Labeled`, `@Discussion.Locked`, `@Discussion.Pinned`, `@Discussion.Reopened`, `@Discussion.Transferred`, `@Discussion.Unanswered`, `@Discussion.Unlabeled`, `@Discussion.Unlocked`, `@Discussion.Unpinned`
 |link:{github-api-javadoc-root-url}/GHEventPayload.Discussion.html[`GHEventPayload.Discussion`]
 
+|link:{webhook-documentation-url}#discussion_comment[`discussion_comment`]
+|`@DiscussionComment.Created`, `@DiscussionComment.Deleted`, `@DiscussionComment.Edited`
+|link:{github-api-javadoc-root-url}/GHEventPayload.DiscussionComment.html[`GHEventPayload.DiscussionComment`]
+
 |link:{webhook-documentation-url}#fork[`fork`]
 |`@Fork`
 |link:{github-api-javadoc-root-url}/GHEventPayload.Fork.html[`GHEventPayload.Fork`]
