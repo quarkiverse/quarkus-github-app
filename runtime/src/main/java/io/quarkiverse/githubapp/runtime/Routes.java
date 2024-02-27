@@ -121,7 +121,7 @@ public class Routes {
         Long installationId = extractInstallationId(body);
         String repository = extractRepository(body);
         GitHubEvent gitHubEvent = new GitHubEvent(installationId, checkedConfigProvider.appName().orElse(null), deliveryId,
-                repository, event, action, routingContext.body().asString(), body, "true".equals(replayed) ? true : false);
+                repository, event, action, routingContext.body().asString(), "true".equals(replayed) ? true : false);
 
         if (launchMode == LaunchMode.DEVELOPMENT && replayRouteInstance.isResolvable()) {
             replayRouteInstance.get().pushEvent(gitHubEvent);

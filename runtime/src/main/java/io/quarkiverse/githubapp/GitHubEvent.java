@@ -2,8 +2,13 @@ package io.quarkiverse.githubapp;
 
 import java.util.Optional;
 
-import io.vertx.core.json.JsonObject;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
+/**
+ * This object will be serialized to JSON when the replay is enabled.
+ * <p>
+ * Thus you need to be extra careful adding the proper {@link JsonIgnore} annotations.
+ */
 public class GitHubEvent {
 
     private final Long installationId;
@@ -20,12 +25,10 @@ public class GitHubEvent {
 
     private final String payload;
 
-    private final JsonObject parsedPayload;
-
     private final boolean replayed;
 
     public GitHubEvent(Long installationId, String appName, String deliveryId, String repository, String event, String action,
-            String payload, JsonObject parsedPayload, boolean replayed) {
+            String payload, boolean replayed) {
         this.installationId = installationId;
         this.appName = Optional.ofNullable(appName);
         this.deliveryId = deliveryId;
@@ -33,7 +36,6 @@ public class GitHubEvent {
         this.event = event;
         this.action = action;
         this.payload = payload;
-        this.parsedPayload = parsedPayload;
         this.replayed = replayed;
     }
 
@@ -53,6 +55,7 @@ public class GitHubEvent {
         return repository;
     }
 
+    @JsonIgnore
     public String getRepositoryOrThrow() {
         return repository
                 .orElseThrow(() -> new IllegalStateException("The payload did not provide any repository information"));
@@ -66,6 +69,7 @@ public class GitHubEvent {
         return action;
     }
 
+    @JsonIgnore
     public String getEventAction() {
         StringBuilder sb = new StringBuilder();
         if (event != null && !event.isBlank()) {
@@ -79,10 +83,6 @@ public class GitHubEvent {
 
     public String getPayload() {
         return payload;
-    }
-
-    public JsonObject getParsedPayload() {
-        return parsedPayload;
     }
 
     public boolean isReplayed() {
