@@ -23,6 +23,8 @@ public class GitHubEvent {
 
     private final String action;
 
+    private final String eventAction;
+
     private final String payload;
 
     private final boolean replayed;
@@ -37,6 +39,15 @@ public class GitHubEvent {
         this.action = action;
         this.payload = payload;
         this.replayed = replayed;
+
+        StringBuilder eventActionSb = new StringBuilder();
+        if (event != null && !event.isBlank()) {
+            eventActionSb.append(event);
+        }
+        if (action != null && !action.isBlank()) {
+            eventActionSb.append(".").append(action);
+        }
+        this.eventAction = eventActionSb.toString();
     }
 
     public Long getInstallationId() {
@@ -69,16 +80,8 @@ public class GitHubEvent {
         return action;
     }
 
-    @JsonIgnore
     public String getEventAction() {
-        StringBuilder sb = new StringBuilder();
-        if (event != null && !event.isBlank()) {
-            sb.append(event);
-        }
-        if (action != null && !action.isBlank()) {
-            sb.append(".").append(action);
-        }
-        return sb.toString();
+        return eventAction;
     }
 
     public String getPayload() {
