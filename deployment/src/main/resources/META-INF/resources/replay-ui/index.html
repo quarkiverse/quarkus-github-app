@@ -92,7 +92,7 @@
 									<div style="clear: both"></div>
 								</div>
 								<div class="description" v-show="gitHubEvent.showPayload">
-									<pre>{{ gitHubEvent.parsedPayload }}</pre>
+									<pre>{{ gitHubEvent.payload | pretty }}</pre>
 								</div>
 							</div>
 						</div>
@@ -185,7 +185,7 @@
 								return;
 							}
 							gitHubEventsApp.waitForEvents = false;
-		
+
 							let gitHubEvent = JSON.parse(message.data);
 							if (!gitHubEventsApp.visible) {
 								gitHubEvent.new = true;
@@ -208,7 +208,7 @@
 				},
 				updateEventSourceStatus: function () {
 					localGitHubEventsApp = gitHubEventsApp ? gitHubEventsApp : this;
-					
+
 					if (eventSource.readyState == 0) {
 						localGitHubEventsApp.eventSourceStatusColor = 'ui grey button small';
 						localGitHubEventsApp.eventSourceStatusIcon = 'notched circle loading icon';
@@ -225,7 +225,7 @@
 						console.error('could not find event for ' + deliveryId);
 						return;
 					}
-					
+
 					this.reconnectEventSource();
 
 					const gitHubEvent = gitHubEventsApp.gitHubEventsMap.get(deliveryId);
@@ -257,7 +257,7 @@
 					}
 
 					const gitHubEvent = gitHubEventsApp.gitHubEventsMap.get(deliveryId);
-					navigator.clipboard.writeText(JSON.stringify(gitHubEvent.parsedPayload, null, 4));
+					navigator.clipboard.writeText(JSON.stringify(JSON.parse(gitHubEvent.payload), null, 4));
 				},
 				markInvisible: function() {
 					gitHubEventsApp.visible = false;
@@ -270,6 +270,11 @@
 					console.error("reset");
 					favicon.reset();
 					gitHubEventsApp.visible = true;
+				}
+			},
+			filters: {
+				pretty: function(value) {
+					return JSON.stringify(JSON.parse(value), null, 4);
 				}
 			}
 		});
