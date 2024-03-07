@@ -8,6 +8,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  * This object will be serialized to JSON when the replay is enabled.
  * <p>
  * Thus you need to be extra careful adding the proper {@link JsonIgnore} annotations.
+ * <p>
+ * This object is also used in the Replay UI's Javascript code so be careful when updating it.
  */
 public class GitHubEvent {
 
