@@ -123,6 +123,14 @@ Here are all the events currently supported, together with the type of the paylo
 |`@Label.Created`, `@Label.Deleted`, `@Label.Edited`
 |link:{github-api-javadoc-root-url}/GHEventPayload.Label.html[`GHEventPayload.Label`]
 
+|link:{webhook-documentation-url}#member[`member`]
+|`@Member.Added`, `@Member.Edited`, `@Member.Removed`
+|link:{github-api-javadoc-root-url}/GHEventPayload.Member.html[`GHEventPayload.Member`]
+
+|link:{webhook-documentation-url}#membership[`membership`]
+|`@Membership.Added`, `@Membership.Removed`
+|link:{github-api-javadoc-root-url}/GHEventPayload.Membership.html[`GHEventPayload.Membership`]
+
 |link:{webhook-documentation-url}#ping[`ping`]
 |`@Ping`
 |link:{github-api-javadoc-root-url}/GHEventPayload.Ping.html[`GHEventPayload.Ping`]
@@ -158,6 +166,14 @@ Here are all the events currently supported, together with the type of the paylo
 |link:{webhook-documentation-url}#status[`status`]
 |`@Status`
 |link:{github-api-javadoc-root-url}/GHEventPayload.Status.html[`GHEventPayload.Status`]
+
+|link:{webhook-documentation-url}#team_add[`team_add`]
+|`@TeamAdd`
+|link:{github-api-javadoc-root-url}/GHEventPayload.TeamAdd.html[`GHEventPayload.TeamAdd`]
+
+|link:{webhook-documentation-url}#team[`team`]
+|`@Team.AddedToRepository`, `@Team.Created`, `@Team.Deleted`, `@Team.Edited`, `@Team.RemovedFromRepository`
+|link:{github-api-javadoc-root-url}/GHEventPayload.Team.html[`GHEventPayload.Team`]
 
 |link:{webhook-documentation-url}#workflow_dispatch[`workflow_dispatch`]
 |`@WorkflowDispatch`
