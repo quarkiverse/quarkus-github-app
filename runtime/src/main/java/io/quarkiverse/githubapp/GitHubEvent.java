@@ -4,6 +4,8 @@ import java.util.Optional;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import io.vertx.core.json.JsonObject;
+
 /**
  * This object will be serialized to JSON when the replay is enabled.
  * <p>
@@ -29,10 +31,12 @@ public class GitHubEvent {
 
     private final String payload;
 
+    private final JsonObject parsedPayload;
+
     private final boolean replayed;
 
     public GitHubEvent(Long installationId, String appName, String deliveryId, String repository, String event, String action,
-            String payload, boolean replayed) {
+            String payload, JsonObject parsedPayload, boolean replayed) {
         this.installationId = installationId;
         this.appName = Optional.ofNullable(appName);
         this.deliveryId = deliveryId;
@@ -40,6 +44,7 @@ public class GitHubEvent {
         this.event = event;
         this.action = action;
         this.payload = payload;
+        this.parsedPayload = parsedPayload;
         this.replayed = replayed;
 
         StringBuilder eventActionSb = new StringBuilder();
@@ -88,6 +93,15 @@ public class GitHubEvent {
 
     public String getPayload() {
         return payload;
+    }
+
+    @JsonIgnore
+    public JsonObject getParsedPayload() {
+        if (parsedPayload == null) {
+            throw new IllegalStateException("getParsedPayload() may not be called on GitHubEvents that have been serialized");
+        }
+
+        return parsedPayload;
     }
 
     public boolean isReplayed() {

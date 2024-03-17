@@ -192,7 +192,7 @@ class TriageIssue {
 }
 ----
 
-The `GitHubEvent` exposes the raw JSON either as a string or as a Vert.x `JsonObject`,
+The `GitHubEvent` exposes the raw JSON either as a string (via `GitHubEvent#getPayload()`) or as a Vert.x `JsonObject` (via `GitHubEvent#getParsedPayload()`),
 together with some additional information like the installation id, the event or the action.
 
 If you miss an event type, it is also possible to listen to events by using the `@RawEvent` annotation.

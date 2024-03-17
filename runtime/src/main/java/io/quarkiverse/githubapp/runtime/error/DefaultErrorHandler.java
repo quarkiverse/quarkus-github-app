@@ -13,8 +13,6 @@ import io.quarkiverse.githubapp.error.ErrorHandler;
 import io.quarkiverse.githubapp.runtime.github.PayloadHelper;
 import io.quarkus.arc.DefaultBean;
 import io.quarkus.runtime.LaunchMode;
-import io.vertx.core.json.Json;
-import io.vertx.core.json.JsonObject;
 
 @ApplicationScoped
 @DefaultBean
@@ -50,7 +48,7 @@ public class DefaultErrorHandler implements ErrorHandler {
         if (launchMode.isDevOrTest()) {
             errorMessage.append("› Payload:\n")
                     .append("----\n")
-                    .append(((JsonObject) Json.decodeValue(gitHubEvent.getPayload())).encodePrettily()).append("\n")
+                    .append(gitHubEvent.getParsedPayload().encodePrettily()).append("\n")
                     .append("----\n");
         }
 

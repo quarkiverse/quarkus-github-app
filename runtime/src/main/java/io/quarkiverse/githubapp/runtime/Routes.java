@@ -7,6 +7,7 @@ import static io.quarkiverse.githubapp.runtime.Headers.X_QUARKIVERSE_GITHUB_APP_
 import static io.quarkiverse.githubapp.runtime.Headers.X_REQUEST_ID;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
@@ -32,6 +33,7 @@ import io.quarkus.vertx.web.Route;
 import io.quarkus.vertx.web.Route.HandlerType;
 import io.quarkus.vertx.web.Route.HttpMethod;
 import io.quarkus.vertx.web.RoutingExchange;
+import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 
@@ -103,14 +105,15 @@ public class Routes {
             }
         }
 
-        JsonObject body = routingContext.body().asJsonObject();
-
-        if (body == null) {
+        if (bodyBytes.length == 0) {
             routingExchange.ok().end();
             return;
         }
 
-        String action = body.getString("action");
+        String payload = new String(bodyBytes, StandardCharsets.UTF_8);
+        JsonObject payloadObject = (JsonObject) Json.decodeValue(payload);
+
+        String action = payloadObject.getString("action");
 
         if (!isBlank(deliveryId) && checkedConfigProvider.debug().payloadDirectory.isPresent()) {
             String fileName = DATE_TIME_FORMATTER.format(LocalDateTime.now()) + "-" + event + "-"
@@ -118,10 +121,10 @@ public class Routes {
             Files.write(checkedConfigProvider.debug().payloadDirectory.get().resolve(fileName), bodyBytes);
         }
 
-        Long installationId = extractInstallationId(body);
-        String repository = extractRepository(body);
+        Long installationId = extractInstallationId(payloadObject);
+        String repository = extractRepository(payloadObject);
         GitHubEvent gitHubEvent = new GitHubEvent(installationId, checkedConfigProvider.appName().orElse(null), deliveryId,
-                repository, event, action, routingContext.body().asString(), "true".equals(replayed) ? true : false);
+                repository, event, action, payload, payloadObject, "true".equals(replayed) ? true : false);
 
         if (launchMode == LaunchMode.DEVELOPMENT && replayRouteInstance.isResolvable()) {
             replayRouteInstance.get().pushEvent(gitHubEvent);
