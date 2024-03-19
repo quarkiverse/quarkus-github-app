@@ -6,6 +6,7 @@ public final class Actions {
 
     // Please respect the alphabetical order
     public static final String ADDED = "added";
+    public static final String ADDED_TO_REPOSITORY = "added_to_repository";
     public static final String ANSWERED = "answered";
     public static final String ARCHIVED = "archived";
     public static final String ASSIGNED = "assigned";
@@ -32,6 +33,7 @@ public final class Actions {
     public static final String READY_FOR_REVIEW = "ready_for_review";
     public static final String RELEASED = "released";
     public static final String REMOVED = "removed";
+    public static final String REMOVED_FROM_REPOSITORY = "removed_from_repository";
     public static final String RENAMED = "renamed";
     public static final String REOPENED = "reopened";
     public static final String REORDERED = "reordered";
