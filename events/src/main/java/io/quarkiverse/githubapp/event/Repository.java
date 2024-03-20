@@ -55,7 +55,7 @@ public @interface Repository {
         String NAME = Actions.EDITED;
     }
 
-    @Release(Privatized.NAME)
+    @Repository(Privatized.NAME)
     @Target(PARAMETER)
     @Retention(RUNTIME)
     @Qualifier
@@ -64,7 +64,7 @@ public @interface Repository {
         String NAME = Actions.PRIVATIZED;
     }
 
-    @Release(Publicized.NAME)
+    @Repository(Publicized.NAME)
     @Target(PARAMETER)
     @Retention(RUNTIME)
     @Qualifier
@@ -73,7 +73,7 @@ public @interface Repository {
         String NAME = Actions.PUBLICIZED;
     }
 
-    @Release(Renamed.NAME)
+    @Repository(Renamed.NAME)
     @Target(PARAMETER)
     @Retention(RUNTIME)
     @Qualifier
@@ -82,7 +82,7 @@ public @interface Repository {
         String NAME = Actions.RENAMED;
     }
 
-    @Release(Transferred.NAME)
+    @Repository(Transferred.NAME)
     @Target(PARAMETER)
     @Retention(RUNTIME)
     @Qualifier
@@ -91,7 +91,7 @@ public @interface Repository {
         String NAME = Actions.TRANSFERRED;
     }
 
-    @Release(Unarchived.NAME)
+    @Repository(Unarchived.NAME)
     @Target(PARAMETER)
     @Retention(RUNTIME)
     @Qualifier
