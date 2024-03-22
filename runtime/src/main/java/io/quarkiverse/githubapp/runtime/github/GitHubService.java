@@ -1,6 +1,8 @@
 package io.quarkiverse.githubapp.runtime.github;
 
 import java.io.IOException;
+import java.net.http.HttpClient;
+import java.net.http.HttpClient.Version;
 import java.security.GeneralSecurityException;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.ExecutionException;
@@ -12,6 +14,8 @@ import jakarta.inject.Inject;
 import org.kohsuke.github.GHAppInstallationToken;
 import org.kohsuke.github.GitHub;
 import org.kohsuke.github.GitHubBuilder;
+import org.kohsuke.github.connector.GitHubConnector;
+import org.kohsuke.github.extras.HttpClientGitHubConnector;
 
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -35,6 +39,7 @@ public class GitHubService implements GitHubClientProvider {
     private final LoadingCache<Long, CachedInstallationToken> installationTokenCache;
 
     private final JwtTokenCreator jwtTokenCreator;
+    private final GitHubConnector gitHubConnector;
 
     @Inject
     public GitHubService(CheckedConfigProvider checkedConfigProvider, JwtTokenCreator jwtTokenCreator) {
@@ -67,6 +72,8 @@ public class GitHubService implements GitHubClientProvider {
                     }
                 })
                 .build(new CreateInstallationToken());
+        this.gitHubConnector = new HttpClientGitHubConnector(
+                HttpClient.newBuilder().version(Version.HTTP_1_1).followRedirects(HttpClient.Redirect.NEVER).build());
     }
 
     @Override
@@ -119,6 +126,7 @@ public class GitHubService implements GitHubClientProvider {
         CachedInstallationToken installationToken = installationTokenCache.get(installationId);
 
         final GitHubBuilder gitHubBuilder = new GitHubBuilder()
+                .withConnector(gitHubConnector)
                 .withAppInstallationToken(installationToken.getToken())
                 .withEndpoint(checkedConfigProvider.restApiEndpoint());
 
@@ -186,6 +194,7 @@ public class GitHubService implements GitHubClientProvider {
 
         try {
             final GitHubBuilder gitHubBuilder = new GitHubBuilder()
+                    .withConnector(gitHubConnector)
                     .withJwtToken(jwtToken)
                     .withEndpoint(checkedConfigProvider.restApiEndpoint());
 
