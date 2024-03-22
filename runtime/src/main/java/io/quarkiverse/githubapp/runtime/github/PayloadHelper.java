@@ -1,5 +1,6 @@
 package io.quarkiverse.githubapp.runtime.github;
 
+import java.io.IOException;
 import java.util.Optional;
 
 import org.kohsuke.github.GHEventPayload;
@@ -75,8 +76,46 @@ public final class PayloadHelper {
         if (eventPayload instanceof GHEventPayload.Status) {
             return Optional.of(((GHEventPayload.Status) eventPayload).getDescription());
         }
+        if (eventPayload instanceof GHEventPayload.WorkflowDispatch) {
+            return Optional.of(((GHEventPayload.WorkflowDispatch) eventPayload).getRepository().getHtmlUrl().toString());
+        }
+        if (eventPayload instanceof GHEventPayload.WorkflowRun) {
+            // unfortunately, getHtmlUrl() for workflow runs can throw an exception
+            try {
+                return Optional.of(((GHEventPayload.WorkflowRun) eventPayload).getWorkflowRun().getHtmlUrl().toString());
+            } catch (IOException e) {
+                return Optional.of(((GHEventPayload.WorkflowRun) eventPayload).getRepository().getHtmlUrl().toString());
+            }
+        }
+        if (eventPayload instanceof GHEventPayload.WorkflowJob) {
+            return Optional.of(((GHEventPayload.WorkflowJob) eventPayload).getWorkflowJob().getHtmlUrl().toString());
+        }
+        if (eventPayload instanceof GHEventPayload.Label) {
+            return Optional.of(((GHEventPayload.Label) eventPayload).getRepository().getHtmlUrl().toString());
+        }
         if (eventPayload instanceof GHEventPayload.Discussion) {
             return Optional.of(((GHEventPayload.Discussion) eventPayload).getDiscussion().getHtmlUrl().toString());
+        }
+        if (eventPayload instanceof GHEventPayload.DiscussionComment) {
+            return Optional.of(((GHEventPayload.DiscussionComment) eventPayload).getComment().getHtmlUrl().toString());
+        }
+        if (eventPayload instanceof GHEventPayload.Star) {
+            return Optional.of(((GHEventPayload.Star) eventPayload).getRepository().getHtmlUrl().toString());
+        }
+        if (eventPayload instanceof GHEventPayload.ProjectsV2Item) {
+            return Optional.of(((GHEventPayload.ProjectsV2Item) eventPayload).getRepository().getHtmlUrl().toString());
+        }
+        if (eventPayload instanceof GHEventPayload.TeamAdd) {
+            return Optional.of(((GHEventPayload.TeamAdd) eventPayload).getTeam().getHtmlUrl().toString());
+        }
+        if (eventPayload instanceof GHEventPayload.Team) {
+            return Optional.of(((GHEventPayload.Team) eventPayload).getTeam().getHtmlUrl().toString());
+        }
+        if (eventPayload instanceof GHEventPayload.Member) {
+            return Optional.of(((GHEventPayload.Member) eventPayload).getRepository().getHtmlUrl().toString());
+        }
+        if (eventPayload instanceof GHEventPayload.Membership) {
+            return Optional.of(((GHEventPayload.Membership) eventPayload).getTeam().getHtmlUrl().toString());
         }
 
         return Optional.empty();
