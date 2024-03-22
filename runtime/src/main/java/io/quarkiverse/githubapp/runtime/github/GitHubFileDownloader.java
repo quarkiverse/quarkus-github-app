@@ -10,6 +10,7 @@ import org.jboss.logging.Logger;
 import org.kohsuke.github.GHContent;
 import org.kohsuke.github.GHFileNotFoundException;
 import org.kohsuke.github.GHRepository;
+import org.kohsuke.github.ServiceDownException;
 
 import io.quarkus.runtime.LaunchMode;
 
@@ -35,6 +36,9 @@ public class GitHubFileDownloader {
                         + ". Either the file does not exist or the 'Contents' permission has not been set for the application.");
             }
             return Optional.empty();
+        } catch (ServiceDownException e) {
+            throw new GitHubServiceDownException(
+                    "Error downloading file " + fullPath + " for repository " + ghRepository.getFullName());
         } catch (IOException e) {
             throw new IllegalStateException(
                     "Error downloading file " + fullPath + " for repository " + ghRepository.getFullName(), e);
