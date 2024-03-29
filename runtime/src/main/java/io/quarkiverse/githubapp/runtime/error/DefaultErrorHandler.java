@@ -7,9 +7,11 @@ import jakarta.inject.Inject;
 
 import org.jboss.logging.Logger;
 import org.kohsuke.github.GHEventPayload;
+import org.kohsuke.github.ServiceDownException;
 
 import io.quarkiverse.githubapp.GitHubEvent;
 import io.quarkiverse.githubapp.error.ErrorHandler;
+import io.quarkiverse.githubapp.runtime.github.GitHubServiceDownException;
 import io.quarkiverse.githubapp.runtime.github.PayloadHelper;
 import io.quarkus.arc.DefaultBean;
 import io.quarkus.runtime.LaunchMode;
@@ -29,6 +31,10 @@ public class DefaultErrorHandler implements ErrorHandler {
     public void handleError(GitHubEvent gitHubEvent, GHEventPayload payload, Throwable t) {
         StringBuilder errorMessage = new StringBuilder();
         errorMessage.append("Error handling delivery " + gitHubEvent.getDeliveryId() + "\n");
+        if (t instanceof ServiceDownException || t instanceof GitHubServiceDownException) {
+            errorMessage
+                    .append("››› GitHub APIs are not available at the moment. Have a look at https://www.githubstatus.com.\n");
+        }
         if (gitHubEvent.getRepository().isPresent()) {
             errorMessage.append("› Repository: " + gitHubEvent.getRepository().get() + "\n");
         }
