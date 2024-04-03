@@ -102,6 +102,48 @@ endif::add-copy-button-to-env-var[]
 |
 
 
+a| [[quarkus-github-app_quarkus-github-app-credentials-provider]]`link:#quarkus-github-app_quarkus-github-app-credentials-provider[quarkus.github-app.credentials-provider]`
+
+
+[.description]
+--
+The credentials provider name.
+
+This is the name of the "keyring" containing the GitHub App secrets.
+
+Key names are defined in `Credentials`.
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_GITHUB_APP_CREDENTIALS_PROVIDER+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_GITHUB_APP_CREDENTIALS_PROVIDER+++`
+endif::add-copy-button-to-env-var[]
+--|string 
+|
+
+
+a| [[quarkus-github-app_quarkus-github-app-credentials-provider-name]]`link:#quarkus-github-app_quarkus-github-app-credentials-provider-name[quarkus.github-app.credentials-provider-name]`
+
+
+[.description]
+--
+The credentials provider bean name.
+
+This is a bean name (as in `@Named`) of a bean that implements `CredentialsProvider`. It is used to select the credentials provider bean when multiple exist. This is unnecessary when there is only one credentials provider available.
+
+For Vault, the credentials provider bean name is `vault-credentials-provider`.
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_GITHUB_APP_CREDENTIALS_PROVIDER_NAME+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_GITHUB_APP_CREDENTIALS_PROVIDER_NAME+++`
+endif::add-copy-button-to-env-var[]
+--|string 
+|
+
+
 a| [[quarkus-github-app_quarkus-github-app-webhook-proxy-url]]`link:#quarkus-github-app_quarkus-github-app-webhook-proxy-url[quarkus.github-app.webhook-proxy-url]`
 
 

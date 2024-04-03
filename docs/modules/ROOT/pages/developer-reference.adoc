@@ -349,6 +349,27 @@ The Quarkus GitHub App extension exposes the following configuration properties:
 
 include::includes/quarkus-github-app.adoc[]
 
+== Credentials provider
+
+Quarkus GitHub App supports the usage of a https://quarkus.io/guides/credentials-provider[`CredentialsProvider`] to provide some of the configuration properties
+that you might not want to appear in a configuration file.
+
+You can find all the information you need about ``CredentialsProvider``s in the https://quarkus.io/guides/credentials-provider[dedicated guide].
+
+The basic principle is that you provide a CDI bean that will implement the `CredentialsProvider` and will provide the values for the supported configuration properties.
+It can either be provided by the https://github.com/quarkiverse/quarkus-vault[Vault extension] if you are using HashiCorp Vault or you can provide you own custom `CredentialsProvider` implementation.
+
+Using a `CredentialsProvider` is easy:
+
+- Make sure you have an implementation of `CredentialsProvider` and that it is a `@Singleton` or `@ApplicationScoped` CDI bean.
+- Set the `quarkus.github-app.credentials-provider` to define the name of the credentials provider.
+See it as the name of a keyring containing your Quarkus GitHub App secrets.
+- For the given name, your `CredentialsProvider` may return a `Map` containing entries for `githubAppPrivateKey` and/or `githubAppWebhookSecret`.
+You can use the constants present in `io.quarkiverse.githubapp.Credentials` for practicality.
+
+That is all you need to do:
+Quarkus GitHub App will then automatically use the values provided by the `CredentialsProvider` for the private key and the webhook secret.
+
 == Architecture Overview
 
 image::architecture.png[Architecture]

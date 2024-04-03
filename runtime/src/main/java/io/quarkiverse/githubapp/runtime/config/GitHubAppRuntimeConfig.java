@@ -4,11 +4,13 @@ import java.nio.file.Path;
 import java.security.PrivateKey;
 import java.util.Optional;
 
+import io.quarkiverse.githubapp.Credentials;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.annotations.ConvertWith;
+import io.quarkus.runtime.configuration.TrimmedStringConverter;
 
 @ConfigRoot(name = "github-app", phase = ConfigPhase.RUN_TIME)
 public class GitHubAppRuntimeConfig {
@@ -49,6 +51,30 @@ public class GitHubAppRuntimeConfig {
      */
     @ConfigItem
     Optional<String> webhookSecret;
+
+    /**
+     * The credentials provider name.
+     * <p>
+     * This is the name of the "keyring" containing the GitHub App secrets.
+     * <p>
+     * Key names are defined in {@link Credentials}.
+     */
+    @ConfigItem
+    @ConvertWith(TrimmedStringConverter.class)
+    Optional<String> credentialsProvider;
+
+    /**
+     * The credentials provider bean name.
+     * <p>
+     * This is a bean name (as in {@code @Named}) of a bean that implements {@code CredentialsProvider}.
+     * It is used to select the credentials provider bean when multiple exist.
+     * This is unnecessary when there is only one credentials provider available.
+     * <p>
+     * For Vault, the credentials provider bean name is {@code vault-credentials-provider}.
+     */
+    @ConfigItem
+    @ConvertWith(TrimmedStringConverter.class)
+    Optional<String> credentialsProviderName;
 
     /**
      * The Smee.io proxy URL used when testing locally.
