@@ -529,5 +529,9 @@
     "received_events_url": "https://api.github.com/users/dependabot%5Bbot%5D/received_events",
     "type": "Bot",
     "site_admin": false
+  },
+  "installation": {
+    "id": 13173124,
+    "node_id": "MDIzOkludGVncmF0aW9uSW5zdGFsbGF0aW9uMTMxNzMxMjQ="
   }
 }
