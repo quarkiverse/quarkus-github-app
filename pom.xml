@@ -26,7 +26,7 @@
         <resource-plugin.version>3.3.1</resource-plugin.version>
         <dependency-plugin.version>3.6.1</dependency-plugin.version>
         <surefire-plugin.version>3.2.5</surefire-plugin.version>
-        <jandex-plugin.version>3.1.8</jandex-plugin.version>
+        <jandex-plugin.version>3.2.0</jandex-plugin.version>
         <assertj.version>3.26.0</assertj.version>
 
         <quarkus-github-api.version>1.321.0</quarkus-github-api.version>
