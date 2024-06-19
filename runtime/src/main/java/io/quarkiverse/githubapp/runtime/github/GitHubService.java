@@ -9,6 +9,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
 import org.kohsuke.github.GHAppInstallationToken;
@@ -23,6 +24,7 @@ import com.github.benmanes.caffeine.cache.Expiry;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 
 import io.quarkiverse.githubapp.GitHubClientProvider;
+import io.quarkiverse.githubapp.GitHubCustomizer;
 import io.quarkiverse.githubapp.runtime.config.CheckedConfigProvider;
 import io.quarkiverse.githubapp.runtime.signing.JwtTokenCreator;
 import io.smallrye.graphql.client.dynamic.api.DynamicGraphQLClient;
@@ -40,9 +42,13 @@ public class GitHubService implements GitHubClientProvider {
 
     private final JwtTokenCreator jwtTokenCreator;
     private final GitHubConnector gitHubConnector;
+    private final GitHubCustomizer githubCustomizer;
 
     @Inject
-    public GitHubService(CheckedConfigProvider checkedConfigProvider, JwtTokenCreator jwtTokenCreator) {
+    public GitHubService(
+            CheckedConfigProvider checkedConfigProvider,
+            JwtTokenCreator jwtTokenCreator,
+            Instance<GitHubCustomizer> gitHubCustomizer) {
         this.checkedConfigProvider = checkedConfigProvider;
         this.jwtTokenCreator = jwtTokenCreator;
         this.installationTokenCache = Caffeine.newBuilder()
@@ -74,6 +80,9 @@ public class GitHubService implements GitHubClientProvider {
                 .build(new CreateInstallationToken());
         this.gitHubConnector = new HttpClientGitHubConnector(
                 HttpClient.newBuilder().version(Version.HTTP_1_1).followRedirects(HttpClient.Redirect.NEVER).build());
+        // if the customizer is not resolvable, we use a no-op customizer
+        githubCustomizer = gitHubCustomizer.isResolvable() ? gitHubCustomizer.get() : builder -> {
+        };
     }
 
     @Override
@@ -126,7 +135,11 @@ public class GitHubService implements GitHubClientProvider {
         CachedInstallationToken installationToken = installationTokenCache.get(installationId);
 
         final GitHubBuilder gitHubBuilder = new GitHubBuilder()
-                .withConnector(gitHubConnector)
+                .withConnector(gitHubConnector);
+        // apply customizations
+        githubCustomizer.customize(gitHubBuilder);
+        // configure mandatory defaults
+        gitHubBuilder
                 .withAppInstallationToken(installationToken.getToken())
                 .withEndpoint(checkedConfigProvider.restApiEndpoint());
 
@@ -194,7 +207,11 @@ public class GitHubService implements GitHubClientProvider {
 
         try {
             final GitHubBuilder gitHubBuilder = new GitHubBuilder()
-                    .withConnector(gitHubConnector)
+                    .withConnector(gitHubConnector);
+            // apply customizations
+            githubCustomizer.customize(gitHubBuilder);
+            // configure mandatory defaults
+            gitHubBuilder
                     .withJwtToken(jwtToken)
                     .withEndpoint(checkedConfigProvider.restApiEndpoint());
 
