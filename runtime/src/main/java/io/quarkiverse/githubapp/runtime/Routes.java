@@ -7,6 +7,7 @@ import static io.quarkiverse.githubapp.runtime.Headers.X_QUARKIVERSE_GITHUB_APP_
 import static io.quarkiverse.githubapp.runtime.Headers.X_REQUEST_ID;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -28,14 +29,13 @@ import io.quarkiverse.githubapp.runtime.signing.PayloadSignatureChecker;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
-import io.quarkus.vertx.web.Header;
-import io.quarkus.vertx.web.Route;
-import io.quarkus.vertx.web.Route.HandlerType;
-import io.quarkus.vertx.web.Route.HttpMethod;
 import io.quarkus.vertx.web.RoutingExchange;
+import io.quarkus.vertx.web.runtime.RoutingExchangeImpl;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.handler.BodyHandler;
 
 @Singleton
 public class Routes {
@@ -72,14 +72,32 @@ public class Routes {
         }
     }
 
-    @Route(path = "/", type = HandlerType.BLOCKING, methods = HttpMethod.POST, consumes = "application/json", produces = "application/json")
+    public void init(@Observes Router router) {
+        router.post("/")
+                .handler(BodyHandler.create()) // this is required so that the body to be read by subsequent handlers
+                .blockingHandler(routingContext -> {
+                    try {
+                        handleRequest(
+                                routingContext,
+                                new RoutingExchangeImpl(routingContext),
+                                routingContext.request().getHeader(X_REQUEST_ID),
+                                routingContext.request().getHeader(X_HUB_SIGNATURE_256),
+                                routingContext.request().getHeader(X_GITHUB_DELIVERY),
+                                routingContext.request().getHeader(X_GITHUB_EVENT),
+                                routingContext.request().getHeader(X_QUARKIVERSE_GITHUB_APP_REPLAYED));
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
+                });
+    }
+
     public void handleRequest(RoutingContext routingContext,
             RoutingExchange routingExchange,
-            @Header(X_REQUEST_ID) String requestId,
-            @Header(X_HUB_SIGNATURE_256) String hubSignature,
-            @Header(X_GITHUB_DELIVERY) String deliveryId,
-            @Header(X_GITHUB_EVENT) String event,
-            @Header(X_QUARKIVERSE_GITHUB_APP_REPLAYED) String replayed) throws IOException {
+            String requestId,
+            String hubSignature,
+            String deliveryId,
+            String event,
+            String replayed) throws IOException {
 
         if (!launchMode.isDevOrTest() && (isBlank(deliveryId) || isBlank(hubSignature))) {
             routingExchange.response().setStatusCode(400).end();
