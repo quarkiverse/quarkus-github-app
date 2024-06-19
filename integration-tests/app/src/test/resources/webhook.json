@@ -1,0 +1,42 @@
+{
+    "zen": "Approachable is better than simple.",
+    "hook_id": 475941683,
+    "hook": {
+        "type": "SponsorsListing",
+        "id": 475941683,
+        "name": "web",
+        "active": true,
+        "events": [
+            "*"
+        ],
+        "config": {
+            "content_type": "json",
+            "secret": "secret",
+            "url": "https://webhook",
+            "insecure_ssl": "0"
+        },
+        "updated_at": "2024-05-02T13:35:48Z",
+        "created_at": "2024-05-02T13:35:48Z",
+        "sponsors_listing_node_id": "SL_kwHOCJzKmc4AAogu"
+    },
+    "sender": {
+        "login": "ebullient",
+        "id": 808713,
+        "node_id": "MDQ6VXNlcjgwODcxMw==",
+        "avatar_url": "https://avatars.githubusercontent.com/u/808713?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/ebullient",
+        "html_url": "https://github.com/ebullient",
+        "followers_url": "https://api.github.com/users/ebullient/followers",
+        "following_url": "https://api.github.com/users/ebullient/following{/other_user}",
+        "gists_url": "https://api.github.com/users/ebullient/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/ebullient/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/ebullient/subscriptions",
+        "organizations_url": "https://api.github.com/users/ebullient/orgs",
+        "repos_url": "https://api.github.com/users/ebullient/repos",
+        "events_url": "https://api.github.com/users/ebullient/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/ebullient/received_events",
+        "type": "User",
+        "site_admin": false
+    }
+}

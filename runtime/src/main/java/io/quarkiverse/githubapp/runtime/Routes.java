@@ -22,6 +22,7 @@ import jakarta.inject.Singleton;
 import org.jboss.logging.Logger;
 
 import io.quarkiverse.githubapp.GitHubEvent;
+import io.quarkiverse.githubapp.GitHubWebhookEvent;
 import io.quarkiverse.githubapp.runtime.config.CheckedConfigProvider;
 import io.quarkiverse.githubapp.runtime.replay.ReplayEventsRoute;
 import io.quarkiverse.githubapp.runtime.signing.PayloadSignatureChecker;
@@ -46,6 +47,9 @@ public class Routes {
 
     @Inject
     Event<GitHubEvent> gitHubEventEmitter;
+
+    @Inject
+    Event<GitHubWebhookEvent> gitHubWebHookEmitter;
 
     @Inject
     CheckedConfigProvider checkedConfigProvider;
@@ -119,6 +123,18 @@ public class Routes {
             String fileName = DATE_TIME_FORMATTER.format(LocalDateTime.now()) + "-" + event + "-"
                     + (!isBlank(action) ? action + "-" : "") + deliveryId + ".json";
             Files.write(checkedConfigProvider.debug().payloadDirectory.get().resolve(fileName), bodyBytes);
+        }
+
+        // Webhook payloads contain the installation property when the event is configured for
+        // and sent to a GitHub App.
+        // If the installation key is missing, this is a regular (other) WebHook
+        if (!payloadObject.containsKey("installation")) {
+            GitHubWebhookEvent webhookEvent = new GitHubWebhookEvent(deliveryId, event, action,
+                    payload, payloadObject, "true".equals(replayed) ? true : false);
+
+            gitHubWebHookEmitter.fire(webhookEvent);
+            routingExchange.ok().end();
+            return;
         }
 
         Long installationId = extractInstallationId(payloadObject);
