@@ -73,7 +73,7 @@ public class Routes {
     }
 
     public void init(@Observes Router router) {
-        router.post("/")
+        router.post(checkedConfigProvider.webhookUrlPath())
                 .handler(BodyHandler.create()) // this is required so that the body to be read by subsequent handlers
                 .blockingHandler(routingContext -> {
                     try {

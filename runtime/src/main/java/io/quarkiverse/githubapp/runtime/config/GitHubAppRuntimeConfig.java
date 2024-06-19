@@ -47,6 +47,15 @@ public class GitHubAppRuntimeConfig {
     Optional<PrivateKey> privateKey;
 
     /**
+     * The webhook URL path that the GitHub App listens to, prefixed with the "/" character.
+     * <p>
+     * This defaults to the root "/" but could be configured to a something else to enable deployment alongside other HTTP
+     * routes. such as "/github-event"
+     */
+    @ConfigItem(defaultValue = "/")
+    String webhookUrlPath;
+
+    /**
      * The webhook secret if defined in the GitHub UI.
      */
     @ConfigItem

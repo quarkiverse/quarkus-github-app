@@ -85,6 +85,25 @@ endif::add-copy-button-to-env-var[]
 |
 
 
+a| [[quarkus-github-app_quarkus-github-app-webhook-url-path]]`link:#quarkus-github-app_quarkus-github-app-webhook-url-path[quarkus.github-app.webhook-url-path]`
+
+
+[.description]
+--
+The webhook URL path that the GitHub App listens to, prefixed with the "/" character.
+
+This defaults to the root "/" but could be configured to a something else to enable deployment alongside other HTTP routes. such as "/github-event"
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_GITHUB_APP_WEBHOOK_URL_PATH+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_GITHUB_APP_WEBHOOK_URL_PATH+++`
+endif::add-copy-button-to-env-var[]
+--|string 
+|`/`
+
+
 a| [[quarkus-github-app_quarkus-github-app-webhook-secret]]`link:#quarkus-github-app_quarkus-github-app-webhook-secret[quarkus.github-app.webhook-secret]`
 
 

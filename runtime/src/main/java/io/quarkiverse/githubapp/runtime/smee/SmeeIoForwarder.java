@@ -50,7 +50,8 @@ public class SmeeIoForwarder {
 
         LOG.info("Listening to events coming from " + checkedConfigProvider.webhookProxyUrl().get());
 
-        URI localUrl = URI.create("http://" + httpConfiguration.host + ":" + httpConfiguration.port + "/");
+        URI localUrl = URI.create(
+                "http://" + httpConfiguration.host + ":" + httpConfiguration.port + checkedConfigProvider.webhookUrlPath());
 
         this.replayEventStreamAdapter = new ReplayEventStreamAdapter(checkedConfigProvider.webhookProxyUrl().get(), localUrl,
                 objectMapper);

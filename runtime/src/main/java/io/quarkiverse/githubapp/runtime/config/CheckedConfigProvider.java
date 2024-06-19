@@ -108,6 +108,10 @@ public class CheckedConfigProvider {
         return gitHubAppRuntimeConfig.restApiEndpoint;
     }
 
+    public String webhookUrlPath() {
+        return gitHubAppRuntimeConfig.webhookUrlPath;
+    }
+
     public String graphqlApiEndpoint() {
         return gitHubAppRuntimeConfig.graphqlApiEndpoint;
     }
