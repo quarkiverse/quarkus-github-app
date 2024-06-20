@@ -35,6 +35,12 @@ public class GitHubService implements GitHubClientProvider {
 
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String AUTHORIZATION_HEADER_BEARER = "Bearer %s";
+    private static final GitHubCustomizer NOOP_GITHUB_CUSTOMIZER = new GitHubCustomizer() {
+
+        @Override
+        public void customize(GitHubBuilder builder) {
+        }
+    };
 
     private final CheckedConfigProvider checkedConfigProvider;
 
@@ -81,8 +87,7 @@ public class GitHubService implements GitHubClientProvider {
         this.gitHubConnector = new HttpClientGitHubConnector(
                 HttpClient.newBuilder().version(Version.HTTP_1_1).followRedirects(HttpClient.Redirect.NEVER).build());
         // if the customizer is not resolvable, we use a no-op customizer
-        githubCustomizer = gitHubCustomizer.isResolvable() ? gitHubCustomizer.get() : builder -> {
-        };
+        githubCustomizer = gitHubCustomizer.isResolvable() ? gitHubCustomizer.get() : NOOP_GITHUB_CUSTOMIZER;
     }
 
     @Override
