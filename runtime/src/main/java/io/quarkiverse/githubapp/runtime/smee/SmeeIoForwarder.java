@@ -2,6 +2,7 @@ package io.quarkiverse.githubapp.runtime.smee;
 
 import static io.quarkiverse.githubapp.runtime.Headers.FORWARDED_HEADERS;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -123,6 +124,12 @@ public class SmeeIoForwarder {
                     }
 
                     forwardingHttpClient.send(requestBuilder.build(), BodyHandlers.discarding());
+                }
+            } catch (IOException e) {
+                if (e.getMessage().contains("GOAWAY received")) {
+                    // ignore
+                } else {
+                    LOG.error("An error occurred while forwarding a payload to the local application running in dev mode", e);
                 }
             } catch (Exception e) {
                 LOG.error("An error occurred while forwarding a payload to the local application running in dev mode", e);
