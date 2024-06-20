@@ -28,14 +28,13 @@ import io.quarkiverse.githubapp.runtime.signing.PayloadSignatureChecker;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
-import io.quarkus.vertx.web.Header;
-import io.quarkus.vertx.web.Route;
-import io.quarkus.vertx.web.Route.HandlerType;
-import io.quarkus.vertx.web.Route.HttpMethod;
 import io.quarkus.vertx.web.RoutingExchange;
+import io.quarkus.vertx.web.runtime.RoutingExchangeImpl;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.handler.BodyHandler;
 
 @Singleton
 public class Routes {
@@ -72,14 +71,28 @@ public class Routes {
         }
     }
 
-    @Route(path = "/", type = HandlerType.BLOCKING, methods = HttpMethod.POST, consumes = "application/json", produces = "application/json")
-    public void handleRequest(RoutingContext routingContext,
+    public void init(@Observes Router router) {
+        router.post(checkedConfigProvider.webhookUrlPath())
+                .handler(BodyHandler.create()) // this is required so that the body to be read by subsequent handlers
+                .blockingHandler(routingContext -> {
+                    handleRequest(
+                            routingContext,
+                            new RoutingExchangeImpl(routingContext),
+                            routingContext.request().getHeader(X_REQUEST_ID),
+                            routingContext.request().getHeader(X_HUB_SIGNATURE_256),
+                            routingContext.request().getHeader(X_GITHUB_DELIVERY),
+                            routingContext.request().getHeader(X_GITHUB_EVENT),
+                            routingContext.request().getHeader(X_QUARKIVERSE_GITHUB_APP_REPLAYED));
+                });
+    }
+
+    private void handleRequest(RoutingContext routingContext,
             RoutingExchange routingExchange,
-            @Header(X_REQUEST_ID) String requestId,
-            @Header(X_HUB_SIGNATURE_256) String hubSignature,
-            @Header(X_GITHUB_DELIVERY) String deliveryId,
-            @Header(X_GITHUB_EVENT) String event,
-            @Header(X_QUARKIVERSE_GITHUB_APP_REPLAYED) String replayed) throws IOException {
+            String requestId,
+            String hubSignature,
+            String deliveryId,
+            String event,
+            String replayed) {
 
         if (!launchMode.isDevOrTest() && (isBlank(deliveryId) || isBlank(hubSignature))) {
             routingExchange.response().setStatusCode(400).end();
@@ -118,7 +131,12 @@ public class Routes {
         if (!isBlank(deliveryId) && checkedConfigProvider.debug().payloadDirectory.isPresent()) {
             String fileName = DATE_TIME_FORMATTER.format(LocalDateTime.now()) + "-" + event + "-"
                     + (!isBlank(action) ? action + "-" : "") + deliveryId + ".json";
-            Files.write(checkedConfigProvider.debug().payloadDirectory.get().resolve(fileName), bodyBytes);
+            Path path = checkedConfigProvider.debug().payloadDirectory.get().resolve(fileName);
+            try {
+                Files.write(path, bodyBytes);
+            } catch (Exception e) {
+                LOG.warnf(e, "Unable to write debug payload: %s", path);
+            }
         }
 
         Long installationId = extractInstallationId(payloadObject);
