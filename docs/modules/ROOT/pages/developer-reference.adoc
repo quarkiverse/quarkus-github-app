@@ -370,6 +370,25 @@ You can use the constants present in `io.quarkiverse.githubapp.Credentials` for 
 That is all you need to do:
 Quarkus GitHub App will then automatically use the values provided by the `CredentialsProvider` for the private key and the webhook secret.
 
+== Customizing the GitHub clients
+
+You can customize the GitHub clients initialized by Quarkus GitHub App
+by creating a CDI bean implementing `io.quarkiverse.githubapp.GitHubCustomizer`.
+
+For instance:
+
+[source,java]
+----
+@Singleton
+public class MyGitHubCustomizer implements GitHubCustomizer {
+
+    @Override
+    public void customize(GitHubBuilder builder) {
+       // call methods of the builder
+    }
+}
+----
+
 == Architecture Overview
 
 image::architecture.png[Architecture]
