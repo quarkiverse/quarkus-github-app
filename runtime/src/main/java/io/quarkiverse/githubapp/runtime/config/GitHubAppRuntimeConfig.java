@@ -21,6 +21,7 @@ public class GitHubAppRuntimeConfig {
      * Optional for tests, but mandatory in production and dev mode.
      */
     @ConfigItem
+    @ConvertWith(TrimmedStringConverter.class)
     Optional<String> appId;
 
     /**
@@ -29,6 +30,7 @@ public class GitHubAppRuntimeConfig {
      * Optional, only used for improving the user experience.
      */
     @ConfigItem
+    @ConvertWith(TrimmedStringConverter.class)
     Optional<String> appName;
 
     /**
@@ -47,12 +49,13 @@ public class GitHubAppRuntimeConfig {
     Optional<PrivateKey> privateKey;
 
     /**
-     * The webhook URL path that the GitHub App listens to, prefixed with the "/" character.
+     * The webhook URL path on which the GitHub App route is mounted.
      * <p>
-     * This defaults to the root "/" but could be configured to a something else to enable deployment alongside other HTTP
-     * routes. such as "/github-event"
+     * It defaults to the root {@code /} but it can be configured to another path such as {@code /github-events} to enable
+     * deployment alongside other HTTP routes.
      */
     @ConfigItem(defaultValue = "/")
+    @ConvertWith(TrimmedStringConverter.class)
     String webhookUrlPath;
 
     /**
@@ -89,6 +92,7 @@ public class GitHubAppRuntimeConfig {
      * The Smee.io proxy URL used when testing locally.
      */
     @ConfigItem
+    @ConvertWith(TrimmedStringConverter.class)
     Optional<String> webhookProxyUrl;
 
     /**
@@ -97,6 +101,7 @@ public class GitHubAppRuntimeConfig {
      * Defaults to the public github.com instance.
      */
     @ConfigItem(defaultValue = "https://api.github.com")
+    @ConvertWith(TrimmedStringConverter.class)
     String instanceEndpoint;
 
     /**
@@ -105,6 +110,7 @@ public class GitHubAppRuntimeConfig {
      * Defaults to the public github.com instance REST API endpoint.
      */
     @ConfigItem(defaultValue = "${quarkus.github-app.instance-endpoint}")
+    @ConvertWith(TrimmedStringConverter.class)
     String restApiEndpoint;
 
     /**
@@ -113,6 +119,7 @@ public class GitHubAppRuntimeConfig {
      * Defaults to the public github.com instance GraphQL endpoint.
      */
     @ConfigItem(defaultValue = "${quarkus.github-app.instance-endpoint}/graphql")
+    @ConvertWith(TrimmedStringConverter.class)
     String graphqlApiEndpoint;
 
     /**
@@ -128,6 +135,7 @@ public class GitHubAppRuntimeConfig {
          * A directory in which the payloads are saved.
          */
         @ConfigItem
+        @ConvertWith(TrimmedStringConverter.class)
         public Optional<Path> payloadDirectory;
     }
 }

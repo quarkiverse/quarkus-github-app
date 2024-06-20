@@ -33,6 +33,7 @@ public class CheckedConfigProvider {
 
     private final Optional<PrivateKey> privateKey;
     private final Optional<String> webhookSecret;
+    private final String webhookUrlPath;
 
     private final Set<String> missingPropertyKeys = new TreeSet<>();
 
@@ -54,6 +55,8 @@ public class CheckedConfigProvider {
         } else {
             this.webhookSecret = gitHubAppRuntimeConfig.webhookSecret;
         }
+        this.webhookUrlPath = gitHubAppRuntimeConfig.webhookUrlPath.startsWith("/") ? gitHubAppRuntimeConfig.webhookUrlPath
+                : "/" + gitHubAppRuntimeConfig.webhookUrlPath;
 
         if (gitHubAppRuntimeConfig.appId.isEmpty()) {
             missingPropertyKeys.add("quarkus.github-app.app-id (.env: QUARKUS_GITHUB_APP_APP_ID)");
@@ -109,7 +112,7 @@ public class CheckedConfigProvider {
     }
 
     public String webhookUrlPath() {
-        return gitHubAppRuntimeConfig.webhookUrlPath;
+        return webhookUrlPath;
     }
 
     public String graphqlApiEndpoint() {

@@ -90,9 +90,9 @@ a| [[quarkus-github-app_quarkus-github-app-webhook-url-path]]`link:#quarkus-gith
 
 [.description]
 --
-The webhook URL path that the GitHub App listens to, prefixed with the "/" character.
+The webhook URL path on which the GitHub App route is mounted.
 
-This defaults to the root "/" but could be configured to a something else to enable deployment alongside other HTTP routes. such as "/github-event"
+It defaults to the root `/` but it can be configured to another path such as `/github-events` to enable deployment alongside other HTTP routes.
 
 ifdef::add-copy-button-to-env-var[]
 Environment variable: env_var_with_copy_button:+++QUARKUS_GITHUB_APP_WEBHOOK_URL_PATH+++[]

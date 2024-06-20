@@ -7,7 +7,6 @@ import static io.quarkiverse.githubapp.runtime.Headers.X_QUARKIVERSE_GITHUB_APP_
 import static io.quarkiverse.githubapp.runtime.Headers.X_REQUEST_ID;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -76,28 +75,24 @@ public class Routes {
         router.post(checkedConfigProvider.webhookUrlPath())
                 .handler(BodyHandler.create()) // this is required so that the body to be read by subsequent handlers
                 .blockingHandler(routingContext -> {
-                    try {
-                        handleRequest(
-                                routingContext,
-                                new RoutingExchangeImpl(routingContext),
-                                routingContext.request().getHeader(X_REQUEST_ID),
-                                routingContext.request().getHeader(X_HUB_SIGNATURE_256),
-                                routingContext.request().getHeader(X_GITHUB_DELIVERY),
-                                routingContext.request().getHeader(X_GITHUB_EVENT),
-                                routingContext.request().getHeader(X_QUARKIVERSE_GITHUB_APP_REPLAYED));
-                    } catch (IOException e) {
-                        throw new UncheckedIOException(e);
-                    }
+                    handleRequest(
+                            routingContext,
+                            new RoutingExchangeImpl(routingContext),
+                            routingContext.request().getHeader(X_REQUEST_ID),
+                            routingContext.request().getHeader(X_HUB_SIGNATURE_256),
+                            routingContext.request().getHeader(X_GITHUB_DELIVERY),
+                            routingContext.request().getHeader(X_GITHUB_EVENT),
+                            routingContext.request().getHeader(X_QUARKIVERSE_GITHUB_APP_REPLAYED));
                 });
     }
 
-    public void handleRequest(RoutingContext routingContext,
+    private void handleRequest(RoutingContext routingContext,
             RoutingExchange routingExchange,
             String requestId,
             String hubSignature,
             String deliveryId,
             String event,
-            String replayed) throws IOException {
+            String replayed) {
 
         if (!launchMode.isDevOrTest() && (isBlank(deliveryId) || isBlank(hubSignature))) {
             routingExchange.response().setStatusCode(400).end();
@@ -136,7 +131,12 @@ public class Routes {
         if (!isBlank(deliveryId) && checkedConfigProvider.debug().payloadDirectory.isPresent()) {
             String fileName = DATE_TIME_FORMATTER.format(LocalDateTime.now()) + "-" + event + "-"
                     + (!isBlank(action) ? action + "-" : "") + deliveryId + ".json";
-            Files.write(checkedConfigProvider.debug().payloadDirectory.get().resolve(fileName), bodyBytes);
+            Path path = checkedConfigProvider.debug().payloadDirectory.get().resolve(fileName);
+            try {
+                Files.write(path, bodyBytes);
+            } catch (Exception e) {
+                LOG.warnf(e, "Unable to write debug payload: %s", path);
+            }
         }
 
         Long installationId = extractInstallationId(payloadObject);
