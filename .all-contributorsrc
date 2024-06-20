@@ -70,6 +70,15 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "ryandens",
+      "name": "Ryan Dens",
+      "avatar_url": "https://avatars.githubusercontent.com/u/8192732?v=4",
+      "profile": "https://www.ryandens.com",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "contributorsPerLine": 7,
