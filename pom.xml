@@ -22,7 +22,7 @@
         <maven.compiler.release>17</maven.compiler.release>
         <maven.compiler.parameters>true</maven.compiler.parameters>
         <quarkus.version>3.11.3</quarkus.version>
-        <compiler-plugin.version>3.10.1</compiler-plugin.version>
+        <compiler-plugin.version>3.13.0</compiler-plugin.version>
         <resource-plugin.version>3.3.1</resource-plugin.version>
         <dependency-plugin.version>3.7.0</dependency-plugin.version>
         <surefire-plugin.version>3.3.0</surefire-plugin.version>
