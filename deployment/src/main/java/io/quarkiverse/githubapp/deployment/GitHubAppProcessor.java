@@ -344,7 +344,7 @@ class GitHubAppProcessor {
         routes.produce(httpRootPath.routeBuilder().route(REPLAY_UI_PATH).handler(handler).build());
         routes.produce(httpRootPath.routeBuilder().route(REPLAY_UI_PATH + "/*").handler(handler).build());
 
-        displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(REPLAY_UI_PATH + "/"));
+        displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(REPLAY_UI_PATH + "/", "Replay UI"));
     }
 
     private static Collection<EventDefinition> getAllEventDefinitions(IndexView index) {
