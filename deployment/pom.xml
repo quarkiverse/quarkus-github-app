@@ -49,8 +49,22 @@
             <artifactId>quarkus-smallrye-jwt-build-deployment</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx-http-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx-http-dev-ui-spi</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
             <groupId>io.quarkiverse.githubapp</groupId>
             <artifactId>quarkus-github-app</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.githubapp</groupId>
+            <artifactId>quarkus-github-app-ui</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -89,87 +103,6 @@
                         </path>
                     </annotationProcessorPaths>
                 </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>install-ui</id>
-                        <phase>generate-sources</phase>
-                        <goals>
-                            <goal>unpack</goal>
-                        </goals>
-                        <configuration>
-                            <artifactItems>
-                                <!-- Fomantic UI -->
-                                <artifactItem>
-                                    <groupId>org.webjars.npm</groupId>
-                                    <artifactId>fomantic-ui-css</artifactId>
-                                    <version>${webjar.fomantic-ui.version}</version>
-                                    <type>jar</type>
-                                    <overWrite>true</overWrite>
-                                    <outputDirectory>${project.build.directory}/classes/META-INF/resources/replay-ui/css/</outputDirectory>
-                                    <includes>META-INF/resources/webjars/fomantic-ui-css/${webjar.fomantic-ui.version}/semantic.min.css,META-INF/resources/webjars/fomantic-ui-css/${webjar.fomantic-ui.version}/themes/default/**</includes>
-                                    <fileMappers>
-                                        <org.codehaus.plexus.components.io.filemappers.RegExpFileMapper>
-                                            <pattern>^META-INF/resources/webjars/fomantic-ui-css/${webjar.fomantic-ui.version}/</pattern>
-                                            <replacement>./</replacement>
-                                        </org.codehaus.plexus.components.io.filemappers.RegExpFileMapper>
-                                    </fileMappers>
-                                </artifactItem>
-                                <artifactItem>
-                                    <groupId>org.webjars.npm</groupId>
-                                    <artifactId>fomantic-ui-css</artifactId>
-                                    <version>${webjar.fomantic-ui.version}</version>
-                                    <type>jar</type>
-                                    <overWrite>true</overWrite>
-                                    <outputDirectory>${project.build.directory}/classes/META-INF/resources/replay-ui/js/</outputDirectory>
-                                    <includes>META-INF/resources/webjars/fomantic-ui-css/${webjar.fomantic-ui.version}/semantic.min.js</includes>
-                                    <fileMappers>
-                                        <org.codehaus.plexus.components.io.filemappers.RegExpFileMapper>
-                                            <pattern>^META-INF/resources/webjars/fomantic-ui-css/${webjar.fomantic-ui.version}/</pattern>
-                                            <replacement>./</replacement>
-                                        </org.codehaus.plexus.components.io.filemappers.RegExpFileMapper>
-                                    </fileMappers>
-                                </artifactItem>
-                                <!-- Vue.js -->
-                                <artifactItem>
-                                    <groupId>org.webjars.npm</groupId>
-                                    <artifactId>vue</artifactId>
-                                    <version>${webjar.vue.version}</version>
-                                    <type>jar</type>
-                                    <overWrite>true</overWrite>
-                                    <outputDirectory>${project.build.directory}/classes/META-INF/resources/replay-ui/js/</outputDirectory>
-                                    <includes>META-INF/resources/webjars/vue/${webjar.vue.version}/dist/vue.min.js</includes>
-                                    <fileMappers>
-                                        <org.codehaus.plexus.components.io.filemappers.RegExpFileMapper>
-                                            <pattern>^META-INF/resources/webjars/vue/${webjar.vue.version}/dist/</pattern>
-                                            <replacement>./</replacement>
-                                        </org.codehaus.plexus.components.io.filemappers.RegExpFileMapper>
-                                    </fileMappers>
-                                </artifactItem>
-                                <!-- jQuery -->
-                                <artifactItem>
-                                    <groupId>org.webjars.npm</groupId>
-                                    <artifactId>jquery</artifactId>
-                                    <version>${webjar.jquery.version}</version>
-                                    <type>jar</type>
-                                    <overWrite>true</overWrite>
-                                    <outputDirectory>${project.build.directory}/classes/META-INF/resources/replay-ui/js/</outputDirectory>
-                                    <includes>META-INF/resources/webjars/jquery/${webjar.jquery.version}/dist/jquery.min.js</includes>
-                                    <fileMappers>
-                                        <org.codehaus.plexus.components.io.filemappers.RegExpFileMapper>
-                                            <pattern>^META-INF/resources/webjars/jquery/${webjar.jquery.version}/dist/</pattern>
-                                            <replacement>./</replacement>
-                                        </org.codehaus.plexus.components.io.filemappers.RegExpFileMapper>
-                                    </fileMappers>
-                                </artifactItem>
-                                <!-- favico.js is a version coming from the master branch of https://github.com/ejci/favico.js/ -->
-                            </artifactItems>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
     </build>

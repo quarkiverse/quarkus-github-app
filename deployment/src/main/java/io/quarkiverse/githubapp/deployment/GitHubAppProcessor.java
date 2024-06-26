@@ -123,7 +123,6 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
-import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.deployment.webjar.WebJarBuildItem;
 import io.quarkus.vertx.http.deployment.webjar.WebJarResultsBuildItem;
 import io.smallrye.graphql.client.dynamic.api.DynamicGraphQLClient;
@@ -153,9 +152,9 @@ class GitHubAppProcessor {
             .createSimple("com.infradna.tool.bridge_method_injector.WithBridgeMethods");
 
     private static final GACT QUARKIVERSE_GITHUB_APP_GACT = new GACT("io.quarkiverse.githubapp",
-            "quarkus-github-app-deployment", null, "jar");
+            "quarkus-github-app-ui", null, "jar");
     private static final String REPLAY_UI_RESOURCES_PREFIX = "META-INF/resources/replay-ui/";
-    private static final String REPLAY_UI_PATH = "/replay";
+    private static final String REPLAY_UI_PATH = "replay";
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -328,8 +327,7 @@ class GitHubAppProcessor {
             WebJarResultsBuildItem webJarResults,
             HttpRootPathBuildItem httpRootPath,
             ShutdownContextBuildItem shutdownContext,
-            BuildProducer<RouteBuildItem> routes,
-            BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints) throws IOException {
+            BuildProducer<RouteBuildItem> routes) throws IOException {
         if (launchMode.getLaunchMode() != LaunchMode.DEVELOPMENT) {
             return;
         }
@@ -339,12 +337,17 @@ class GitHubAppProcessor {
             return;
         }
 
-        Handler<RoutingContext> handler = recorder.replayUiHandler(webJarResult.getFinalDestination(), REPLAY_UI_PATH,
+        String replayUiPath = httpRootPath.resolvePath(REPLAY_UI_PATH);
+
+        Handler<RoutingContext> handler = recorder.replayUiHandler(webJarResult.getFinalDestination(), replayUiPath,
                 webJarResult.getWebRootConfigurations(), shutdownContext);
-        routes.produce(httpRootPath.routeBuilder().route(REPLAY_UI_PATH).handler(handler).build());
+        routes.produce(httpRootPath.routeBuilder()
+                .route(REPLAY_UI_PATH)
+                .handler(handler)
+                .displayOnNotFoundPage("Replay UI")
+                .build());
         routes.produce(httpRootPath.routeBuilder().route(REPLAY_UI_PATH + "/*").handler(handler).build());
 
-        displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(REPLAY_UI_PATH + "/", "Replay UI"));
     }
 
     private static Collection<EventDefinition> getAllEventDefinitions(IndexView index) {
