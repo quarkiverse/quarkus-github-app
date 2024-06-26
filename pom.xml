@@ -33,7 +33,7 @@
         <airline.version>3.0.0</airline.version>
 
         <webjar.fomantic-ui.version>2.9.0</webjar.fomantic-ui.version>
-        <webjar.vue.version>2.6.12</webjar.vue.version>
+        <webjar.vue.version>2.7.16</webjar.vue.version>
         <webjar.jquery.version>3.7.1</webjar.jquery.version>
     </properties>
 
