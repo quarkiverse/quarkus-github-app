@@ -9,7 +9,8 @@
 
 **Develop your GitHub Apps in Java with Quarkus**
 
-> _Interested in GitHub Actions? Have a look at the [Quarkus GitHub Action extension](https://github.com/quarkiverse/quarkus-github-action/)._
+> [!TIP]
+> Interested in GitHub Actions? Have a look at the [Quarkus GitHub Action extension](https://github.com/quarkiverse/quarkus-github-action/).
 
 Quarkus GitHub App is a [Quarkus](https://quarkus.io) extension
 that allows to create GitHub Apps in Java with very little boilerplate.
