@@ -6,47 +6,46 @@ import java.util.Optional;
 
 import io.quarkiverse.githubapp.Credentials;
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
-import io.quarkus.runtime.annotations.ConvertWith;
 import io.quarkus.runtime.configuration.TrimmedStringConverter;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithConverter;
+import io.smallrye.config.WithDefault;
 
-@ConfigRoot(name = "github-app", phase = ConfigPhase.RUN_TIME)
-public class GitHubAppRuntimeConfig {
+@ConfigRoot(phase = ConfigPhase.RUN_TIME)
+@ConfigMapping(prefix = "quarkus.github-app")
+public interface GitHubAppRuntimeConfig {
 
     /**
      * The numeric application id provided by GitHub.
      * <p>
      * Optional for tests, but mandatory in production and dev mode.
      */
-    @ConfigItem
-    @ConvertWith(TrimmedStringConverter.class)
-    Optional<String> appId;
+    @WithConverter(TrimmedStringConverter.class)
+    Optional<String> appId();
 
     /**
      * The GitHub name of the application.
      * <p>
      * Optional, only used for improving the user experience.
      */
-    @ConfigItem
-    @ConvertWith(TrimmedStringConverter.class)
-    Optional<String> appName;
+    @WithConverter(TrimmedStringConverter.class)
+    Optional<String> appName();
 
     /**
      * Read the configuration files from the source repository in case of a fork.
      */
-    @ConfigItem(defaultValue = "false")
-    boolean readConfigFilesFromSourceRepository;
+    @WithDefault("false")
+    boolean readConfigFilesFromSourceRepository();
 
     /**
      * The RSA private key.
      * <p>
      * Optional for tests, but mandatory in production and dev mode.
      */
-    @ConfigItem
-    @ConvertWith(PrivateKeyConverter.class)
-    Optional<PrivateKey> privateKey;
+    @WithConverter(PrivateKeyConverter.class)
+    Optional<PrivateKey> privateKey();
 
     /**
      * The webhook URL path on which the GitHub App route is mounted.
@@ -54,15 +53,14 @@ public class GitHubAppRuntimeConfig {
      * It defaults to the root {@code /} but it can be configured to another path such as {@code /github-events} to enable
      * deployment alongside other HTTP routes.
      */
-    @ConfigItem(defaultValue = "/")
-    @ConvertWith(TrimmedStringConverter.class)
-    String webhookUrlPath;
+    @WithDefault("/")
+    @WithConverter(TrimmedStringConverter.class)
+    String webhookUrlPath();
 
     /**
      * The webhook secret if defined in the GitHub UI.
      */
-    @ConfigItem
-    Optional<String> webhookSecret;
+    Optional<String> webhookSecret();
 
     /**
      * The credentials provider name.
@@ -71,9 +69,8 @@ public class GitHubAppRuntimeConfig {
      * <p>
      * Key names are defined in {@link Credentials}.
      */
-    @ConfigItem
-    @ConvertWith(TrimmedStringConverter.class)
-    Optional<String> credentialsProvider;
+    @WithConverter(TrimmedStringConverter.class)
+    Optional<String> credentialsProvider();
 
     /**
      * The credentials provider bean name.
@@ -84,58 +81,54 @@ public class GitHubAppRuntimeConfig {
      * <p>
      * For Vault, the credentials provider bean name is {@code vault-credentials-provider}.
      */
-    @ConfigItem
-    @ConvertWith(TrimmedStringConverter.class)
-    Optional<String> credentialsProviderName;
+    @WithConverter(TrimmedStringConverter.class)
+    Optional<String> credentialsProviderName();
 
     /**
      * The Smee.io proxy URL used when testing locally.
      */
-    @ConfigItem
-    @ConvertWith(TrimmedStringConverter.class)
-    Optional<String> webhookProxyUrl;
+    @WithConverter(TrimmedStringConverter.class)
+    Optional<String> webhookProxyUrl();
 
     /**
      * The GitHub instance endpoint.
      * <p>
      * Defaults to the public github.com instance.
      */
-    @ConfigItem(defaultValue = "https://api.github.com")
-    @ConvertWith(TrimmedStringConverter.class)
-    String instanceEndpoint;
+    @WithDefault("https://api.github.com")
+    @WithConverter(TrimmedStringConverter.class)
+    String instanceEndpoint();
 
     /**
      * The REST API endpoint.
      * <p>
      * Defaults to the public github.com instance REST API endpoint.
      */
-    @ConfigItem(defaultValue = "${quarkus.github-app.instance-endpoint}")
-    @ConvertWith(TrimmedStringConverter.class)
-    String restApiEndpoint;
+    @WithDefault("${quarkus.github-app.instance-endpoint}")
+    @WithConverter(TrimmedStringConverter.class)
+    String restApiEndpoint();
 
     /**
      * The GraphQL API endpoint.
      * <p>
      * Defaults to the public github.com instance GraphQL endpoint.
      */
-    @ConfigItem(defaultValue = "${quarkus.github-app.instance-endpoint}/graphql")
-    @ConvertWith(TrimmedStringConverter.class)
-    String graphqlApiEndpoint;
+    @WithDefault("${quarkus.github-app.instance-endpoint}/graphql")
+    @WithConverter(TrimmedStringConverter.class)
+    String graphqlApiEndpoint();
 
     /**
      * Debug configuration.
      */
-    @ConfigItem
-    Debug debug;
+    Debug debug();
 
     @ConfigGroup
-    public static class Debug {
+    public interface Debug {
 
         /**
          * A directory in which the payloads are saved.
          */
-        @ConfigItem
-        @ConvertWith(TrimmedStringConverter.class)
-        public Optional<Path> payloadDirectory;
+        @WithConverter(TrimmedStringConverter.class)
+        public Optional<Path> payloadDirectory();
     }
 }
