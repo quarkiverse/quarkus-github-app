@@ -64,10 +64,10 @@ public class Routes {
     Path tmpDirectory;
 
     public void init(@Observes StartupEvent startupEvent) throws IOException {
-        if (checkedConfigProvider.debug().payloadDirectory.isPresent()) {
-            Files.createDirectories(checkedConfigProvider.debug().payloadDirectory.get());
+        if (checkedConfigProvider.debug().payloadDirectory().isPresent()) {
+            Files.createDirectories(checkedConfigProvider.debug().payloadDirectory().get());
             LOG.warn("Payloads saved to: "
-                    + checkedConfigProvider.debug().payloadDirectory.get().toAbsolutePath().toString());
+                    + checkedConfigProvider.debug().payloadDirectory().get().toAbsolutePath().toString());
         }
     }
 
@@ -128,10 +128,10 @@ public class Routes {
 
         String action = payloadObject.getString("action");
 
-        if (!isBlank(deliveryId) && checkedConfigProvider.debug().payloadDirectory.isPresent()) {
+        if (!isBlank(deliveryId) && checkedConfigProvider.debug().payloadDirectory().isPresent()) {
             String fileName = DATE_TIME_FORMATTER.format(LocalDateTime.now()) + "-" + event + "-"
                     + (!isBlank(action) ? action + "-" : "") + deliveryId + ".json";
-            Path path = checkedConfigProvider.debug().payloadDirectory.get().resolve(fileName);
+            Path path = checkedConfigProvider.debug().payloadDirectory().get().resolve(fileName);
             try {
                 Files.write(path, bodyBytes);
             } catch (Exception e) {

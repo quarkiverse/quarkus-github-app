@@ -47,18 +47,18 @@ public class CheckedConfigProvider {
         if (privateKeyFromCredentials != null && !privateKeyFromCredentials.isBlank()) {
             this.privateKey = Optional.of(new PrivateKeyConverter().convert(privateKeyFromCredentials.trim()));
         } else {
-            this.privateKey = gitHubAppRuntimeConfig.privateKey;
+            this.privateKey = gitHubAppRuntimeConfig.privateKey();
         }
         String webhookSecretFromCredentials = credentials.get(Credentials.WEBHOOK_SECRET);
         if (webhookSecretFromCredentials != null && !webhookSecretFromCredentials.isBlank()) {
             this.webhookSecret = Optional.of(webhookSecretFromCredentials.trim());
         } else {
-            this.webhookSecret = gitHubAppRuntimeConfig.webhookSecret;
+            this.webhookSecret = gitHubAppRuntimeConfig.webhookSecret();
         }
-        this.webhookUrlPath = gitHubAppRuntimeConfig.webhookUrlPath.startsWith("/") ? gitHubAppRuntimeConfig.webhookUrlPath
-                : "/" + gitHubAppRuntimeConfig.webhookUrlPath;
+        this.webhookUrlPath = gitHubAppRuntimeConfig.webhookUrlPath().startsWith("/") ? gitHubAppRuntimeConfig.webhookUrlPath()
+                : "/" + gitHubAppRuntimeConfig.webhookUrlPath();
 
-        if (gitHubAppRuntimeConfig.appId.isEmpty()) {
+        if (gitHubAppRuntimeConfig.appId().isEmpty()) {
             missingPropertyKeys.add("quarkus.github-app.app-id (.env: QUARKUS_GITHUB_APP_APP_ID)");
         }
         if (this.privateKey.isEmpty()) {
@@ -83,11 +83,11 @@ public class CheckedConfigProvider {
         }
 
         // The optional will never be empty; using orElseThrow instead of get to avoid IDE warnings.
-        return gitHubAppRuntimeConfig.appId.orElseThrow();
+        return gitHubAppRuntimeConfig.appId().orElseThrow();
     }
 
     public Optional<String> appName() {
-        return gitHubAppRuntimeConfig.appName;
+        return gitHubAppRuntimeConfig.appName();
     }
 
     public PrivateKey privateKey() {
@@ -104,11 +104,11 @@ public class CheckedConfigProvider {
     }
 
     public Optional<String> webhookProxyUrl() {
-        return gitHubAppRuntimeConfig.webhookProxyUrl;
+        return gitHubAppRuntimeConfig.webhookProxyUrl();
     }
 
     public String restApiEndpoint() {
-        return gitHubAppRuntimeConfig.restApiEndpoint;
+        return gitHubAppRuntimeConfig.restApiEndpoint();
     }
 
     public String webhookUrlPath() {
@@ -116,16 +116,16 @@ public class CheckedConfigProvider {
     }
 
     public String graphqlApiEndpoint() {
-        return gitHubAppRuntimeConfig.graphqlApiEndpoint;
+        return gitHubAppRuntimeConfig.graphqlApiEndpoint();
     }
 
     public Debug debug() {
-        return gitHubAppRuntimeConfig.debug;
+        return gitHubAppRuntimeConfig.debug();
     }
 
     public ConfigFile.Source getEffectiveSource(ConfigFile.Source source) {
         if (source == ConfigFile.Source.DEFAULT) {
-            return gitHubAppRuntimeConfig.readConfigFilesFromSourceRepository ? ConfigFile.Source.SOURCE_REPOSITORY
+            return gitHubAppRuntimeConfig.readConfigFilesFromSourceRepository() ? ConfigFile.Source.SOURCE_REPOSITORY
                     : ConfigFile.Source.CURRENT_REPOSITORY;
         }
         return source;
@@ -155,13 +155,13 @@ public class CheckedConfigProvider {
     }
 
     private Map<String, String> getCredentials() {
-        if (gitHubAppRuntimeConfig.credentialsProvider.isEmpty()) {
+        if (gitHubAppRuntimeConfig.credentialsProvider().isEmpty()) {
             return Map.of();
         }
 
-        String beanName = gitHubAppRuntimeConfig.credentialsProviderName.orElse(null);
+        String beanName = gitHubAppRuntimeConfig.credentialsProviderName().orElse(null);
         CredentialsProvider credentialsProvider = getCredentialsProvider(beanName);
-        String keyRingName = gitHubAppRuntimeConfig.credentialsProvider.get();
+        String keyRingName = gitHubAppRuntimeConfig.credentialsProvider().get();
 
         return credentialsProvider.getCredentials(keyRingName);
     }

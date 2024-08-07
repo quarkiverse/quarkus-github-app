@@ -100,7 +100,8 @@ endif::add-copy-button-to-env-var[]
 ifndef::add-copy-button-to-env-var[]
 Environment variable: `+++QUARKUS_GITHUB_APP_WEBHOOK_URL_PATH+++`
 endif::add-copy-button-to-env-var[]
---|string 
+--|link:https://docs.oracle.com/javase/8/docs/api/java/lang/String.html[String]
+ 
 |`/`
 
 
@@ -195,7 +196,8 @@ endif::add-copy-button-to-env-var[]
 ifndef::add-copy-button-to-env-var[]
 Environment variable: `+++QUARKUS_GITHUB_APP_INSTANCE_ENDPOINT+++`
 endif::add-copy-button-to-env-var[]
---|string 
+--|link:https://docs.oracle.com/javase/8/docs/api/java/lang/String.html[String]
+ 
 |`https://api.github.com`
 
 
@@ -214,7 +216,8 @@ endif::add-copy-button-to-env-var[]
 ifndef::add-copy-button-to-env-var[]
 Environment variable: `+++QUARKUS_GITHUB_APP_REST_API_ENDPOINT+++`
 endif::add-copy-button-to-env-var[]
---|string 
+--|link:https://docs.oracle.com/javase/8/docs/api/java/lang/String.html[String]
+ 
 |`${quarkus.github-app.instance-endpoint}`
 
 
@@ -233,7 +236,8 @@ endif::add-copy-button-to-env-var[]
 ifndef::add-copy-button-to-env-var[]
 Environment variable: `+++QUARKUS_GITHUB_APP_GRAPHQL_API_ENDPOINT+++`
 endif::add-copy-button-to-env-var[]
---|string 
+--|link:https://docs.oracle.com/javase/8/docs/api/java/lang/String.html[String]
+ 
 |`${quarkus.github-app.instance-endpoint}/graphql`
 
 
