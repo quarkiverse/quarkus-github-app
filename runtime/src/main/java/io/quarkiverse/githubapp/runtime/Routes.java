@@ -168,16 +168,7 @@ public class Routes {
             }
         }
 
-        if (launchMode == LaunchMode.TEST || launchMode == LaunchMode.DEVELOPMENT) {
-            long defaultInstallationId = 1L;
-            LOG.infof(
-                    "Payload is lacking an installation ID; the payload was probably copy/pasted from GitHub's delivery history?"
-                            + " Defaulting to installation ID %s",
-                    defaultInstallationId);
-            return defaultInstallationId;
-        }
-
-        throw new IllegalStateException("Unable to extract installation id from payload");
+        return null;
     }
 
     private static String extractRepository(JsonObject body) {

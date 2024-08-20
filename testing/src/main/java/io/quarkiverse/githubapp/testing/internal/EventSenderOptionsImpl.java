@@ -29,7 +29,7 @@ final class EventSenderOptionsImpl implements EventSenderOptions {
 
     private UUID requestId;
     private UUID deliveryId;
-    private long installationId;
+    private Long installationId;
     private String payload;
     private String contentType;
 

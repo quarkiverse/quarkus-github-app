@@ -181,8 +181,8 @@ public final class GitHubMockContextImpl implements GitHubMockContext, GitHubMoc
                 .thenAnswer(invocation -> installationGraphQLClient(invocation.getArgument(0, Long.class)));
     }
 
-    void initEventStubs(long installationId) {
-        GitHub clientMock = installationClient(installationId);
+    void initEventStubs(Long installationId) {
+        GitHub clientMock = applicationOrInstallationClient(installationId);
         MockitoUtils.doWithMockedClassClassLoader(GitHub.class, () -> {
             try {
                 when(clientMock.parseEventPayload(any(), any())).thenAnswer(invocation -> {
