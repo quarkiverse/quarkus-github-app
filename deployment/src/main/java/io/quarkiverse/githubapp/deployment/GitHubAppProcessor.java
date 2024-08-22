@@ -58,6 +58,7 @@ import com.github.benmanes.caffeine.cache.CacheLoader;
 
 import io.quarkiverse.githubapp.ConfigFile;
 import io.quarkiverse.githubapp.GitHubEvent;
+import io.quarkiverse.githubapp.TokenGitHubClients;
 import io.quarkiverse.githubapp.deployment.DispatchingConfiguration.EventAnnotation;
 import io.quarkiverse.githubapp.deployment.DispatchingConfiguration.EventAnnotationLiteral;
 import io.quarkiverse.githubapp.deployment.DispatchingConfiguration.EventDispatchingConfiguration;
@@ -223,7 +224,8 @@ class GitHubAppProcessor {
                 DefaultErrorHandler.class,
                 GitHubFileDownloader.class,
                 GitHubConfigFileProviderImpl.class,
-                CheckedConfigProvider.class)
+                CheckedConfigProvider.class,
+                TokenGitHubClients.class)
                 .setUnremovable();
 
         for (ClassInfo errorHandler : index.getIndex().getAllKnownImplementors(GitHubAppDotNames.ERROR_HANDLER)) {
@@ -582,11 +584,20 @@ class GitHubAppProcessor {
         }
         BytecodeCreator installationIdNull = testInstallationId.falseBranch();
         installationIdNull.assign(gitHubRh, installationIdNull.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(GitHubService.class, "getApplicationClient", GitHub.class),
+                MethodDescriptor.ofMethod(GitHubService.class, "getTokenOrApplicationClient", GitHub.class),
                 installationIdNull.readInstanceField(
                         FieldDescriptor.of(dispatcherClassCreator.getClassName(), GITHUB_SERVICE_FIELD, GitHubService.class),
                         installationIdNull.getThis())));
-        installationIdNull.assign(gitHubGraphQLClientRh, installationIdNull.loadNull());
+        if (dispatchingConfiguration.requiresGraphQLClient()) {
+            installationIdNull.assign(gitHubGraphQLClientRh, installationIdNull.invokeVirtualMethod(
+                    MethodDescriptor.ofMethod(GitHubService.class, "getTokenGraphQLClientOrNull", DynamicGraphQLClient.class),
+                    installationIdNull.readInstanceField(
+                            FieldDescriptor.of(dispatcherClassCreator.getClassName(), GITHUB_SERVICE_FIELD,
+                                    GitHubService.class),
+                            installationIdNull.getThis())));
+        } else {
+            installationIdNull.assign(gitHubGraphQLClientRh, installationIdNull.loadNull());
+        }
 
         for (EventDispatchingConfiguration eventDispatchingConfiguration : dispatchingConfiguration.getEventConfigurations()
                 .values()) {

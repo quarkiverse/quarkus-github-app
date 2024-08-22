@@ -12,6 +12,7 @@ import io.quarkus.runtime.configuration.TrimmedStringConverter;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
+import io.smallrye.graphql.client.dynamic.api.DynamicGraphQLClient;
 
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
 @ConfigMapping(prefix = "quarkus.github-app")
@@ -116,6 +117,21 @@ public interface GitHubAppRuntimeConfig {
     @WithDefault("${quarkus.github-app.instance-endpoint}/graphql")
     @WithConverter(TrimmedStringConverter.class)
     String graphqlApiEndpoint();
+
+    /**
+     * A personal access token for use with {@code TokenGitHubClients} or when no installation id is provided in the payload.
+     * <p>
+     * For standard use cases, you will use the installation client which comes with the installation permissions. It can be
+     * injected directly in your method.
+     * <p>
+     * However, if your payload comes from a webhook and doesn't have an installation id, it's handy to be able to use a
+     * client authenticated with a personal access token as the application client permissions are very limited.
+     * <p>
+     * This token will be used to authenticate the clients provided by {@code TokenGitHubClients} and clients
+     * authenticated with this personal access token will be automatically provided when injecting {@code GitHub} or
+     * {@code DynamicGraphQLClient} in your method, when the payload doesn't provide an installation id.
+     */
+    Optional<String> personalAccessToken();
 
     /**
      * Debug configuration.

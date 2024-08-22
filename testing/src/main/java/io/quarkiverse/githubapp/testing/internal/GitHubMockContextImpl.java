@@ -93,6 +93,15 @@ public final class GitHubMockContextImpl implements GitHubMockContext, GitHubMoc
                 .mock();
     }
 
+    public GitHub tokenRestClient() {
+        // the token client should have all the features of an installation client
+        return installationClient(-1);
+    }
+
+    public DynamicGraphQLClient tokenGraphQLClient() {
+        return installationGraphQLClient(-1);
+    }
+
     @Override
     public GitHubMockConfigFileSetupContext configFile(String pathInRepository) {
         return configFile(null, pathInRepository);
@@ -179,6 +188,14 @@ public final class GitHubMockContextImpl implements GitHubMockContext, GitHubMoc
 
         when(service.getInstallationGraphQLClient(anyLong()))
                 .thenAnswer(invocation -> installationGraphQLClient(invocation.getArgument(0, Long.class)));
+
+        if (GitHubAppTestingCallback.hasPersonalAccessToken()) {
+            when(service.getTokenOrApplicationClient()).thenAnswer(invocation -> tokenRestClient());
+            when(service.getTokenGraphQLClientOrNull()).thenAnswer(invocation -> tokenGraphQLClient());
+        } else {
+            when(service.getTokenOrApplicationClient()).thenAnswer(invocation -> applicationClient());
+            when(service.getTokenGraphQLClientOrNull()).thenAnswer(invocation -> null);
+        }
     }
 
     void initEventStubs(Long installationId) {

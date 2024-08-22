@@ -8,10 +8,12 @@ import java.time.temporal.ChronoUnit;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
+import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
+import org.jboss.logging.Logger;
 import org.kohsuke.github.GHAppInstallationToken;
 import org.kohsuke.github.GitHub;
 import org.kohsuke.github.GitHubBuilder;
@@ -33,6 +35,8 @@ import io.smallrye.graphql.client.dynamic.api.DynamicGraphQLClientBuilder;
 @ApplicationScoped
 public class GitHubService implements GitHubClientProvider {
 
+    private static final Logger LOG = Logger.getLogger(GitHubService.class);
+
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String AUTHORIZATION_HEADER_BEARER = "Bearer %s";
     private static final GitHubCustomizer NOOP_GITHUB_CUSTOMIZER = new GitHubCustomizer() {
@@ -49,6 +53,9 @@ public class GitHubService implements GitHubClientProvider {
     private final JwtTokenCreator jwtTokenCreator;
     private final GitHubConnector gitHubConnector;
     private final GitHubCustomizer githubCustomizer;
+
+    private final GitHub tokenRestClient;
+    private final DynamicGraphQLClient tokenGraphQLClient;
 
     @Inject
     public GitHubService(
@@ -88,6 +95,30 @@ public class GitHubService implements GitHubClientProvider {
                 HttpClient.newBuilder().version(Version.HTTP_1_1).followRedirects(HttpClient.Redirect.NEVER).build());
         // if the customizer is not resolvable, we use a no-op customizer
         githubCustomizer = gitHubCustomizer.isResolvable() ? gitHubCustomizer.get() : NOOP_GITHUB_CUSTOMIZER;
+
+        // Token-based clients if a personal token is defined
+        if (checkedConfigProvider.personalAccessToken().isPresent()) {
+            GitHub restClient = null;
+            try {
+                GitHubBuilder restClientBuilder = new GitHubBuilder()
+                        .withConnector(gitHubConnector);
+                githubCustomizer.customize(restClientBuilder);
+                restClientBuilder.withEndpoint(checkedConfigProvider.restApiEndpoint())
+                        .withOAuthToken(checkedConfigProvider.personalAccessToken().get());
+                restClient = restClientBuilder.build();
+            } catch (IOException e) {
+                LOG.error("Unable to create a REST GitHub client with provided personal access token", e);
+            }
+            this.tokenRestClient = restClient;
+            this.tokenGraphQLClient = DynamicGraphQLClientBuilder.newBuilder()
+                    .url(checkedConfigProvider.graphqlApiEndpoint())
+                    .header(AUTHORIZATION_HEADER,
+                            String.format(AUTHORIZATION_HEADER_BEARER, checkedConfigProvider.personalAccessToken().get()))
+                    .build();
+        } else {
+            this.tokenRestClient = null;
+            this.tokenGraphQLClient = null;
+        }
     }
 
     @Override
@@ -199,6 +230,53 @@ public class GitHubService implements GitHubClientProvider {
     @Override
     public GitHub getApplicationClient() {
         return createApplicationGitHub();
+    }
+
+    public GitHub getTokenRestClient() {
+        if (tokenRestClient == null) {
+            throw new IllegalStateException(
+                    "No personal access token was provided or we were unable to create the GitHub REST client."
+                            + " You can either use the injectable GitHub client or fix the issue if you absolutely need a client authenticated with a personal access token.");
+        }
+
+        return tokenRestClient;
+    }
+
+    public DynamicGraphQLClient getTokenGraphQLClient() {
+        if (tokenGraphQLClient == null) {
+            throw new IllegalStateException(
+                    "No personal access token was provided."
+                            + " You can either use the injectable GraphQL client (if available) or fix the issue if you absolutely need a client authenticated with a personal access token.");
+        }
+
+        return tokenGraphQLClient;
+    }
+
+    public GitHub getTokenOrApplicationClient() {
+        if (tokenRestClient != null) {
+            return tokenRestClient;
+        }
+
+        return getApplicationClient();
+    }
+
+    public DynamicGraphQLClient getTokenGraphQLClientOrNull() {
+        if (tokenGraphQLClient != null) {
+            return tokenGraphQLClient;
+        }
+
+        return null;
+    }
+
+    @PreDestroy
+    void destroy() {
+        if (tokenGraphQLClient != null) {
+            try {
+                tokenGraphQLClient.close();
+            } catch (Exception e) {
+                LOG.warn("Unable to close the GraphQL client", e);
+            }
+        }
     }
 
     private GitHub createApplicationGitHub() {

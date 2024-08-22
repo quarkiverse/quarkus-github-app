@@ -119,6 +119,10 @@ public class CheckedConfigProvider {
         return gitHubAppRuntimeConfig.graphqlApiEndpoint();
     }
 
+    public Optional<String> personalAccessToken() {
+        return gitHubAppRuntimeConfig.personalAccessToken();
+    }
+
     public Debug debug() {
         return gitHubAppRuntimeConfig.debug();
     }
