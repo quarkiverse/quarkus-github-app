@@ -110,11 +110,11 @@ public class SmeeIoForwarder {
 
             try {
                 JsonNode rootNode = objectMapper.readTree(data);
-                JsonNode body = rootNode.get("body");
+                JsonNode rawData = rootNode.get("rawdata");
 
-                if (body != null) {
+                if (rawData != null) {
                     HttpRequest.Builder requestBuilder = HttpRequest.newBuilder(localUrl)
-                            .POST(BodyPublishers.ofString(objectMapper.writeValueAsString(rootNode.get("body"))));
+                            .POST(BodyPublishers.ofString(objectMapper.writeValueAsString(rootNode.get("rawdata"))));
 
                     for (String forwardedHeader : FORWARDED_HEADERS) {
                         JsonNode headerValue = rootNode.get(forwardedHeader.toLowerCase(Locale.ROOT));
