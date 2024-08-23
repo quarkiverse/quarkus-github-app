@@ -29,7 +29,7 @@ final class EventSenderOptionsImpl implements EventSenderOptions {
 
     private UUID requestId;
     private UUID deliveryId;
-    private long installationId;
+    private Long installationId;
     private String payload;
     private String contentType;
 
@@ -86,12 +86,22 @@ final class EventSenderOptionsImpl implements EventSenderOptions {
 
     @Override
     public EventHandlingResponseImpl event(GHEvent event, boolean ignoreExceptions) {
+        return rawEvent(symbol(event), ignoreExceptions);
+    }
+
+    @Override
+    public EventHandlingResponseImpl rawEvent(String event) {
+        return rawEvent(event, false);
+    }
+
+    @Override
+    public EventHandlingResponseImpl rawEvent(String event, boolean ignoreExceptions) {
         HttpRequest request = HttpRequest.newBuilder(buildUrl())
                 .POST(BodyPublishers.ofString(payload))
                 .header(Headers.CONTENT_TYPE, contentType)
                 .header(Headers.X_REQUEST_ID, (requestId == null ? UUID.randomUUID() : requestId).toString())
                 .header(Headers.X_GITHUB_DELIVERY, (deliveryId == null ? UUID.randomUUID() : deliveryId).toString())
-                .header(Headers.X_GITHUB_EVENT, symbol(event))
+                .header(Headers.X_GITHUB_EVENT, event)
                 .build();
 
         // Only stub these methods when we know they are going to get called;

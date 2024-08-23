@@ -241,6 +241,29 @@ endif::add-copy-button-to-env-var[]
 |`${quarkus.github-app.instance-endpoint}/graphql`
 
 
+a| [[quarkus-github-app_quarkus-github-app-personal-access-token]]`link:#quarkus-github-app_quarkus-github-app-personal-access-token[quarkus.github-app.personal-access-token]`
+
+
+[.description]
+--
+A personal access token for use with `TokenGitHubClients`.
+
+For standard use cases, you will use the installation client which comes with the installation permissions. It can be injected directly in your method.
+
+However, if your payload comes from a webhook and doesn't have an installation id, it's handy to be able to use a client authenticated with a personal access token as the application client permissions are very limited.
+
+This token will be used to authenticate the clients provided by `TokenGitHubClients`.
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_GITHUB_APP_PERSONAL_ACCESS_TOKEN+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_GITHUB_APP_PERSONAL_ACCESS_TOKEN+++`
+endif::add-copy-button-to-env-var[]
+--|string 
+|
+
+
 a| [[quarkus-github-app_quarkus-github-app-debug-payload-directory]]`link:#quarkus-github-app_quarkus-github-app-debug-payload-directory[quarkus.github-app.debug.payload-directory]`
 
 

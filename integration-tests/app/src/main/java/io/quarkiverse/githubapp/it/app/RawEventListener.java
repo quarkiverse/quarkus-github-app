@@ -6,11 +6,12 @@ import org.kohsuke.github.GitHub;
 
 import io.quarkiverse.githubapp.GitHubEvent;
 import io.quarkiverse.githubapp.event.RawEvent;
+import io.smallrye.graphql.client.dynamic.api.DynamicGraphQLClient;
 
 public class RawEventListener {
 
-    void testRawEventListenedTo(@RawEvent(event = "issues", action = "opened") GitHubEvent gitHubEvent, GitHub gitHub)
-            throws IOException {
+    void testRawEventListenedTo(@RawEvent(event = "issues", action = "opened") GitHubEvent gitHubEvent, GitHub gitHub,
+            DynamicGraphQLClient graphQLClient) throws IOException {
         assert gitHubEvent.getEvent().equals("issues");
         assert gitHubEvent.getAction().equals("opened");
 
@@ -35,8 +36,8 @@ public class RawEventListener {
     }
 
     void testRawEventCatchAllEventAction(@RawEvent GitHubEvent gitHubEvent, GitHub gitHub) throws IOException {
-        assert gitHubEvent.getEvent().equals("issues");
-        assert gitHubEvent.getAction().equals("opened");
+        assert gitHubEvent.getEvent() != null;
+        assert gitHubEvent.getAction() != null;
 
         gitHub.getRepository("test/test").getIssue(1).addLabels("testRawEventCatchAllEventAction");
     }

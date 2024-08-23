@@ -24,6 +24,11 @@ public final class GitHubAppTestingCallback
                 .orElse(false);
     }
 
+    static boolean hasPersonalAccessToken() {
+        return ConfigProviderResolver.instance().getConfig()
+                .getOptionalValue("quarkus.github-app.personal-access-token", String.class).isPresent();
+    }
+
     @Override
     public void afterConstruct(Object testInstance) {
         if (!isEnabled()) {

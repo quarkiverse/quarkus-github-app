@@ -343,11 +343,41 @@ The injected `DynamicGraphQLClient` instance is authenticated as an installation
 `DynamicGraphQLClient` is a dynamic SmallRye GraphQL client.
 You can find more information about the SmallRye GraphQL client https://quarkus.io/guides/smallrye-graphql-client[here] and https://github.com/smallrye/smallrye-graphql[here].
 
-== Configuration Reference
+== Webhook events
 
-The Quarkus GitHub App extension exposes the following configuration properties:
+While Quarkus GitHub App was primarily designed as a tool to develop GitHub Apps,
+it is also possible to use it to handle your webhook requests.
 
-include::includes/quarkus-github-app.adoc[]
+It will take care of all the ceremony of authenticating the requests and will save you a lot of boilerplate.
+
+There are a few differences though:
+
+- You will have to use `@RawEvent` to listen to the events and get the raw JSON of the payload.
+- Webhook requests don't provide an installation id so we can't initialize an installation GitHub client nor a GraphQL client.
+
+The default `GitHub` REST client instance that can be injected is an application client and has so few permissions that it is not really useful.
+
+While it could be a major inconvenience, we present a nice feature dedicated to this use case in the following section.
+
+== Providing a personal access token
+
+When using Quarkus GitHub App, in most cases, the REST and GraphQL clients provided by the installation are what you are looking for:
+they have the permissions allowed for this GitHub App and it should be enough to do what your GitHub App has been designed for.
+
+However, there are corner cases where you might need a client with additional permissions,
+the most common one is when you deal with webhooks as presented in the previous section.
+
+For this situation, you can define a personal access token by using the `quarkus.github-app.personal-access-token` configuration property.
+The personal access token provided in this property will be used to initialize:
+
+- an authenticated `GitHub` REST client
+- an authenticated `DynamicGraphQL` GraphQL client
+
+These clients will be automatically injected in your methods when injecting clients *if the payload doesn't provide an installation id*
+(if it does provide one, the regular installation clients will be injected).
+
+It is also possible to directly obtain the clients authenticated with the personal access token by injecting the `TokenGitHubClients` CDI bean.
+It provides methods to get the authenticated REST and GraphQL clients.
 
 == Credentials provider
 
@@ -388,6 +418,12 @@ public class MyGitHubCustomizer implements GitHubCustomizer {
     }
 }
 ----
+
+== Configuration Reference
+
+The Quarkus GitHub App extension exposes the following configuration properties:
+
+include::includes/quarkus-github-app.adoc[]
 
 == Architecture Overview
 

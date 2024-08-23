@@ -21,4 +21,8 @@ public interface EventSenderOptions {
     EventHandlingResponse event(GHEvent event);
 
     EventHandlingResponse event(GHEvent event, boolean ignoreExceptions);
+
+    EventHandlingResponse rawEvent(String event);
+
+    EventHandlingResponse rawEvent(String event, boolean ignoreExceptions);
 }
