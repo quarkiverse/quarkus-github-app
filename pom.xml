@@ -44,8 +44,6 @@
         <module>runtime</module>
         <module>command-airline</module>
         <module>testing</module>
-        <module>integration-tests</module>
-        <module>docs</module>
     </modules>
 
     <dependencyManagement>
@@ -166,5 +164,30 @@
         <system>GitHub</system>
         <url>https://github.com/quarkiverse/quarkus-github-app/issues/</url>
     </issueManagement>
+    <profiles>
+        <profile>
+            <id>docs</id>
+            <activation>
+                <property>
+                    <name>performRelease</name>
+                    <value>!true</value>
+                </property>
+            </activation>
+            <modules>
+                <module>docs</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>it</id>
+            <activation>
+                <property>
+                    <name>performRelease</name>
+                    <value>!true</value>
+                </property>
+            </activation>
+            <modules>
+                <module>integration-tests</module>
+            </modules>
+        </profile>
+    </profiles>
 </project>
-
