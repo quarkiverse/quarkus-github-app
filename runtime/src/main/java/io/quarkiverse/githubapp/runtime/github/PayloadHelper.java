@@ -1,6 +1,5 @@
 package io.quarkiverse.githubapp.runtime.github;
 
-import java.io.IOException;
 import java.util.Optional;
 
 import org.kohsuke.github.GHEventPayload;
@@ -80,12 +79,7 @@ public final class PayloadHelper {
             return Optional.of(((GHEventPayload.WorkflowDispatch) eventPayload).getRepository().getHtmlUrl().toString());
         }
         if (eventPayload instanceof GHEventPayload.WorkflowRun) {
-            // unfortunately, getHtmlUrl() for workflow runs can throw an exception
-            try {
-                return Optional.of(((GHEventPayload.WorkflowRun) eventPayload).getWorkflowRun().getHtmlUrl().toString());
-            } catch (IOException e) {
-                return Optional.of(((GHEventPayload.WorkflowRun) eventPayload).getRepository().getHtmlUrl().toString());
-            }
+            return Optional.of(((GHEventPayload.WorkflowRun) eventPayload).getWorkflowRun().getHtmlUrl().toString());
         }
         if (eventPayload instanceof GHEventPayload.WorkflowJob) {
             return Optional.of(((GHEventPayload.WorkflowJob) eventPayload).getWorkflowJob().getHtmlUrl().toString());
