@@ -81,7 +81,7 @@ QUARKUS_GITHUB_APP_PRIVATE_KEY=-----BEGIN RSA PRIVATE KEY-----\
 QUARKUS_GITHUB_APP_APP_ID:: The numeric app id appearing in the `App ID` field.
 QUARKUS_GITHUB_APP_APP_NAME:: The name of your app is the one appearing in the GitHub URL.
 It is only used to improve usability in dev mode.
-QUARKUS_GITHUB_APP_WEBHOOK_PROXY_URL:: The URL you obtained when you created your Smee.io channel.
+QUARKUS_GITHUB_APP_WEBHOOK_PROXY_URL:: The URL you obtained when you created your Smee.io channel. If you are using services like https://ngrok.com/[ngrok], you don't need to set it.
 QUARKUS_GITHUB_APP_WEBHOOK_SECRET:: The webhook secret you created at the previous step.
 QUARKUS_GITHUB_APP_PRIVATE_KEY:: The content of the private key you generated and downloaded.
 Open the key file with a text editor as key viewers usually only show fingerprints.
@@ -115,7 +115,7 @@ Check the instructions above carefully.
 
 == Time to code
 
-From now on, you are done with the setup and you can code your GitHub App.
+That's it! You are done with the setup and you can code your GitHub App.
 Sky is the limit.
 
 For instance, you can create the following class:
@@ -130,7 +130,7 @@ class CreateComment {
 }
 ----
 
-From now on, every time you create an issue in your GitHub project, a comment will be added by your GitHub App.
+Every time you create an issue in your GitHub project, a comment will be posted by your GitHub App.
 
 In details:
 
@@ -143,7 +143,7 @@ In details:
 
 You are done developing your first Quarkus GitHub App.
 
-Obviously the one we developed is not very useful, but it is a good start and using this framework:
+Obviously the one we developed is not very useful, but it is a good start and by using this framework:
 
 * You can listen to all the events currently supported by the https://github.com/hub4j/github-api[Hub4j GitHub API].
 * You have the full power of Quarkus with live coding, easy configuration, dependency injection, native executables and more.
