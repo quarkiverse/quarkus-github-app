@@ -13,3 +13,8 @@ metadata:
   status: "stable"
   config:
     - "quarkus.github-app."
+  codestart:
+    name: "quarkiverse-github-app"
+    languages:
+      - "java"
+    artifact: "io.quarkiverse.githubapp:quarkus-github-app:codestarts:jar:${project.version}"

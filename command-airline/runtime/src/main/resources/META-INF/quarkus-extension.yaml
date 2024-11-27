@@ -15,3 +15,8 @@ metadata:
   status: "stable"
   config:
     - "quarkus.github-app."
+  codestart:
+    name: "quarkiverse-github-app-command-airline"
+    languages:
+      - "java"
+    artifact: "io.quarkiverse.githubapp:quarkus-github-app-command-airline:codestarts:jar:${project.version}"

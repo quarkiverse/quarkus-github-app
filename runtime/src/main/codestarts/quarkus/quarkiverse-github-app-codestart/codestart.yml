@@ -1,0 +1,11 @@
+name: quarkiverse-github-app-codestart
+ref: quarkiverse-github-app
+metadata:
+  title: GitHub App
+  description: Start coding a GitHub App.
+  related-guide-section: https://quarkiverse.github.io/quarkiverse-docs/quarkus-github-app/dev/index.html
+language:
+  base:
+    shared-data:
+      readme:
+        include-default-content: false
