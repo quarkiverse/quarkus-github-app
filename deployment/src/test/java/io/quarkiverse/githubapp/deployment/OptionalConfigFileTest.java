@@ -1,6 +1,7 @@
 package io.quarkiverse.githubapp.deployment;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -30,6 +31,7 @@ public class OptionalConfigFileTest {
         RestAssured
                 .given()
                 .header(Headers.X_GITHUB_EVENT, "label")
+                .header(Headers.X_GITHUB_DELIVERY, UUID.randomUUID())
                 .contentType("application/json")
                 .body(Thread.currentThread().getContextClassLoader().getResourceAsStream(PAYLOAD))
                 .when().post("/")
