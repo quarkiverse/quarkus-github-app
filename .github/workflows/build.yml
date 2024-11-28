@@ -60,5 +60,5 @@ jobs:
         key: maven-repo-pr-${{ runner.os }}-${{ steps.get-date.outputs.date }}
 
     - name: Build with Maven
-      run: mvn -B formatter:validate verify --file pom.xml
+      run: mvn -B formatter:validate install
 
