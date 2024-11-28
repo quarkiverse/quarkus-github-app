@@ -1,0 +1,11 @@
+name: quarkiverse-github-app-command-airline-codestart
+ref: quarkiverse-github-app-command-airline
+metadata:
+  title: GitHub App Command Airline
+  description: Start coding comment-based commands.
+  related-guide-section: https://docs.quarkiverse.io/quarkus-github-app/dev/commands.html
+language:
+  base:
+    shared-data:
+      readme:
+        include-default-content: false

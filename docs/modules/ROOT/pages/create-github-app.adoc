@@ -14,12 +14,10 @@ WARNING: Make sure you use the `📋` button to copy the command.
 ----
 quarkus create app \
     -x quarkus-github-app \ <1>
-    org.acme:my-github-app \ <2>
-    --no-code <3>
+    org.acme:my-github-app <2>
 ----
 <1> The Quarkus GitHub App extension.
 <2> The GA of your Maven project.
-<3> Do not include unrelated generated code in the project.
 
 [TIP]
 ====
@@ -40,13 +38,11 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DplatformVersion={quarkus-version} \
     -DprojectGroupId=org.acme \ <1>
     -DprojectArtifactId=my-github-app \ <2>
-    -Dextensions="io.quarkiverse.githubapp:quarkus-github-app:{quarkus-github-app-version}" \ <3>
-    -DnoCode <4>
+    -Dextensions="io.quarkiverse.githubapp:quarkus-github-app:{quarkus-github-app-version}" <3>
 ----
 <1> The groupId of your Maven project.
 <2> The artifactId of your Maven project.
 <3> The Quarkus GitHub App extension.
-<4> Do not include unrelated generated code in the project.
 
 [TIP]
 ====
@@ -118,15 +114,23 @@ Check the instructions above carefully.
 That's it! You are done with the setup and you can code your GitHub App.
 Sky is the limit.
 
-For instance, you can create the following class:
+Your newly created GitHub App comes with a small example:
 
 [source, java]
 ----
-class CreateComment {
+package org.acme;
 
-	void onOpen(@Issue.Opened GHEventPayload.Issue issuePayload) throws IOException {
-		issuePayload.getIssue().comment("Hello from my GitHub App");
-	}
+import java.io.IOException;
+
+import org.kohsuke.github.GHEventPayload;
+
+import io.quarkiverse.githubapp.event.Issue;
+
+class MyGitHubApp {
+
+    void onOpen(@Issue.Opened GHEventPayload.Issue issuePayload) throws IOException {
+        issuePayload.getIssue().comment(":wave: Hello from my GitHub App");
+    }
 }
 ----
 
@@ -143,7 +147,7 @@ In details:
 
 You are done developing your first Quarkus GitHub App.
 
-Obviously the one we developed is not very useful, but it is a good start and by using this framework:
+Obviously, the code from `MyGitHubApp` is not very useful in real life, but it is a good start and by using this framework:
 
 * You can listen to all the events currently supported by the https://github.com/hub4j/github-api[Hub4j GitHub API].
 * You have the full power of Quarkus with live coding, easy configuration, dependency injection, native executables and more.

@@ -31,6 +31,12 @@ First things first, add the `quarkus-github-app-command-airline` dependency to y
 </dependency>
 ----
 
+[NOTE]
+====
+If you requested the dependency when you generated the Quarkus project,
+Quarkus will generate a small example for you: `MyGitHubBot`.
+====
+
 == Your first command
 
 Let's say we want to implement a command to re-run a CI workflow.
