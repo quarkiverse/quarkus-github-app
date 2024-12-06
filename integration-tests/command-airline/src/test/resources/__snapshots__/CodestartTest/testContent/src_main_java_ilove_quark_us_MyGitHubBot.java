@@ -1,6 +1,7 @@
 package ilove.quark.us;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.kohsuke.github.GHEventPayload;
@@ -24,12 +25,12 @@ public class MyGitHubBot {
     static class SayHello implements Commands {
 
         @Arguments
-        List<String> arguments;
+        List<String> arguments = new ArrayList<>();
 
         @Override
         public void run(GHEventPayload.IssueComment issueCommentPayload) throws IOException {
             issueCommentPayload.getIssue()
-                    .comment(":wave: Hello " + (arguments != null ? String.join(" ", arguments) : "from Bot"));
+                    .comment(":wave: Hello " + String.join(" ", arguments));
         }
     }
 
