@@ -51,7 +51,7 @@ public class DefaultErrorHandler implements ErrorHandler {
             Optional<String> context = PayloadHelper.getContext(payload);
             if (context.isPresent()) {
                 errorMessage.append("› Context:    {").append(errorMessageParameters.size()).append("}\n");
-                errorMessageParameters.add(PayloadHelper.getContext(payload).get());
+                errorMessageParameters.add(context.get());
             }
         }
 
