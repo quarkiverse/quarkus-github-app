@@ -292,7 +292,7 @@ public class GitHubService implements GitHubClientProvider {
             final GitHubBuilder gitHubBuilder = new GitHubBuilder()
                     .withConnector(gitHubConnector);
             // apply customizations
-            githubCustomizer.customize(gitHubBuilder);
+            githubCustomizer.customizeApplicationClient(gitHubBuilder);
             // configure mandatory defaults
             gitHubBuilder
                     .withJwtToken(jwtToken)
