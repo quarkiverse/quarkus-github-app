@@ -419,6 +419,39 @@ public class MyGitHubCustomizer implements GitHubCustomizer {
 }
 ----
 
+This will apply the customizations to both the application clients and the installation clients.
+
+However, some customizations can't be applied to the application clients such as configuring a rate limit checker.
+You may customize the application clients differently by implementing `customizeApplicationClient(GitHubBuilder)`:
+
+[source,java]
+----
+@Singleton
+public class MyGitHubCustomizer implements GitHubCustomizer {
+
+    @Override
+    public void customize(GitHubBuilder builder) { <1>
+       // call methods of the builder
+    }
+
+    @Override
+    public void customizeApplicationClient(GitHubBuilder builder) { <2>
+       // call methods of the builder
+    }
+}
+----
+<1> Customize the installation clients.
+<2> Customize the application clients.
+
+[NOTE]
+.About application and installation clients
+====
+A GitHub App relies on two types of GitHub clients:
+
+- The application client: it is authenticated as the application, it has very few permissions and is mostly used to create installation-specific tokens.
+- The installation client: it is created specifically for an installation of the application (i.e. it is tied where the application is installed) and it is the client you consume in your GitHub App code. It has the permissions you defined for your GitHub App.
+====
+
 == Configuration Reference
 
 The Quarkus GitHub App extension exposes the following configuration properties:
