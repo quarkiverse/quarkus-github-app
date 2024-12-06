@@ -1,5 +1,7 @@
 package io.quarkiverse.githubapp.runtime.error;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -30,37 +32,45 @@ public class DefaultErrorHandler implements ErrorHandler {
     @Override
     public void handleError(GitHubEvent gitHubEvent, GHEventPayload payload, Throwable t) {
         StringBuilder errorMessage = new StringBuilder();
-        errorMessage.append("Error handling delivery " + gitHubEvent.getDeliveryId() + "\n");
+        List<String> errorMessageParameters = new ArrayList<>();
+
+        errorMessage.append("Error handling delivery {").append(errorMessageParameters.size()).append("}\n");
+        errorMessageParameters.add(gitHubEvent.getDeliveryId());
         if (t instanceof ServiceDownException || t instanceof GitHubServiceDownException) {
             errorMessage
                     .append("››› GitHub APIs are not available at the moment. Have a look at https://www.githubstatus.com.\n");
         }
         if (gitHubEvent.getRepository().isPresent()) {
-            errorMessage.append("› Repository: " + gitHubEvent.getRepository().get() + "\n");
+            errorMessage.append("› Repository: {").append(errorMessageParameters.size()).append("}\n");
+            errorMessageParameters.add(gitHubEvent.getRepository().get());
         }
-        errorMessage.append("› Event:      " + gitHubEvent.getEventAction() + "\n");
+        errorMessage.append("› Event:      {").append(errorMessageParameters.size()).append("}\n");
+        errorMessageParameters.add(gitHubEvent.getEventAction());
 
         if (payload != null) {
             Optional<String> context = PayloadHelper.getContext(payload);
             if (context.isPresent()) {
-                errorMessage.append("› Context:    " + PayloadHelper.getContext(payload).get() + "\n");
+                errorMessage.append("› Context:    {").append(errorMessageParameters.size()).append("}\n");
+                errorMessageParameters.add(PayloadHelper.getContext(payload).get());
             }
         }
 
         if (gitHubEvent.getAppName().isPresent()) {
-            errorMessage.append("› Redeliver:  " + String.format(REDELIVERY_URL, gitHubEvent.getAppName().get()) + "\n");
+            errorMessage.append("› Redeliver:  {").append(errorMessageParameters.size()).append("}\n");
+            errorMessageParameters.add(String.format(REDELIVERY_URL, gitHubEvent.getAppName().get()));
         }
 
         if (launchMode.isDevOrTest()) {
             errorMessage.append("› Payload:\n")
                     .append("----\n")
-                    .append(gitHubEvent.getParsedPayload().encodePrettily()).append("\n")
+                    .append("{").append(errorMessageParameters.size()).append("}\n")
                     .append("----\n");
+            errorMessageParameters.add(gitHubEvent.getParsedPayload().encodePrettily());
         }
 
         errorMessage.append("Exception");
 
-        LOG.error(errorMessage.toString(), t);
+        LOG.errorv(t, errorMessage.toString(), errorMessageParameters.toArray());
     }
 
 }
