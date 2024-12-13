@@ -151,6 +151,10 @@ Here are all the events currently supported, together with the type of the paylo
 |`@PullRequestReviewComment.Created`, `@PullRequestReviewComment.Deleted`, `@PullRequestReviewComment.Edited`
 |link:{github-api-javadoc-root-url}/GHEventPayload.PullRequestReviewComment.html[`GHEventPayload.PullRequestReviewComment`]
 
+|link:https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#pull_request_target[`pull_request_target`] (only for actions)
+|`@PullRequestTarget.Assigned`, `@PullRequestTarget.Closed`, `@PullRequestTarget.Edited`, `@PullRequestTarget.Labeled`, `@PullRequestTarget.Locked`, `@PullRequestTarget.Opened`, `@PullRequestTarget.ReadyForReview`, `@PullRequestTarget.Reopened`, `@PullRequestTarget.ReviewRequested`, `@PullRequestTarget.ReviewRequestRemoved`, `@PullRequestTarget.Synchronize`, `@PullRequestTarget.Unassigned`, `@PullRequestTarget.Unlabeled`, `@PullRequestTarget.Unlocked`
+|link:{github-api-javadoc-root-url}/GHEventPayload.PullRequest.html[`GHEventPayload.PullRequest`]
+
 |link:{webhook-documentation-url}#push[`push`]
 |`@Push`
 |link:{github-api-javadoc-root-url}/GHEventPayload.Push.html[`GHEventPayload.Push`]
