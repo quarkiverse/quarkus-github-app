@@ -92,21 +92,39 @@ public class Routes {
             String hubSignature,
             String deliveryId,
             String event,
-            String replayed) {
+            String replayedHeader) {
 
-        if (!launchMode.isDevOrTest() && (isBlank(deliveryId) || isBlank(hubSignature))) {
+        boolean replayed = "true".equals(replayedHeader) && LaunchMode.current().isDevOrTest();
+        boolean checkSignatures = !replayed && LaunchMode.current() != LaunchMode.TEST;
+
+        if (isBlank(deliveryId)) {
             routingExchange.response().setStatusCode(400).end();
+            LOG.debug("Request received without delivery id. It has been ignored.");
+            return;
+        }
+
+        if (checkSignatures && isBlank(hubSignature)) {
+            routingExchange.response().setStatusCode(400).end();
+
+            if (LaunchMode.current() == LaunchMode.DEVELOPMENT) {
+                LOG.warn(
+                        "Request received without signature. This is only permitted for replayed events. It has been ignored.");
+            }
+
             return;
         }
 
         if (routingContext.body().buffer() == null) {
             routingExchange.ok().end();
+            LOG.debug("Request received without a body. It has been ignored.");
             return;
         }
 
         byte[] bodyBytes = routingContext.body().buffer().getBytes();
 
-        if (checkedConfigProvider.webhookSecret().isPresent() && !launchMode.isDevOrTest()) {
+        if (checkSignatures && checkedConfigProvider.webhookSecret().isPresent()) {
+            System.out.println("Signature checked!");
+
             if (!payloadSignatureChecker.matches(bodyBytes, hubSignature)) {
                 StringBuilder signatureError = new StringBuilder("Invalid signature for delivery: ").append(deliveryId)
                         .append("\n");
@@ -120,6 +138,7 @@ public class Routes {
 
         if (bodyBytes.length == 0) {
             routingExchange.ok().end();
+            LOG.debug("Request received without a body. It has been ignored.");
             return;
         }
 
@@ -128,7 +147,7 @@ public class Routes {
 
         String action = payloadObject.getString("action");
 
-        if (!isBlank(deliveryId) && checkedConfigProvider.debug().payloadDirectory().isPresent()) {
+        if (checkedConfigProvider.debug().payloadDirectory().isPresent()) {
             String fileName = DATE_TIME_FORMATTER.format(LocalDateTime.now()) + "-" + event + "-"
                     + (!isBlank(action) ? action + "-" : "") + deliveryId + ".json";
             Path path = checkedConfigProvider.debug().payloadDirectory().get().resolve(fileName);
@@ -142,7 +161,7 @@ public class Routes {
         Long installationId = extractInstallationId(payloadObject);
         String repository = extractRepository(payloadObject);
         GitHubEvent gitHubEvent = new GitHubEvent(installationId, checkedConfigProvider.appName().orElse(null), deliveryId,
-                repository, event, action, payload, payloadObject, "true".equals(replayed) ? true : false);
+                repository, event, action, payload, payloadObject, replayed);
 
         if (launchMode == LaunchMode.DEVELOPMENT && replayRouteInstance.isResolvable()) {
             replayRouteInstance.get().pushEvent(gitHubEvent);
