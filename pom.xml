@@ -29,7 +29,7 @@
         <jandex-plugin.version>3.2.5</jandex-plugin.version>
         <assertj.version>3.27.3</assertj.version>
 
-        <quarkus-github-api.version>1.322.0</quarkus-github-api.version>
+        <quarkus-github-api.version>1.326.0</quarkus-github-api.version>
         <airline.version>3.0.0</airline.version>
 
         <webjar.fomantic-ui.version>2.9.0</webjar.fomantic-ui.version>
