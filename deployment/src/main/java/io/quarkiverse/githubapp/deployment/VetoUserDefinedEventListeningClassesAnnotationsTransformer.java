@@ -29,14 +29,25 @@ class VetoUserDefinedEventListeningClassesAnnotationsTransformer implements Anno
             return;
         }
 
+        if (isEventListeningClass(annotations)) {
+            transformationContext.transform().add(DotNames.VETOED).done();
+        }
+    }
+
+    public boolean isEventListeningClass(Set<DotName> annotations) {
+        if (annotations.contains(GitHubAppDotNames.RAW_EVENT)) {
+            return true;
+        }
+
         for (DotName eventDefiningAnnotation : eventDefinitionAnnotations) {
             if (!annotations.contains(eventDefiningAnnotation)) {
                 continue;
             }
 
-            transformationContext.transform().add(DotNames.VETOED).done();
-            return;
+            return true;
         }
+
+        return false;
     }
 
 }
