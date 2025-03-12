@@ -9,6 +9,14 @@ import java.lang.annotation.Target;
 
 import jakarta.inject.Qualifier;
 
+/**
+ * Allows listening to any event and obtain a raw {@code GitHubEvent}.
+ * <p>
+ * Especially useful when we don't have a dedicated annotation for a given event.
+ * <p>
+ * For instance:
+ * {@code @RawEvent(event = "pull_request", action = "opened") GitHubEvent gitHubEvent}
+ */
 @Target({ PARAMETER, TYPE })
 @Retention(RUNTIME)
 @Qualifier

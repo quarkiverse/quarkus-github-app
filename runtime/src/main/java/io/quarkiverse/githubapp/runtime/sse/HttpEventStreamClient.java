@@ -591,9 +591,9 @@ public class HttpEventStreamClient {
 
     /**
      * Starts listening for SSE events and immediately returns.
-     * If client looses connection then automatically reconnects.
+     * If client loses connection then automatically reconnects.
      * Multiple calls will not start multiple listening
-     * but calls {@link EventStreamListener#onReconnect()} on listeners
+     * but calls {@link EventStreamListener#onReconnect(HttpEventStreamClient, HttpResponse, boolean, long)} on listeners
      *
      * @return This client instance
      */
@@ -831,7 +831,7 @@ public class HttpEventStreamClient {
 
     /**
      * Stops without reconnecting.
-     * Executes {@link EventStreamListener#onClose()} on listeners
+     * Executes {@link EventStreamListener#onClose(HttpEventStreamClient, HttpResponse)} on listeners
      *
      * @return This client instance
      */
