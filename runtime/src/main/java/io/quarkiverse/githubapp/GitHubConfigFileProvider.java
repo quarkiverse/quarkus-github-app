@@ -35,7 +35,6 @@ public interface GitHubConfigFileProvider {
      * @param source Which repository to extract the file from in the case of forked repositories.
      * @param type The type to deserialize the file to.
      * @return The configuration file wrapped in an {@link java.util.Optional}, or {@link Optional#empty()} if it is missing.
-     * @throws java.io.IOException If the configuration file cannot be retrieved.
      * @throws IllegalStateException If the configuration file cannot be deserialized to the given type.
      * @see ConfigFile
      * @see ConfigFile.Source
@@ -59,7 +58,6 @@ public interface GitHubConfigFileProvider {
      * @param source Which repository to extract the file from in the case of forked repositories.
      * @param type The type to deserialize the file to.
      * @return The configuration file wrapped in an {@link java.util.Optional}, or {@link Optional#empty()} if it is missing.
-     * @throws java.io.IOException If the configuration file cannot be retrieved.
      * @throws IllegalStateException If the configuration file cannot be deserialized to the given type.
      * @see ConfigFile
      * @see ConfigFile.Source
