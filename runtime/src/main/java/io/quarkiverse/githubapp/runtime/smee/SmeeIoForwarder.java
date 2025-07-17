@@ -27,7 +27,7 @@ import io.quarkiverse.githubapp.runtime.sse.HttpEventStreamClient;
 import io.quarkiverse.githubapp.runtime.sse.HttpEventStreamClient.Event;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.Startup;
-import io.quarkus.vertx.http.runtime.HttpConfiguration;
+import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 
 @ApplicationScoped
 @Startup
@@ -41,9 +41,9 @@ public class SmeeIoForwarder {
     private final ReplayEventStreamAdapter replayEventStreamAdapter;
 
     @Inject
-    SmeeIoForwarder(CheckedConfigProvider checkedConfigProvider, HttpConfiguration httpConfiguration,
+    SmeeIoForwarder(CheckedConfigProvider checkedConfigProvider, VertxHttpConfig vertxHttpConfig,
             ObjectMapper objectMapper) {
-        if (!checkedConfigProvider.webhookProxyUrl().isPresent()) {
+        if (checkedConfigProvider.webhookProxyUrl().isEmpty()) {
             this.replayEventStreamAdapter = null;
             this.eventStreamClient = null;
             return;
@@ -52,7 +52,7 @@ public class SmeeIoForwarder {
         LOG.info("Listening to events coming from " + checkedConfigProvider.webhookProxyUrl().get());
 
         URI localUrl = URI.create(
-                "http://" + httpConfiguration.host + ":" + httpConfiguration.port + checkedConfigProvider.webhookUrlPath());
+                "http://" + vertxHttpConfig.host() + ":" + vertxHttpConfig.port() + checkedConfigProvider.webhookUrlPath());
 
         this.replayEventStreamAdapter = new ReplayEventStreamAdapter(checkedConfigProvider.webhookProxyUrl().get(), localUrl,
                 objectMapper);

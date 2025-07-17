@@ -27,7 +27,6 @@ import io.quarkiverse.githubapp.runtime.replay.ReplayEventsRoute;
 import io.quarkiverse.githubapp.runtime.signing.PayloadSignatureChecker;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.StartupEvent;
-import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.web.RoutingExchange;
 import io.quarkus.vertx.web.runtime.RoutingExchangeImpl;
 import io.vertx.core.json.Json;
@@ -57,11 +56,6 @@ public class Routes {
 
     @Inject
     Instance<ReplayEventsRoute> replayRouteInstance;
-
-    @Inject
-    HttpConfiguration httpConfig;
-
-    Path tmpDirectory;
 
     public void init(@Observes StartupEvent startupEvent) throws IOException {
         if (checkedConfigProvider.debug().payloadDirectory().isPresent()) {
@@ -142,7 +136,7 @@ public class Routes {
         Long installationId = extractInstallationId(payloadObject);
         String repository = extractRepository(payloadObject);
         GitHubEvent gitHubEvent = new GitHubEvent(installationId, checkedConfigProvider.appName().orElse(null), deliveryId,
-                repository, event, action, payload, payloadObject, "true".equals(replayed) ? true : false);
+                repository, event, action, payload, payloadObject, "true".equals(replayed));
 
         if (launchMode == LaunchMode.DEVELOPMENT && replayRouteInstance.isResolvable()) {
             replayRouteInstance.get().pushEvent(gitHubEvent);
