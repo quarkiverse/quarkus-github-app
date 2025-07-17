@@ -1,4 +1,3 @@
-:summaryTableId: quarkus-github-app_quarkus-github-app
 [.configuration-legend]
 icon:lock[title=Fixed at build time] Configuration property fixed at build time - All other configuration properties are overridable at runtime
 [.configuration-reference.searchable, cols="80,.^10,.^10"]
@@ -9,6 +8,10 @@ h|Type
 h|Default
 
 a| [[quarkus-github-app_quarkus-github-app-app-id]] [.property-path]##link:#quarkus-github-app_quarkus-github-app-app-id[`quarkus.github-app.app-id`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.github-app.app-id+++[]
+endif::add-copy-button-to-config-props[]
+
 
 [.description]
 --
@@ -28,6 +31,10 @@ endif::add-copy-button-to-env-var[]
 |
 
 a| [[quarkus-github-app_quarkus-github-app-app-name]] [.property-path]##link:#quarkus-github-app_quarkus-github-app-app-name[`quarkus.github-app.app-name`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.github-app.app-name+++[]
+endif::add-copy-button-to-config-props[]
+
 
 [.description]
 --
@@ -47,6 +54,10 @@ endif::add-copy-button-to-env-var[]
 |
 
 a| [[quarkus-github-app_quarkus-github-app-read-config-files-from-source-repository]] [.property-path]##link:#quarkus-github-app_quarkus-github-app-read-config-files-from-source-repository[`quarkus.github-app.read-config-files-from-source-repository`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.github-app.read-config-files-from-source-repository+++[]
+endif::add-copy-button-to-config-props[]
+
 
 [.description]
 --
@@ -64,6 +75,10 @@ endif::add-copy-button-to-env-var[]
 |`false`
 
 a| [[quarkus-github-app_quarkus-github-app-private-key]] [.property-path]##link:#quarkus-github-app_quarkus-github-app-private-key[`quarkus.github-app.private-key`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.github-app.private-key+++[]
+endif::add-copy-button-to-config-props[]
+
 
 [.description]
 --
@@ -83,6 +98,10 @@ endif::add-copy-button-to-env-var[]
 |
 
 a| [[quarkus-github-app_quarkus-github-app-webhook-url-path]] [.property-path]##link:#quarkus-github-app_quarkus-github-app-webhook-url-path[`quarkus.github-app.webhook-url-path`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.github-app.webhook-url-path+++[]
+endif::add-copy-button-to-config-props[]
+
 
 [.description]
 --
@@ -102,6 +121,10 @@ endif::add-copy-button-to-env-var[]
 |`/`
 
 a| [[quarkus-github-app_quarkus-github-app-webhook-secret]] [.property-path]##link:#quarkus-github-app_quarkus-github-app-webhook-secret[`quarkus.github-app.webhook-secret`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.github-app.webhook-secret+++[]
+endif::add-copy-button-to-config-props[]
+
 
 [.description]
 --
@@ -119,6 +142,10 @@ endif::add-copy-button-to-env-var[]
 |
 
 a| [[quarkus-github-app_quarkus-github-app-credentials-provider]] [.property-path]##link:#quarkus-github-app_quarkus-github-app-credentials-provider[`quarkus.github-app.credentials-provider`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.github-app.credentials-provider+++[]
+endif::add-copy-button-to-config-props[]
+
 
 [.description]
 --
@@ -140,6 +167,10 @@ endif::add-copy-button-to-env-var[]
 |
 
 a| [[quarkus-github-app_quarkus-github-app-credentials-provider-name]] [.property-path]##link:#quarkus-github-app_quarkus-github-app-credentials-provider-name[`quarkus.github-app.credentials-provider-name`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.github-app.credentials-provider-name+++[]
+endif::add-copy-button-to-config-props[]
+
 
 [.description]
 --
@@ -161,6 +192,10 @@ endif::add-copy-button-to-env-var[]
 |
 
 a| [[quarkus-github-app_quarkus-github-app-webhook-proxy-url]] [.property-path]##link:#quarkus-github-app_quarkus-github-app-webhook-proxy-url[`quarkus.github-app.webhook-proxy-url`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.github-app.webhook-proxy-url+++[]
+endif::add-copy-button-to-config-props[]
+
 
 [.description]
 --
@@ -178,6 +213,10 @@ endif::add-copy-button-to-env-var[]
 |
 
 a| [[quarkus-github-app_quarkus-github-app-instance-endpoint]] [.property-path]##link:#quarkus-github-app_quarkus-github-app-instance-endpoint[`quarkus.github-app.instance-endpoint`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.github-app.instance-endpoint+++[]
+endif::add-copy-button-to-config-props[]
+
 
 [.description]
 --
@@ -197,6 +236,10 @@ endif::add-copy-button-to-env-var[]
 |`https://api.github.com`
 
 a| [[quarkus-github-app_quarkus-github-app-rest-api-endpoint]] [.property-path]##link:#quarkus-github-app_quarkus-github-app-rest-api-endpoint[`quarkus.github-app.rest-api-endpoint`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.github-app.rest-api-endpoint+++[]
+endif::add-copy-button-to-config-props[]
+
 
 [.description]
 --
@@ -216,6 +259,10 @@ endif::add-copy-button-to-env-var[]
 |`${quarkus.github-app.instance-endpoint}`
 
 a| [[quarkus-github-app_quarkus-github-app-graphql-api-endpoint]] [.property-path]##link:#quarkus-github-app_quarkus-github-app-graphql-api-endpoint[`quarkus.github-app.graphql-api-endpoint`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.github-app.graphql-api-endpoint+++[]
+endif::add-copy-button-to-config-props[]
+
 
 [.description]
 --
@@ -235,6 +282,10 @@ endif::add-copy-button-to-env-var[]
 |`${quarkus.github-app.instance-endpoint}/graphql`
 
 a| [[quarkus-github-app_quarkus-github-app-personal-access-token]] [.property-path]##link:#quarkus-github-app_quarkus-github-app-personal-access-token[`quarkus.github-app.personal-access-token`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.github-app.personal-access-token+++[]
+endif::add-copy-button-to-config-props[]
+
 
 [.description]
 --
@@ -258,6 +309,10 @@ endif::add-copy-button-to-env-var[]
 |
 
 a| [[quarkus-github-app_quarkus-github-app-debug-payload-directory]] [.property-path]##link:#quarkus-github-app_quarkus-github-app-debug-payload-directory[`quarkus.github-app.debug.payload-directory`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.github-app.debug.payload-directory+++[]
+endif::add-copy-button-to-config-props[]
+
 
 [.description]
 --
@@ -276,5 +331,3 @@ endif::add-copy-button-to-env-var[]
 
 |===
 
-
-:!summaryTableId:
