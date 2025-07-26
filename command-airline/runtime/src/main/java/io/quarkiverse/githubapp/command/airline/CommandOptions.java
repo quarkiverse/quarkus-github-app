@@ -7,7 +7,11 @@ import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
+import org.kohsuke.github.GHEventPayload;
+
 import com.github.rvesse.airline.annotations.Command;
+
+import io.quarkiverse.githubapp.command.airline.runtime.DefaultExecutionErrorHandler;
 
 /**
  * Complement to the {@link Command} annotation for Quarkus GitHub App specific options.
@@ -21,6 +25,7 @@ public @interface CommandOptions {
     CommandScope DEFAULT_SCOPE = CommandScope.ISSUES_AND_PULL_REQUESTS;
     ExecutionErrorStrategy DEFAULT_EXECUTION_ERROR_STRATEGY = ExecutionErrorStrategy.NONE;
     String DEFAULT_EXECUTION_ERROR_MESSAGE = "> `%s`\n\n:rotating_light: An error occurred while executing the command.";
+    Class<? extends ExecutionErrorHandler> DEFAULT_EXECUTION_ERROR_HANDLER = DefaultExecutionErrorHandler.class;
     ReactionStrategy DEFAULT_REACTION_STRATEGY = ReactionStrategy.ALL;
 
     /**
@@ -37,6 +42,13 @@ public @interface CommandOptions {
      * The error message when an error occurs executing the command.
      */
     String executionErrorMessage() default DEFAULT_EXECUTION_ERROR_MESSAGE;
+
+    /**
+     * A custom handler for execution errors.
+     * <p>
+     * It is recommended that you make the class a singleton bean, except if your requirements enforce another scope.
+     */
+    Class<? extends ExecutionErrorHandler> executionErrorHandler() default DefaultExecutionErrorHandlerMarker.class;
 
     /**
      * The reaction strategy used to provide feedback via comment reactions.
@@ -108,6 +120,15 @@ public @interface CommandOptions {
 
         public boolean reactionOnError() {
             return reactionOnError;
+        }
+    }
+
+    public static class DefaultExecutionErrorHandlerMarker implements ExecutionErrorHandler {
+
+        @Override
+        public void handleExecutionError(GHEventPayload.IssueComment issueCommentPayload,
+                ExecutionErrorContext executionErrorContext) {
+            throw new IllegalStateException("This implementation is just a marker and may never get called");
         }
     }
 }
