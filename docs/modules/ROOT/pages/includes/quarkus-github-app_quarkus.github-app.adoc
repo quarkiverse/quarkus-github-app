@@ -308,6 +308,31 @@ endif::add-copy-button-to-env-var[]
 |string
 |
 
+a| [[quarkus-github-app_quarkus-github-app-check-installation-token-validity]] [.property-path]##link:#quarkus-github-app_quarkus-github-app-check-installation-token-validity[`quarkus.github-app.check-installation-token-validity`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.github-app.check-installation-token-validity+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Check the validity of the candidate installation token before returning the client for use.
+
+By default, we are extra cautious, but we usually cache the token for 50 minutes (they are valid one hour), so it should be safe to disable this check, not counting GitHub infra issues, where token could be lost/invalidated by mistake on the GitHub side.
+
+This saves one API roundtrip when getting the GitHub client, which might help with performances.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_GITHUB_APP_CHECK_INSTALLATION_TOKEN_VALIDITY+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_GITHUB_APP_CHECK_INSTALLATION_TOKEN_VALIDITY+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|`true`
+
 a| [[quarkus-github-app_quarkus-github-app-debug-payload-directory]] [.property-path]##link:#quarkus-github-app_quarkus-github-app-debug-payload-directory[`quarkus.github-app.debug.payload-directory`]##
 ifdef::add-copy-button-to-config-props[]
 config_property_copy_button:+++quarkus.github-app.debug.payload-directory+++[]
