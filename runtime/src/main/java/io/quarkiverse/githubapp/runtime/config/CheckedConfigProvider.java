@@ -123,6 +123,10 @@ public class CheckedConfigProvider {
         return gitHubAppRuntimeConfig.personalAccessToken();
     }
 
+    public boolean checkInstallationTokenValidity() {
+        return gitHubAppRuntimeConfig.checkInstallationTokenValidity();
+    }
+
     public Debug debug() {
         return gitHubAppRuntimeConfig.debug();
     }

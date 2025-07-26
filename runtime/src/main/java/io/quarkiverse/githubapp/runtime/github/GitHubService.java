@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.http.HttpClient;
 import java.net.http.HttpClient.Version;
 import java.security.GeneralSecurityException;
+import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -65,12 +66,12 @@ public class GitHubService implements GitHubClientProvider {
         this.checkedConfigProvider = checkedConfigProvider;
         this.jwtTokenCreator = jwtTokenCreator;
         this.installationTokenCache = Caffeine.newBuilder()
-                .maximumSize(50)
+                .maximumSize(100)
                 .expireAfter(new Expiry<Long, CachedInstallationToken>() {
                     @Override
                     public long expireAfterCreate(Long installationId, CachedInstallationToken cachedInstallationGitHub,
                             long currentTime) {
-                        long millis = cachedInstallationGitHub.getExpiresAt()
+                        long millis = cachedInstallationGitHub.expiresAt()
                                 .minus(System.currentTimeMillis(), ChronoUnit.MILLIS)
                                 .minus(10, ChronoUnit.MINUTES)
                                 .toEpochMilli();
@@ -176,13 +177,15 @@ public class GitHubService implements GitHubClientProvider {
         githubCustomizer.customize(gitHubBuilder);
         // configure mandatory defaults
         gitHubBuilder
-                .withAppInstallationToken(installationToken.getToken())
+                .withAppInstallationToken(installationToken.token())
                 .withEndpoint(checkedConfigProvider.restApiEndpoint());
 
         GitHub gitHub = gitHubBuilder.build();
 
-        // this call is not counted in the rate limit
-        gitHub.getRateLimit();
+        if (checkedConfigProvider.checkInstallationTokenValidity()) {
+            // this call is not counted in the rate limit
+            gitHub.getRateLimit();
+        }
 
         return gitHub;
     }
@@ -193,18 +196,20 @@ public class GitHubService implements GitHubClientProvider {
 
         DynamicGraphQLClient graphQLClient = DynamicGraphQLClientBuilder.newBuilder()
                 .url(checkedConfigProvider.graphqlApiEndpoint())
-                .header(AUTHORIZATION_HEADER, String.format(AUTHORIZATION_HEADER_BEARER, installationToken.getToken()))
+                .header(AUTHORIZATION_HEADER, String.format(AUTHORIZATION_HEADER_BEARER, installationToken.token()))
                 .build();
 
         // this call is probably - it's not documented - not counted in the rate limit
-        graphQLClient.executeSync("query {\n" +
-                "rateLimit {\n" +
-                "    limit\n" +
-                "    cost\n" +
-                "    remaining\n" +
-                "    resetAt\n" +
-                "  }\n" +
-                "}");
+        if (checkedConfigProvider.checkInstallationTokenValidity()) {
+            graphQLClient.executeSync("query {\n" +
+                    "rateLimit {\n" +
+                    "    limit\n" +
+                    "    cost\n" +
+                    "    remaining\n" +
+                    "    resetAt\n" +
+                    "  }\n" +
+                    "}");
+        }
 
         return graphQLClient;
     }
@@ -219,7 +224,7 @@ public class GitHubService implements GitHubClientProvider {
                         .getInstallationById(installationId)
                         .createToken().create();
 
-                return new CachedInstallationToken(installationToken.getToken(), installationToken.getExpiresAt());
+                return new CachedInstallationToken(installationToken.getToken(), installationToken.getExpiresAt().toInstant());
             } catch (IOException e) {
                 throw new IllegalStateException("Unable to create a GitHub token for the installation " + installationId, e);
             }
@@ -302,5 +307,8 @@ public class GitHubService implements GitHubClientProvider {
         } catch (IOException e) {
             throw new IllegalStateException("Unable to create a GitHub client for the application", e);
         }
+    }
+
+    private record CachedInstallationToken(String token, Instant expiresAt) {
     }
 }

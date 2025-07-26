@@ -134,6 +134,18 @@ public interface GitHubAppRuntimeConfig {
     Optional<String> personalAccessToken();
 
     /**
+     * Check the validity of the candidate installation token before returning the client for use.
+     * <p>
+     * By default, we are extra cautious, but we usually cache the token for 50 minutes (they are valid one hour),
+     * so it should be safe to disable this check, not accounting for potential GitHub infra issues,
+     * where token could be lost/invalidated by mistake on the GitHub side.
+     * <p>
+     * This saves one API roundtrip when getting the GitHub client, which might help with performances.
+     */
+    @WithDefault("true")
+    boolean checkInstallationTokenValidity();
+
+    /**
      * Debug configuration.
      */
     Debug debug();
