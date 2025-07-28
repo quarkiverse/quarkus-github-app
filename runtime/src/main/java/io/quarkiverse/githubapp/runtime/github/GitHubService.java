@@ -28,13 +28,15 @@ import com.github.benmanes.caffeine.cache.LoadingCache;
 
 import io.quarkiverse.githubapp.GitHubClientProvider;
 import io.quarkiverse.githubapp.GitHubCustomizer;
+import io.quarkiverse.githubapp.InstallationTokenProvider;
+import io.quarkiverse.githubapp.InstallationTokenProvider.InstallationToken;
 import io.quarkiverse.githubapp.runtime.config.CheckedConfigProvider;
 import io.quarkiverse.githubapp.runtime.signing.JwtTokenCreator;
 import io.smallrye.graphql.client.dynamic.api.DynamicGraphQLClient;
 import io.smallrye.graphql.client.dynamic.api.DynamicGraphQLClientBuilder;
 
 @ApplicationScoped
-public class GitHubService implements GitHubClientProvider {
+public class GitHubService implements GitHubClientProvider, InstallationTokenProvider {
 
     private static final Logger LOG = Logger.getLogger(GitHubService.class);
 
@@ -166,6 +168,11 @@ public class GitHubService implements GitHubClientProvider {
                 }
             }
         }
+    }
+
+    @Override
+    public InstallationToken getInstallationToken(long installationId) {
+        return installationTokenCache.get(installationId);
     }
 
     private GitHub createInstallationClient(long installationId) throws IOException {
@@ -309,6 +316,6 @@ public class GitHubService implements GitHubClientProvider {
         }
     }
 
-    private record CachedInstallationToken(String token, Instant expiresAt) {
+    private record CachedInstallationToken(String token, Instant expiresAt) implements InstallationToken {
     }
 }
