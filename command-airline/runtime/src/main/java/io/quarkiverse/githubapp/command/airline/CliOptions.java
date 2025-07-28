@@ -9,6 +9,8 @@ import java.lang.annotation.Target;
 
 import com.github.rvesse.airline.annotations.Cli;
 
+import io.quarkiverse.githubapp.command.airline.runtime.DefaultParseErrorHandler;
+
 /**
  * Complement to the {@link Cli} annotation for Quarkus GitHub App specific options.
  */
@@ -20,6 +22,7 @@ public @interface CliOptions {
     // Make sure to keep these consistent with the annotation defaults
     ParseErrorStrategy DEFAULT_PARSE_ERROR_STRATEGY = ParseErrorStrategy.COMMENT_MESSAGE_HELP_ERRORS;
     String DEFAULT_PARSE_ERROR_MESSAGE = "> `%s`\n\n:rotating_light: Unable to parse the command.";
+    Class<? extends ParseErrorHandler> DEFAULT_PARSE_ERROR_HANDLER = DefaultParseErrorHandler.class;
 
     /**
      * The aliases of the command. They will be recognized as triggering this particular command set.
@@ -35,6 +38,13 @@ public @interface CliOptions {
      * The error message when an error occurs parsing the command.
      */
     String parseErrorMessage() default DEFAULT_PARSE_ERROR_MESSAGE;
+
+    /**
+     * A custom handler for parse errors.
+     * <p>
+     * It is recommended that you make the class a singleton bean, except if your requirements enforce another scope.
+     */
+    Class<? extends ParseErrorHandler> parseErrorHandler() default DefaultParseErrorHandler.class; // make sure to update the constant above in case of modification
 
     /**
      * Default options applied to all this command set, except if they are overridden at the command level.

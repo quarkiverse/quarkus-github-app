@@ -42,6 +42,8 @@ import io.quarkiverse.githubapp.command.airline.CliOptions.ParseErrorStrategy;
 import io.quarkiverse.githubapp.command.airline.CommandOptions.CommandScope;
 import io.quarkiverse.githubapp.command.airline.CommandOptions.ExecutionErrorStrategy;
 import io.quarkiverse.githubapp.command.airline.CommandOptions.ReactionStrategy;
+import io.quarkiverse.githubapp.command.airline.ExecutionErrorHandler;
+import io.quarkiverse.githubapp.command.airline.ParseErrorHandler;
 import io.quarkiverse.githubapp.command.airline.runtime.AbstractCommandDispatcher;
 import io.quarkiverse.githubapp.command.airline.runtime.AbstractCommandDispatcher.CommandExecutionContext;
 import io.quarkiverse.githubapp.command.airline.runtime.CliConfig;
@@ -49,12 +51,16 @@ import io.quarkiverse.githubapp.command.airline.runtime.CommandConfig;
 import io.quarkiverse.githubapp.command.airline.runtime.CommandExecutionException;
 import io.quarkiverse.githubapp.command.airline.runtime.CommandPermissionConfig;
 import io.quarkiverse.githubapp.command.airline.runtime.CommandTeamConfig;
+import io.quarkiverse.githubapp.command.airline.runtime.DefaultExecutionErrorHandler;
+import io.quarkiverse.githubapp.command.airline.runtime.DefaultParseErrorHandler;
 import io.quarkiverse.githubapp.command.airline.runtime.util.Reactions;
 import io.quarkiverse.githubapp.deployment.AdditionalEventDispatchingClassesIndexBuildItem;
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
@@ -84,11 +90,19 @@ class GitHubAppCommandAirlineProcessor {
     @BuildStep
     public void beanConfig(CombinedIndexBuildItem index,
             BuildProducer<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations,
-            BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer) {
+            BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
         beanDefiningAnnotations.produce(new BeanDefiningAnnotationBuildItem(COMMAND, DEPENDENT));
 
         annotationsTransformer
                 .produce(new AnnotationsTransformerBuildItem(new HideAirlineInjectAnnotationsTransformer(index.getIndex())));
+
+        // default error handlers
+        additionalBeans
+                .produce(new AdditionalBeanBuildItem(DefaultExecutionErrorHandler.class, DefaultParseErrorHandler.class));
+        unremovableBeans.produce(
+                UnremovableBeanBuildItem.beanTypes(ExecutionErrorHandler.class, ParseErrorHandler.class));
     }
 
     @BuildStep
@@ -269,8 +283,9 @@ class GitHubAppCommandAirlineProcessor {
         createReaction(reactionOnError.trueBranch(), issueCommentPayloadRh, ReactionContent.MINUS_ONE);
 
         catchBlock.invokeSpecialMethod(MethodDescriptor.ofMethod(AbstractCommandDispatcher.class, "handleExecutionError",
-                void.class, GHEventPayload.IssueComment.class, CommandExecutionContext.class), catchBlock.getThis(),
-                issueCommentPayloadRh, commandExecutionContextRh);
+                void.class, GHEventPayload.IssueComment.class, CommandExecutionContext.class, Exception.class),
+                catchBlock.getThis(),
+                issueCommentPayloadRh, commandExecutionContextRh, catchBlock.getCaughtException());
 
         catchBlock.throwException(catchBlock
                 .newInstance(MethodDescriptor.ofConstructor(CommandExecutionException.class, String.class, Exception.class),
@@ -407,13 +422,16 @@ class GitHubAppCommandAirlineProcessor {
         if (cliOptionsAnnotation != null) {
             cliConfigRh = constructorMethodCreator.newInstance(
                     MethodDescriptor.ofConstructor(CliConfig.class, List.class,
-                            ParseErrorStrategy.class, String.class, CommandConfig.class,
+                            ParseErrorStrategy.class, String.class, Class.class, CommandConfig.class,
                             CommandPermissionConfig.class, CommandTeamConfig.class),
                     aliasesRh,
                     constructorMethodCreator.load(ParseErrorStrategy
                             .valueOf(cliOptionsAnnotation.valueWithDefault(index, "parseErrorStrategy").asEnum())),
                     constructorMethodCreator
                             .load(cliOptionsAnnotation.valueWithDefault(index, "parseErrorMessage").asString()),
+                    constructorMethodCreator
+                            .loadClass(cliOptionsAnnotation.valueWithDefault(index, "parseErrorHandler").asClass().name()
+                                    .toString()),
                     defaultCommandConfigRh, defaultCommandPermissionConfigRh, defaultCommandTeamConfigRh);
         } else {
             cliConfigRh = constructorMethodCreator.newInstance(
@@ -485,11 +503,13 @@ class GitHubAppCommandAirlineProcessor {
 
         return bytecodeCreator.newInstance(
                 MethodDescriptor.ofConstructor(CommandConfig.class, CommandScope.class, ExecutionErrorStrategy.class,
-                        String.class, ReactionStrategy.class),
+                        String.class, Class.class, ReactionStrategy.class),
                 bytecodeCreator.load(CommandScope.valueOf(commandOptionsAnnotation.valueWithDefault(index, "scope").asEnum())),
                 bytecodeCreator.load(ExecutionErrorStrategy
                         .valueOf(commandOptionsAnnotation.valueWithDefault(index, "executionErrorStrategy").asEnum())),
                 bytecodeCreator.load(commandOptionsAnnotation.valueWithDefault(index, "executionErrorMessage").asString()),
+                bytecodeCreator.loadClass(
+                        commandOptionsAnnotation.valueWithDefault(index, "executionErrorHandler").asClass().name().toString()),
                 bytecodeCreator.load(ReactionStrategy
                         .valueOf(commandOptionsAnnotation.valueWithDefault(index, "reactionStrategy").asEnum())));
     }

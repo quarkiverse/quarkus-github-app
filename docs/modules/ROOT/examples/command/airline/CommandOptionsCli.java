@@ -70,6 +70,18 @@ public class CommandOptionsCli {
     }
     // end::execution-error-message[]
 
+    // tag::execution-error-handler[]
+    @Command(name = "execution-error-handler")
+    @CommandOptions(executionErrorHandler = CustomExecutionErrorHandler.class) // <1>
+    static class CommandWithCustomExecutionErrorHandler implements Commands {
+
+        @Override
+        public void run(GHEventPayload.IssueComment issueCommentPayload) throws IOException {
+            // do something
+        }
+    }
+    // end::execution-error-handler[]
+
     // tag::reaction-strategy[]
     @Command(name = "reaction-strategy")
     @CommandOptions(reactionStrategy = ReactionStrategy.NONE)

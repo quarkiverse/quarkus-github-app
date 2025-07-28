@@ -1,9 +1,6 @@
 package io.quarkiverse.githubapp.command.airline.runtime;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -21,15 +18,20 @@ import org.kohsuke.github.ReactionContent;
 import com.github.rvesse.airline.Cli;
 import com.github.rvesse.airline.annotations.AirlineModule;
 import com.github.rvesse.airline.builder.ParserBuilder;
-import com.github.rvesse.airline.help.Help;
 import com.github.rvesse.airline.model.MetadataLoader;
 import com.github.rvesse.airline.parser.ParseResult;
-import com.github.rvesse.airline.parser.errors.ParseException;
 import com.github.rvesse.airline.parser.errors.handlers.CollectAll;
 
 import io.quarkiverse.githubapp.command.airline.AirlineInject;
+import io.quarkiverse.githubapp.command.airline.CommandOptions.DefaultExecutionErrorHandlerMarker;
+import io.quarkiverse.githubapp.command.airline.ExecutionErrorHandler;
+import io.quarkiverse.githubapp.command.airline.ExecutionErrorHandler.ExecutionErrorContext;
+import io.quarkiverse.githubapp.command.airline.ParseErrorHandler;
+import io.quarkiverse.githubapp.command.airline.ParseErrorHandler.ParseErrorContext;
 import io.quarkiverse.githubapp.command.airline.runtime.util.Commandline;
 import io.quarkiverse.githubapp.command.airline.runtime.util.Reactions;
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InstanceHandle;
 
 public abstract class AbstractCommandDispatcher<C> {
 
@@ -193,71 +195,42 @@ public abstract class AbstractCommandDispatcher<C> {
                 cliConfig.getDefaultCommandConfig());
     }
 
-    private void handleParseError(IssueComment issueCommentPayload, String command,
+    protected void handleParseError(IssueComment issueCommentPayload, String command,
             ParseResult<C> parseResult, String error) {
-        if (!cliConfig.getParseErrorStrategy().addMessage()) {
-            return;
-        }
+        Class<? extends ParseErrorHandler> parseErrorHandlerClass = cliConfig.getParseErrorHandler();
 
-        StringBuilder message = new StringBuilder();
-        message.append(String.format(cliConfig.getParseErrorMessage(), command));
-
-        if (cliConfig.getParseErrorStrategy().includeErrors()) {
-            message.append("\n\nErrors:\n");
-            if (error != null) {
-                message.append("\n- " + error);
+        try (InstanceHandle<? extends ParseErrorHandler> parseErrorHandlerInstance = Arc.container()
+                .instance(parseErrorHandlerClass)) {
+            if (!parseErrorHandlerInstance.isAvailable()) {
+                throw new IllegalStateException(
+                        "Unable to find or create a bean for ParseErrorHandler class: " + parseErrorHandlerClass.getName());
             }
-            if (parseResult != null) {
-                for (ParseException parseError : parseResult.getErrors()) {
-                    message.append("\n- " + parseError.getMessage());
-                }
-            }
-        }
 
-        if (error == null && cliConfig.getParseErrorStrategy().includeHelp()) {
-            try {
-                ByteArrayOutputStream helpOs = new ByteArrayOutputStream();
-
-                if (parseResult != null && parseResult.getState().getCommand() != null) {
-                    Help.help(parseResult.getState().getCommand(), helpOs);
-                } else {
-                    Help.help(cli.getMetadata(), Collections.emptyList(), helpOs);
-                }
-
-                String help = helpOs.toString(StandardCharsets.UTF_8);
-
-                if (!help.isBlank()) {
-                    message.append("\n\nHelp:\n\n").append("```\n" + help.trim() + "\n```");
-                }
-            } catch (IOException e) {
-                LOGGER.warn("Error trying to generate help for command `" + command + "` in "
-                        + issueCommentPayload.getRepository().getFullName() + "#" + issueCommentPayload.getIssue().getNumber(),
-                        e);
-            }
-        }
-
-        try {
-            issueCommentPayload.getIssue().comment(message.toString());
-        } catch (Exception e) {
-            LOGGER.warn("Error trying to add command parse error comment for command `" + command + "` in "
-                    + issueCommentPayload.getRepository().getFullName() + "#" + issueCommentPayload.getIssue().getNumber(), e);
+            parseErrorHandlerInstance.get().handleParseError(issueCommentPayload,
+                    new ParseErrorContext(cliConfig, cli, command, parseResult, error));
         }
     }
 
     protected void handleExecutionError(GHEventPayload.IssueComment issueCommentPayload,
-            CommandExecutionContext<C> commandExecutionContext) {
-        CommandConfig commandConfig = commandExecutionContext.getCommandConfig();
-        String commandLine = commandExecutionContext.getCommandLine();
-
-        if (!commandConfig.getExecutionErrorStrategy().addMessage()) {
-            return;
+            CommandExecutionContext<C> commandExecutionContext, Exception exception) {
+        Class<? extends ExecutionErrorHandler> executionErrorHandlerClass = commandExecutionContext.getCommandConfig()
+                .getExecutionErrorHandler();
+        if (DefaultExecutionErrorHandlerMarker.class.equals(executionErrorHandlerClass)) {
+            executionErrorHandlerClass = cliConfig.getDefaultCommandConfig().getExecutionErrorHandler();
+            if (DefaultExecutionErrorHandlerMarker.class.equals(executionErrorHandlerClass)) {
+                executionErrorHandlerClass = DefaultExecutionErrorHandler.class;
+            }
         }
-        try {
-            issueCommentPayload.getIssue()
-                    .comment(String.format(commandConfig.getExecutionErrorMessage(), commandLine));
-        } catch (Exception e) {
-            LOGGER.warn("Error trying to add command execution error comment for command `" + commandLine + "` in "
-                    + issueCommentPayload.getRepository().getFullName() + "#" + issueCommentPayload.getIssue().getNumber(), e);
+
+        try (InstanceHandle<? extends ExecutionErrorHandler> executionErrorHandlerInstance = Arc.container()
+                .instance(executionErrorHandlerClass)) {
+            if (!executionErrorHandlerInstance.isAvailable()) {
+                throw new IllegalStateException("Unable to find or create a bean for ExecutionErrorHandler class: "
+                        + executionErrorHandlerClass.getName());
+            }
+
+            executionErrorHandlerInstance.get().handleExecutionError(issueCommentPayload,
+                    new ExecutionErrorContext(commandExecutionContext, exception));
         }
     }
 

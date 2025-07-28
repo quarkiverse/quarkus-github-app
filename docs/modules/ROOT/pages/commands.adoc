@@ -161,7 +161,7 @@ include::{command-airline-examples-dir}/CommandOptionsCli.java[tag=only-for-prs]
 ----
 <1> This command will only be executed in the context of a pull request.
 
-==== Execution error strategy
+==== Execution error handling
 
 By default, when an execution error occurs, a <<reactions, `MINUS_ONE` reaction>> is added to the comment but that's it.
 You might want to customize this behavior and have your GitHub App post a comment:
@@ -184,6 +184,24 @@ include::{command-airline-examples-dir}/CommandOptionsCli.java[tag=execution-err
 ====
 Use `%s` in your message to include the executed command.
 ====
+
+You can also completely override the execution error handler and implement your own logic:
+
+[source,java]
+----
+include::{command-airline-examples-dir}/CommandOptionsCli.java[tag=execution-error-handler]
+----
+
+A custom execution error handler implements `io.quarkiverse.githubapp.command.airline.ExecutionErrorHandler`:
+
+[source,java]
+----
+include::{command-airline-examples-dir}/CustomExecutionErrorHandler.java[tag=execution-error-handler]
+----
+
+As for all command options, you can configure a global custom execution error handler in the default command options of `@CliOptions`.
+
+You can find the default implementation of `ExecutionErrorHandler` in our https://github.com/quarkiverse/quarkus-github-app/blob/main/command-airline/runtime/src/main/java/io/quarkiverse/githubapp/command/airline/runtime/DefaultExecutionErrorHandler.java[source code].
 
 ==== Reaction strategy
 
@@ -232,7 +250,7 @@ include::{command-airline-examples-dir}/CliOptionsDefaultCommandOptionsCli.java[
 You can override the default command options by adding a `@CommandOptions` annotation to a command.
 ====
 
-==== Parse error strategy
+==== Parse error handling
 
 By default, when an error occurs parsing the command, a comment is posted containing:
 
@@ -269,6 +287,23 @@ include::{command-airline-examples-dir}/CliOptionsParseErrorMessageCli.java[tag=
 ====
 Use `%s` in your message to include the parsed command.
 ====
+
+You can also completely override the parse error handler and implement your own logic:
+
+[source,java]
+----
+include::{command-airline-examples-dir}/CliOptionsParseErrorHandlerCli.java[tag=parse-error-handler-config,indent=0]
+----
+
+A custom execution error handler implements `io.quarkiverse.githubapp.command.airline.ParseErrorHandler`:
+
+[source,java]
+----
+include::{command-airline-examples-dir}/CustomParseErrorHandler.java[tag=parse-error-handler]
+----
+
+You can find the default implementation of `ParseErrorHandler` in our https://github.com/quarkiverse/quarkus-github-app/blob/main/command-airline/runtime/src/main/java/io/quarkiverse/githubapp/command/airline/runtime/DefaultParseErrorHandler.java[source code].
+
 
 [[permissions]]
 == Permissions
