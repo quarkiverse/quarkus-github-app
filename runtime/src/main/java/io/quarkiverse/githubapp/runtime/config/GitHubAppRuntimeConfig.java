@@ -1,7 +1,6 @@
 package io.quarkiverse.githubapp.runtime.config;
 
 import java.nio.file.Path;
-import java.security.PrivateKey;
 import java.util.Optional;
 
 import io.quarkiverse.githubapp.Credentials;
@@ -45,8 +44,7 @@ public interface GitHubAppRuntimeConfig {
      * <p>
      * Optional for tests, but mandatory in production and dev mode.
      */
-    @WithConverter(PrivateKeyConverter.class)
-    Optional<PrivateKey> privateKey();
+    Optional<String> privateKey();
 
     /**
      * The webhook URL path on which the GitHub App route is mounted.

@@ -94,7 +94,7 @@ ifndef::add-copy-button-to-env-var[]
 Environment variable: `+++QUARKUS_GITHUB_APP_PRIVATE_KEY+++`
 endif::add-copy-button-to-env-var[]
 --
-|link:https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/security/PrivateKey.html[PrivateKey]
+|string
 |
 
 a| [[quarkus-github-app_quarkus-github-app-webhook-url-path]] [.property-path]##link:#quarkus-github-app_quarkus-github-app-webhook-url-path[`quarkus.github-app.webhook-url-path`]##
