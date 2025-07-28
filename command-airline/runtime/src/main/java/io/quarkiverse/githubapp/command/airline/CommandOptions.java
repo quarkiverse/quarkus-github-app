@@ -85,6 +85,7 @@ public @interface CommandOptions {
         NONE(false, false, false),
         ON_PROGRESS(true, false, false),
         ON_PROGRESS_ON_ERROR(true, false, true),
+        ON_NORMAL_ON_ERROR(false, true, true),
         ON_ERROR(false, false, true),
         ALL(true, true, true);
 
