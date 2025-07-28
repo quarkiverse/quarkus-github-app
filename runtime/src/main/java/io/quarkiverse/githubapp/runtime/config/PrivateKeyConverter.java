@@ -3,7 +3,6 @@ package io.quarkiverse.githubapp.runtime.config;
 import static io.quarkus.runtime.configuration.ConverterSupport.DEFAULT_QUARKUS_CONVERTER_PRIORITY;
 
 import java.io.Serializable;
-import java.security.GeneralSecurityException;
 import java.security.PrivateKey;
 
 import jakarta.annotation.Priority;
@@ -29,7 +28,7 @@ public class PrivateKeyConverter implements Converter<PrivateKey>, Serializable 
 
         try {
             return PrivateKeyUtil.loadKey(privateKeyValue);
-        } catch (GeneralSecurityException e) {
+        } catch (Exception e) {
             throw new ConfigurationException("Unable to interpret the provided private key", e);
         }
     }

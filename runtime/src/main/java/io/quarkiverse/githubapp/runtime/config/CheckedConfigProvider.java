@@ -43,12 +43,14 @@ public class CheckedConfigProvider {
         this.launchMode = launchMode;
 
         Map<String, String> credentials = getCredentials();
-        String privateKeyFromCredentials = credentials.get(Credentials.PRIVATE_KEY);
-        if (privateKeyFromCredentials != null && !privateKeyFromCredentials.isBlank()) {
-            this.privateKey = Optional.of(new PrivateKeyConverter().convert(privateKeyFromCredentials.trim()));
-        } else {
-            this.privateKey = gitHubAppRuntimeConfig.privateKey();
+
+        String privateKey = credentials.get(Credentials.PRIVATE_KEY);
+        if (privateKey == null || privateKey.isBlank()) {
+            privateKey = gitHubAppRuntimeConfig.privateKey().orElse(null);
         }
+        this.privateKey = privateKey != null ? Optional.of(new PrivateKeyConverter().convert(privateKey.trim()))
+                : Optional.empty();
+
         String webhookSecretFromCredentials = credentials.get(Credentials.WEBHOOK_SECRET);
         if (webhookSecretFromCredentials != null && !webhookSecretFromCredentials.isBlank()) {
             this.webhookSecret = Optional.of(webhookSecretFromCredentials.trim());
