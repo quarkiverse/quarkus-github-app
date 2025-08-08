@@ -7,6 +7,7 @@ import org.kohsuke.github.GHEventPayload;
 
 import io.quarkiverse.githubapp.GitHubEvent;
 import io.quarkiverse.githubapp.error.ErrorHandler;
+import io.quarkiverse.githubapp.error.GitHubEventDeliveryException;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 
@@ -30,6 +31,10 @@ public class ErrorHandlerBridgeFunction implements Function<Throwable, Void> {
 
     @Override
     public Void apply(Throwable t) {
+        if (t instanceof GitHubEventDeliveryException e) {
+            throw e;
+        }
+
         InstanceHandle<ErrorHandler> errorHandler = Arc.container().instance(ErrorHandler.class);
 
         if (errorHandler.isAvailable()) {

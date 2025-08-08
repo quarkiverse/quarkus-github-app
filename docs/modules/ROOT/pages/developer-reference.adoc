@@ -298,6 +298,31 @@ By default, the config file path is relative to the `.github/` directory.
 You can reference a file outside this directory by using an `/absolute/path`.
 ====
 
+== Eventing model
+
+Quarkus GitHub App supports two eventing models via the `quarkus.github-app.eventing-model` configuration property:
+
+`sync`::
+    Events are handled synchronously. The response to the original GitHub request will only be sent when the event has been handled.
++
+If an error occurs when handling the event, the status code of the response is `500` and the body contains a short description of the error.
++
+In the GitHub App delivery page on GitHub (`https://github.com/settings/apps/<your-github-app>/advanced`), you are able to see the failed requests.
+`async` (the default, for backward compatibility reasons)::
+    Events are handled asynchronously. The response to the original GitHub request is sent just after the parsing of the request (with a `200` status code, except if the request couldn't be parsed properly).
++
+If an error occurs when handling the event, it is logged, but it is already too late to affect the response as it has already been sent.
++
+In the GitHub App delivery page on GitHub (`https://github.com/settings/apps/<your-github-app>/advanced`), you only see failures for early parsing errors, not for errors in your event handling code.
++
+With `async`, you will use less resources and will keep the connections to GitHub open for a very short amount of time.
+However, you can't rely on the HTTP status code of the response anymore.
+
+[NOTE]
+====
+In development, when using the Smee.io forwarder, errors are not reported to GitHub.
+====
+
 == Error handler
 
 The Quarkus GitHub App extension provides an error handler that will log errors with as many details as possible.
