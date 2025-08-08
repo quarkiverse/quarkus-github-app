@@ -22,6 +22,7 @@ import jakarta.inject.Singleton;
 import org.jboss.logging.Logger;
 
 import io.quarkiverse.githubapp.GitHubEvent;
+import io.quarkiverse.githubapp.error.GitHubEventDeliveryException;
 import io.quarkiverse.githubapp.runtime.config.CheckedConfigProvider;
 import io.quarkiverse.githubapp.runtime.replay.ReplayEventsRoute;
 import io.quarkiverse.githubapp.runtime.signing.PayloadSignatureChecker;
@@ -67,7 +68,7 @@ public class Routes {
 
     public void init(@Observes Router router) {
         router.post(checkedConfigProvider.webhookUrlPath())
-                .handler(BodyHandler.create()) // this is required so that the body to be read by subsequent handlers
+                .handler(BodyHandler.create()) // this is required so that the body can be read by subsequent handlers
                 .blockingHandler(routingContext -> {
                     handleRequest(
                             routingContext,
@@ -142,9 +143,12 @@ public class Routes {
             replayRouteInstance.get().pushEvent(gitHubEvent);
         }
 
-        gitHubEventEmitter.fire(gitHubEvent);
-
-        routingExchange.ok().end();
+        try {
+            gitHubEventEmitter.fire(gitHubEvent);
+            routingExchange.ok().end();
+        } catch (GitHubEventDeliveryException e) {
+            routingExchange.serverError().end(e.getMessage());
+        }
     }
 
     private static boolean isBlank(String value) {

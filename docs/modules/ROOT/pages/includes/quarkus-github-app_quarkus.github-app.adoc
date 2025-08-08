@@ -7,6 +7,30 @@ h|[.header-title]##Configuration property##
 h|Type
 h|Default
 
+a|icon:lock[title=Fixed at build time] [[quarkus-github-app_quarkus-github-app-eventing-model]] [.property-path]##link:#quarkus-github-app_quarkus-github-app-eventing-model[`quarkus.github-app.eventing-model`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.github-app.eventing-model+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Eventing model used to determine how to handle the events received from GitHub.
+
+ - When using `sync`, events are handled synchronously and errors correctly reported to GitHub if an error occurs.
+ - When using `async`, events are handled asynchronously and a 200 is returned right away so you can't see the errors on the GitHub side. The advantage of using this approach is that you don't keep the HTTP connection to GitHub open while your payload is handled.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_GITHUB_APP_EVENTING_MODEL+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_GITHUB_APP_EVENTING_MODEL+++`
+endif::add-copy-button-to-env-var[]
+--
+a|`sync`, `async`
+|`sync`
+
 a| [[quarkus-github-app_quarkus-github-app-app-id]] [.property-path]##link:#quarkus-github-app_quarkus-github-app-app-id[`quarkus.github-app.app-id`]##
 ifdef::add-copy-button-to-config-props[]
 config_property_copy_button:+++quarkus.github-app.app-id+++[]

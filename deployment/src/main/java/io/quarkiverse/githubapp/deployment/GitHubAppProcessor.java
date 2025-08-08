@@ -73,6 +73,7 @@ import io.quarkiverse.githubapp.runtime.RequestScopeCachingGitHubConfigFileProvi
 import io.quarkiverse.githubapp.runtime.Routes;
 import io.quarkiverse.githubapp.runtime.UtilsProducer;
 import io.quarkiverse.githubapp.runtime.config.CheckedConfigProvider;
+import io.quarkiverse.githubapp.runtime.config.GitHubAppBuildTimeConfig;
 import io.quarkiverse.githubapp.runtime.error.DefaultErrorHandler;
 import io.quarkiverse.githubapp.runtime.error.ErrorHandlerBridgeFunction;
 import io.quarkiverse.githubapp.runtime.github.GitHubConfigFileProviderImpl;
@@ -143,6 +144,8 @@ class GitHubAppProcessor {
 
     private static final MethodDescriptor EVENT_SELECT = MethodDescriptor.ofMethod(Event.class, "select", Event.class,
             Annotation[].class);
+    private static final MethodDescriptor EVENT_FIRE = MethodDescriptor.ofMethod(Event.class, "fire",
+            void.class, Object.class);
     private static final MethodDescriptor EVENT_FIRE_ASYNC = MethodDescriptor.ofMethod(Event.class, "fireAsync",
             CompletionStage.class, Object.class);
     private static final MethodDescriptor COMPLETION_STAGE_TO_COMPLETABLE_FUTURE = MethodDescriptor.ofMethod(
@@ -186,8 +189,7 @@ class GitHubAppProcessor {
             MethodParameterInfo methodParameter = configFileAnnotationInstance.target().asMethodParameter();
             short parameterPosition = methodParameter.position();
             Type parameterType = methodParameter.method().parameterTypes().get(parameterPosition);
-            reflectiveHierarchies.produce(new ReflectiveHierarchyBuildItem.Builder()
-                    .type(parameterType)
+            reflectiveHierarchies.produce(ReflectiveHierarchyBuildItem.builder(parameterType)
                     .index(index)
                     .source(GitHubAppProcessor.class.getSimpleName() + " > " + methodParameter.method().declaringClass() + "#"
                             + methodParameter.method())
@@ -277,6 +279,7 @@ class GitHubAppProcessor {
 
     @BuildStep
     void generateClasses(CombinedIndexBuildItem combinedIndex, LaunchModeBuildItem launchMode,
+            GitHubAppBuildTimeConfig gitHubAppBuildTimeConfig,
             List<AdditionalEventDispatchingClassesIndexBuildItem> additionalEventDispatchingIndexes,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
@@ -293,7 +296,7 @@ class GitHubAppProcessor {
         // Add @Vetoed to all the user-defined event listening classes
         annotationsTransformer
                 .produce(new AnnotationsTransformerBuildItem(new VetoUserDefinedEventListeningClassesAnnotationsTransformer(
-                        allEventDefinitions.stream().map(d -> d.getAnnotation()).collect(Collectors.toSet()))));
+                        allEventDefinitions.stream().map(EventDefinition::getAnnotation).collect(Collectors.toSet()))));
 
         // Add the qualifiers as beans
         String[] subscriberAnnotations = allEventDefinitions.stream().map(d -> d.getAnnotation().toString())
@@ -307,8 +310,8 @@ class GitHubAppProcessor {
         generateAnnotationLiterals(classOutput, dispatchingConfiguration);
 
         ClassOutput beanClassOutput = new GeneratedBeanGizmoAdaptor(generatedBeans);
-        generateDispatcher(beanClassOutput, launchMode, dispatchingConfiguration, reflectiveClasses);
-        generateMultiplexers(beanClassOutput, index, dispatchingConfiguration, reflectiveClasses);
+        generateDispatcher(beanClassOutput, launchMode, dispatchingConfiguration, reflectiveClasses, gitHubAppBuildTimeConfig);
+        generateMultiplexers(beanClassOutput, index, dispatchingConfiguration, reflectiveClasses, gitHubAppBuildTimeConfig);
     }
 
     @BuildStep
@@ -394,7 +397,7 @@ class GitHubAppProcessor {
                     .stream()
                     .filter(ai -> ai.target().kind() == Kind.METHOD_PARAMETER)
                     .filter(ai -> !Modifier.isInterface(ai.target().asMethodParameter().method().declaringClass().flags()))
-                    .collect(Collectors.toList());
+                    .toList();
             for (AnnotationInstance eventSubscriberInstance : eventSubscriberInstances) {
                 String action = eventDefinition.getAction() != null ? eventDefinition.getAction()
                         : (eventSubscriberInstance.value() != null ? eventSubscriberInstance.value().asString() : Actions.ALL);
@@ -424,7 +427,7 @@ class GitHubAppProcessor {
                 .stream()
                 .filter(ai -> ai.target().kind() == Kind.METHOD_PARAMETER)
                 .filter(ai -> !Modifier.isInterface(ai.target().asMethodParameter().method().declaringClass().flags()))
-                .collect(Collectors.toList());
+                .toList();
         for (AnnotationInstance rawEventSubscriberInstance : rawEventSubscriberInstances) {
             String event = rawEventSubscriberInstance.valueWithDefault(index, "event").asString();
             String action = rawEventSubscriberInstance.valueWithDefault(index, "action").asString();
@@ -511,7 +514,8 @@ class GitHubAppProcessor {
     private static void generateDispatcher(ClassOutput beanClassOutput,
             LaunchModeBuildItem launchMode,
             DispatchingConfiguration dispatchingConfiguration,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            GitHubAppBuildTimeConfig gitHubAppBuildTimeConfig) {
         String dispatcherClassName = GitHubEvent.class.getName() + "DispatcherImpl";
 
         reflectiveClasses.produce(ReflectiveClassBuildItem.builder(dispatcherClassName).methods(true).fields(true).build());
@@ -653,16 +657,18 @@ class GitHubAppProcessor {
                     eventMatchesCreator.writeArrayValue(annotationLiteralArrayRh, 0, annotationLiteralRh);
 
                     if (Actions.ALL.equals(action)) {
-                        fireAsyncAction(eventMatchesCreator, launchMode.getLaunchMode(), dispatcherClassCreator.getClassName(),
-                                gitHubEventRh, multiplexedEventRh, annotationLiteralArrayRh);
+                        fireAction(gitHubAppBuildTimeConfig, eventMatchesCreator, launchMode.getLaunchMode(),
+                                dispatcherClassCreator.getClassName(), gitHubEventRh, multiplexedEventRh,
+                                annotationLiteralArrayRh);
                     } else {
                         BytecodeCreator actionMatchesCreator = eventMatchesCreator
                                 .ifTrue(eventMatchesCreator.invokeVirtualMethod(MethodDescriptors.OBJECT_EQUALS,
                                         eventMatchesCreator.load(action), dispatchedActionRh))
                                 .trueBranch();
 
-                        fireAsyncAction(actionMatchesCreator, launchMode.getLaunchMode(), dispatcherClassCreator.getClassName(),
-                                gitHubEventRh, multiplexedEventRh, annotationLiteralArrayRh);
+                        fireAction(gitHubAppBuildTimeConfig, actionMatchesCreator, launchMode.getLaunchMode(),
+                                dispatcherClassCreator.getClassName(), gitHubEventRh, multiplexedEventRh,
+                                annotationLiteralArrayRh);
                     }
                 }
             }
@@ -698,7 +704,8 @@ class GitHubAppProcessor {
     private static void generateMultiplexers(ClassOutput beanClassOutput,
             IndexView index,
             DispatchingConfiguration dispatchingConfiguration,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            GitHubAppBuildTimeConfig gitHubAppBuildTimeConfig) {
         for (Entry<DotName, TreeSet<EventDispatchingMethod>> eventDispatchingMethodsEntry : dispatchingConfiguration
                 .getMethods().entrySet()) {
             DotName declaringClassName = eventDispatchingMethodsEntry.getKey();
@@ -741,7 +748,7 @@ class GitHubAppProcessor {
                         originalConstructor.parameterTypes().stream().map(t -> t.name().toString()).toArray(String[]::new)));
 
                 List<AnnotationInstance> originalMethodAnnotations = originalConstructor.annotations().stream()
-                        .filter(ai -> ai.target().kind() == Kind.METHOD).collect(Collectors.toList());
+                        .filter(ai -> ai.target().kind() == Kind.METHOD).toList();
                 for (AnnotationInstance originalMethodAnnotation : originalMethodAnnotations) {
                     constructorCreator.addAnnotation(originalMethodAnnotation);
                 }
@@ -864,7 +871,10 @@ class GitHubAppProcessor {
                     AnnotatedElement generatedParameterAnnotations = methodCreator
                             .getParameterAnnotations(generatedParameterIndex);
                     if (parameterAnnotations.stream().anyMatch(ai -> ai.name().equals(eventSubscriberInstance.name()))) {
-                        generatedParameterAnnotations.addAnnotation(DotNames.OBSERVES_ASYNC.toString());
+                        switch (gitHubAppBuildTimeConfig.eventingModel()) {
+                            case ASYNC -> generatedParameterAnnotations.addAnnotation(DotNames.OBSERVES_ASYNC.toString());
+                            case SYNC -> generatedParameterAnnotations.addAnnotation(DotNames.OBSERVES.toString());
+                        }
                         generatedParameterAnnotations.addAnnotation(eventSubscriberInstance);
                     } else {
                         for (AnnotationInstance annotationInstance : parameterAnnotations) {
@@ -984,6 +994,28 @@ class GitHubAppProcessor {
 
             multiplexerClassCreator.close();
         }
+    }
+
+    private static void fireAction(GitHubAppBuildTimeConfig gitHubAppBuildTimeConfig, BytecodeCreator bytecodeCreator,
+            LaunchMode launchMode, String className,
+            ResultHandle gitHubEventRh, ResultHandle multiplexedEventRh, ResultHandle annotationLiteralArrayRh) {
+        switch (gitHubAppBuildTimeConfig.eventingModel()) {
+            case ASYNC -> fireAsyncAction(bytecodeCreator, launchMode, className, gitHubEventRh, multiplexedEventRh,
+                    annotationLiteralArrayRh);
+            case SYNC -> fireSyncAction(bytecodeCreator, launchMode, className, gitHubEventRh, multiplexedEventRh,
+                    annotationLiteralArrayRh);
+        }
+    }
+
+    private static void fireSyncAction(BytecodeCreator bytecodeCreator, LaunchMode launchMode, String className,
+            ResultHandle gitHubEventRh, ResultHandle multiplexedEventRh, ResultHandle annotationLiteralArrayRh) {
+        ResultHandle cdiEventRh = bytecodeCreator.invokeInterfaceMethod(EVENT_SELECT,
+                bytecodeCreator.readInstanceField(
+                        FieldDescriptor.of(className, EVENT_EMITTER_FIELD, Event.class),
+                        bytecodeCreator.getThis()),
+                annotationLiteralArrayRh);
+
+        bytecodeCreator.invokeInterfaceMethod(EVENT_FIRE, cdiEventRh, multiplexedEventRh);
     }
 
     private static ResultHandle fireAsyncAction(BytecodeCreator bytecodeCreator, LaunchMode launchMode, String className,

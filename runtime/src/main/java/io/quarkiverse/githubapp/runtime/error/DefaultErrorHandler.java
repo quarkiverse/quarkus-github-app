@@ -13,6 +13,9 @@ import org.kohsuke.github.ServiceDownException;
 
 import io.quarkiverse.githubapp.GitHubEvent;
 import io.quarkiverse.githubapp.error.ErrorHandler;
+import io.quarkiverse.githubapp.error.GitHubEventDeliveryException;
+import io.quarkiverse.githubapp.runtime.config.GitHubAppBuildTimeConfig;
+import io.quarkiverse.githubapp.runtime.config.GitHubAppBuildTimeConfig.EventingModel;
 import io.quarkiverse.githubapp.runtime.github.GitHubServiceDownException;
 import io.quarkiverse.githubapp.runtime.github.PayloadHelper;
 import io.quarkus.arc.DefaultBean;
@@ -29,14 +32,19 @@ public class DefaultErrorHandler implements ErrorHandler {
     @Inject
     LaunchMode launchMode;
 
+    @Inject
+    GitHubAppBuildTimeConfig gitHubAppBuildTimeConfig;
+
     @Override
     public void handleError(GitHubEvent gitHubEvent, GHEventPayload payload, Throwable t) {
         StringBuilder errorMessage = new StringBuilder();
         List<String> errorMessageParameters = new ArrayList<>();
+        boolean serviceDown = false;
 
         errorMessage.append("Error handling delivery {").append(errorMessageParameters.size()).append("}\n");
         errorMessageParameters.add(gitHubEvent.getDeliveryId());
         if (t instanceof ServiceDownException || t instanceof GitHubServiceDownException) {
+            serviceDown = true;
             errorMessage
                     .append("››› GitHub APIs are not available at the moment. Have a look at https://www.githubstatus.com.\n");
         }
@@ -47,8 +55,9 @@ public class DefaultErrorHandler implements ErrorHandler {
         errorMessage.append("› Event:      {").append(errorMessageParameters.size()).append("}\n");
         errorMessageParameters.add(gitHubEvent.getEventAction());
 
+        Optional<String> context = Optional.empty();
         if (payload != null) {
-            Optional<String> context = PayloadHelper.getContext(payload);
+            context = PayloadHelper.getContext(payload);
             if (context.isPresent()) {
                 errorMessage.append("› Context:    {").append(errorMessageParameters.size()).append("}\n");
                 errorMessageParameters.add(context.get());
@@ -71,6 +80,9 @@ public class DefaultErrorHandler implements ErrorHandler {
         errorMessage.append("Exception");
 
         LOG.errorv(t, errorMessage.toString(), errorMessageParameters.toArray());
-    }
 
+        if (gitHubAppBuildTimeConfig.eventingModel() == EventingModel.SYNC) {
+            throw new GitHubEventDeliveryException(gitHubEvent, context.orElse("no context given"), serviceDown, t);
+        }
+    }
 }
