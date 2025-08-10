@@ -249,7 +249,8 @@ class GitHubAppProcessor {
 
     /**
      * The bridge methods added for binary compatibility in the GitHub API are causing issues with Mockito
-     * and more specifically with Byte Buddy (see https://github.com/raphw/byte-buddy/issues/1162).
+     * and more specifically with Byte Buddy (see <a href="https://github.com/raphw/byte-buddy/issues/1162">ByteBuddy issue
+     * #1162</a>.
      * They don't bring much to the plate for new applications that are regularly updated so let's remove them altogether.
      */
     @BuildStep

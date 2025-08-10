@@ -2,13 +2,15 @@ package io.quarkiverse.githubapp.deployment;
 
 import java.util.Set;
 
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
+import org.jboss.jandex.AnnotationTransformation;
 import org.jboss.jandex.DotName;
 
-import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.DotNames;
 
-class VetoUserDefinedEventListeningClassesAnnotationsTransformer implements AnnotationsTransformer {
+class VetoUserDefinedEventListeningClassesAnnotationsTransformer implements AnnotationTransformation {
 
     private final Set<DotName> eventDefinitionAnnotations;
 
@@ -17,30 +19,28 @@ class VetoUserDefinedEventListeningClassesAnnotationsTransformer implements Anno
     }
 
     @Override
-    public boolean appliesTo(Kind kind) {
+    public boolean supports(AnnotationTarget.Kind kind) {
         return Kind.CLASS.equals(kind);
     }
 
     @Override
-    public void transform(TransformationContext transformationContext) {
-        Set<DotName> annotations = transformationContext.getTarget().asClass().annotationsMap().keySet();
-
-        if (annotations.contains(GitHubAppDotNames.MULTIPLEXER)) {
+    public void apply(TransformationContext transformationContext) {
+        if (transformationContext.hasAnnotation(GitHubAppDotNames.MULTIPLEXER)) {
             return;
         }
 
-        if (isEventListeningClass(annotations)) {
-            transformationContext.transform().add(DotNames.VETOED).done();
+        if (isEventListeningClass(transformationContext)) {
+            transformationContext.add(AnnotationInstance.builder(DotNames.VETOED).build());
         }
     }
 
-    public boolean isEventListeningClass(Set<DotName> annotations) {
-        if (annotations.contains(GitHubAppDotNames.RAW_EVENT)) {
+    public boolean isEventListeningClass(TransformationContext transformationContext) {
+        if (transformationContext.hasAnnotation(GitHubAppDotNames.RAW_EVENT)) {
             return true;
         }
 
         for (DotName eventDefiningAnnotation : eventDefinitionAnnotations) {
-            if (!annotations.contains(eventDefiningAnnotation)) {
+            if (!transformationContext.hasAnnotation(eventDefiningAnnotation)) {
                 continue;
             }
 
@@ -49,5 +49,4 @@ class VetoUserDefinedEventListeningClassesAnnotationsTransformer implements Anno
 
         return false;
     }
-
 }
