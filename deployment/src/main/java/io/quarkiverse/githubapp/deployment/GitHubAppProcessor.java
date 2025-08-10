@@ -8,6 +8,9 @@ import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.GITHUB_EVENT
 import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.RAW_EVENT;
 import static io.quarkus.gizmo.Type.classType;
 import static io.quarkus.gizmo.Type.parameterizedType;
+import static org.objectweb.asm.Opcodes.ACC_FINAL;
+import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
+import static org.objectweb.asm.Opcodes.ACC_STATIC;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -150,6 +153,7 @@ class GitHubAppProcessor {
             "toCompletableFuture", CompletableFuture.class);
     private static final MethodDescriptor COMPLETABLE_FUTURE_JOIN = MethodDescriptor.ofMethod(CompletableFuture.class,
             "join", Object.class);
+    private static final String ARRAY_INSTANCE_FIELD_NAME = "ARRAY_INSTANCE";
 
     private static final DotName WITH_BRIDGE_METHODS = DotName
             .createSimple("com.infradna.tool.bridge_method_injector.WithBridgeMethods");
@@ -494,6 +498,19 @@ class GitHubAppProcessor {
                             FieldDescriptor.of(literalClassName, attribute, String.class), getterCreator.getThis()));
                 }
 
+                if (eventAnnotationLiteral.getAttributes().isEmpty()) {
+                    FieldCreator arrayInstanceFieldCreator = literalClassCreator.getFieldCreator(ARRAY_INSTANCE_FIELD_NAME,
+                            "[L" + literalClassName + ";");
+                    arrayInstanceFieldCreator.setModifiers(ACC_PUBLIC | ACC_STATIC | ACC_FINAL);
+                    MethodCreator clinit = literalClassCreator.getMethodCreator("<clinit>", void.class);
+                    clinit.setModifiers(ACC_STATIC);
+                    ResultHandle singletonInstance = clinit.newArray(literalClassName, 1);
+                    clinit.writeArrayValue(singletonInstance, clinit.load(0),
+                            clinit.newInstance(constructorCreator.getMethodDescriptor()));
+                    clinit.writeStaticField(arrayInstanceFieldCreator.getFieldDescriptor(), singletonInstance);
+                    clinit.returnVoid();
+                }
+
                 literalClassCreator.close();
             }
         }
@@ -639,18 +656,28 @@ class GitHubAppProcessor {
                 String action = eventAnnotationsEntry.getKey();
 
                 for (EventAnnotation eventAnnotation : eventAnnotationsEntry.getValue()) {
-                    Class<?>[] literalParameterTypes = new Class<?>[eventAnnotation.getValues().size()];
-                    Arrays.fill(literalParameterTypes, String.class);
-                    List<ResultHandle> literalParameters = new ArrayList<>();
-                    for (AnnotationValue eventAnnotationValue : eventAnnotation.getValues()) {
-                        literalParameters.add(eventMatchesCreator.load(eventAnnotationValue.asString()));
-                    }
+                    ResultHandle annotationLiteralArrayRh;
+                    String literalClassName = getLiteralClassName(eventAnnotation.getName());
 
-                    ResultHandle annotationLiteralRh = eventMatchesCreator.newInstance(MethodDescriptor
-                            .ofConstructor(getLiteralClassName(eventAnnotation.getName()), (Object[]) literalParameterTypes),
-                            literalParameters.toArray(ResultHandle[]::new));
-                    ResultHandle annotationLiteralArrayRh = eventMatchesCreator.newArray(Annotation.class, 1);
-                    eventMatchesCreator.writeArrayValue(annotationLiteralArrayRh, 0, annotationLiteralRh);
+                    if (eventAnnotation.getValues().isEmpty()) {
+                        annotationLiteralArrayRh = eventMatchesCreator
+                                .readStaticField(
+                                        FieldDescriptor.of(literalClassName, ARRAY_INSTANCE_FIELD_NAME,
+                                                "[L" + literalClassName + ";"));
+                    } else {
+                        Class<?>[] literalParameterTypes = new Class<?>[eventAnnotation.getValues().size()];
+                        Arrays.fill(literalParameterTypes, String.class);
+                        List<ResultHandle> literalParameters = new ArrayList<>(eventAnnotation.getValues().size());
+                        for (AnnotationValue eventAnnotationValue : eventAnnotation.getValues()) {
+                            literalParameters.add(eventMatchesCreator.load(eventAnnotationValue.asString()));
+                        }
+
+                        ResultHandle annotationLiteralRh = eventMatchesCreator.newInstance(MethodDescriptor
+                                .ofConstructor(literalClassName, (Object[]) literalParameterTypes),
+                                literalParameters.toArray(ResultHandle[]::new));
+                        annotationLiteralArrayRh = eventMatchesCreator.newArray(Annotation.class, 1);
+                        eventMatchesCreator.writeArrayValue(annotationLiteralArrayRh, 0, annotationLiteralRh);
+                    }
 
                     if (Actions.ALL.equals(action)) {
                         fireAsyncAction(eventMatchesCreator, launchMode.getLaunchMode(), dispatcherClassCreator.getClassName(),
