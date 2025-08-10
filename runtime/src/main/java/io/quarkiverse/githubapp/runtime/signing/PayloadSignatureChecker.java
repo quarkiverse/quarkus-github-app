@@ -24,7 +24,7 @@ public class PayloadSignatureChecker {
     private final boolean supportsClone;
 
     PayloadSignatureChecker(CheckedConfigProvider checkedConfigProvider) {
-        if (!checkedConfigProvider.webhookSecret().isPresent()) {
+        if (checkedConfigProvider.webhookSecret().isEmpty()) {
             secretKeySpec = null;
             sharedMac = null;
             supportsClone = false;

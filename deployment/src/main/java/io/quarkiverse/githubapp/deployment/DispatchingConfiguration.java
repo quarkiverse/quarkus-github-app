@@ -15,6 +15,7 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.Type;
 
 class DispatchingConfiguration {
 
@@ -243,7 +244,7 @@ class DispatchingConfiguration {
         }
 
         public boolean requiresGraphQLClient() {
-            return method.parameterTypes().stream().map(t -> t.name()).anyMatch(n -> DYNAMIC_GRAPHQL_CLIENT.equals(n));
+            return method.parameterTypes().stream().map(Type::name).anyMatch(DYNAMIC_GRAPHQL_CLIENT::equals);
         }
 
         @Override

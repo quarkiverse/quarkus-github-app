@@ -190,8 +190,7 @@ class GitHubAppProcessor {
             MethodParameterInfo methodParameter = configFileAnnotationInstance.target().asMethodParameter();
             short parameterPosition = methodParameter.position();
             Type parameterType = methodParameter.method().parameterTypes().get(parameterPosition);
-            reflectiveHierarchies.produce(new ReflectiveHierarchyBuildItem.Builder()
-                    .type(parameterType)
+            reflectiveHierarchies.produce(ReflectiveHierarchyBuildItem.builder(parameterType)
                     .index(index)
                     .source(GitHubAppProcessor.class.getSimpleName() + " > " + methodParameter.method().declaringClass() + "#"
                             + methodParameter.method())
@@ -297,7 +296,7 @@ class GitHubAppProcessor {
         // Add @Vetoed to all the user-defined event listening classes
         annotationsTransformer
                 .produce(new AnnotationsTransformerBuildItem(new VetoUserDefinedEventListeningClassesAnnotationsTransformer(
-                        allEventDefinitions.stream().map(d -> d.getAnnotation()).collect(Collectors.toSet()))));
+                        allEventDefinitions.stream().map(EventDefinition::getAnnotation).collect(Collectors.toSet()))));
 
         // Add the qualifiers as beans
         String[] subscriberAnnotations = allEventDefinitions.stream().map(d -> d.getAnnotation().toString())
@@ -398,7 +397,7 @@ class GitHubAppProcessor {
                     .stream()
                     .filter(ai -> ai.target().kind() == Kind.METHOD_PARAMETER)
                     .filter(ai -> !Modifier.isInterface(ai.target().asMethodParameter().method().declaringClass().flags()))
-                    .collect(Collectors.toList());
+                    .toList();
             for (AnnotationInstance eventSubscriberInstance : eventSubscriberInstances) {
                 String action = eventDefinition.getAction() != null ? eventDefinition.getAction()
                         : (eventSubscriberInstance.value() != null ? eventSubscriberInstance.value().asString() : Actions.ALL);
@@ -428,7 +427,7 @@ class GitHubAppProcessor {
                 .stream()
                 .filter(ai -> ai.target().kind() == Kind.METHOD_PARAMETER)
                 .filter(ai -> !Modifier.isInterface(ai.target().asMethodParameter().method().declaringClass().flags()))
-                .collect(Collectors.toList());
+                .toList();
         for (AnnotationInstance rawEventSubscriberInstance : rawEventSubscriberInstances) {
             String event = rawEventSubscriberInstance.valueWithDefault(index, "event").asString();
             String action = rawEventSubscriberInstance.valueWithDefault(index, "action").asString();
@@ -768,7 +767,7 @@ class GitHubAppProcessor {
                         originalConstructor.parameterTypes().stream().map(t -> t.name().toString()).toArray(String[]::new)));
 
                 List<AnnotationInstance> originalMethodAnnotations = originalConstructor.annotations().stream()
-                        .filter(ai -> ai.target().kind() == Kind.METHOD).collect(Collectors.toList());
+                        .filter(ai -> ai.target().kind() == Kind.METHOD).toList();
                 for (AnnotationInstance originalMethodAnnotation : originalMethodAnnotations) {
                     constructorCreator.addAnnotation(originalMethodAnnotation);
                 }

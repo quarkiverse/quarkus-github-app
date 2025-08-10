@@ -30,15 +30,15 @@ public class ErrorHandlerBridgeFunction implements Function<Throwable, Void> {
 
     @Override
     public Void apply(Throwable t) {
-        InstanceHandle<ErrorHandler> errorHandler = Arc.container().instance(ErrorHandler.class);
+        try (InstanceHandle<ErrorHandler> errorHandler = Arc.container().instance(ErrorHandler.class)) {
+            if (errorHandler.isAvailable()) {
+                errorHandler.get().handleError(gitHubEvent, payload, t);
+            } else {
+                LOG.error("An error occurred and no ErrorHandler is available", t);
+            }
 
-        if (errorHandler.isAvailable()) {
-            errorHandler.get().handleError(gitHubEvent, payload, t);
-        } else {
-            LOG.error("An error occurred and no ErrorHandler is available", t);
+            return null;
         }
-
-        return null;
     }
 
 }
