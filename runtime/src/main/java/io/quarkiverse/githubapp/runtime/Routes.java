@@ -23,6 +23,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkiverse.githubapp.GitHubEvent;
 import io.quarkiverse.githubapp.runtime.config.CheckedConfigProvider;
+import io.quarkiverse.githubapp.runtime.error.GitHubEventDispatchingException;
 import io.quarkiverse.githubapp.runtime.replay.ReplayEventsRoute;
 import io.quarkiverse.githubapp.runtime.signing.PayloadSignatureChecker;
 import io.quarkus.runtime.LaunchMode;
@@ -142,9 +143,15 @@ public class Routes {
             replayRouteInstance.get().pushEvent(gitHubEvent);
         }
 
-        gitHubEventEmitter.fire(gitHubEvent);
-
-        routingExchange.ok().end();
+        try {
+            gitHubEventEmitter.fire(gitHubEvent);
+            routingExchange.ok().end();
+        } catch (GitHubEventDispatchingException e) {
+            routingExchange.serverError().end(e.getMessage());
+        } catch (Exception e) {
+            // this shouldn't be needed but let's be safe
+            routingExchange.serverError().end();
+        }
     }
 
     private static boolean isBlank(String value) {
