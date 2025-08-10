@@ -17,6 +17,7 @@ import io.quarkiverse.githubapp.GitHubEvent;
 import io.quarkiverse.githubapp.runtime.config.GitHubAppRuntimeConfig.Debug;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.InstanceHandle;
 import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.Startup;
@@ -170,21 +171,23 @@ public class CheckedConfigProvider {
         }
 
         String beanName = gitHubAppRuntimeConfig.credentialsProviderName().orElse(null);
-        CredentialsProvider credentialsProvider = getCredentialsProvider(beanName);
-        String keyRingName = gitHubAppRuntimeConfig.credentialsProvider().get();
+        try (InstanceHandle<CredentialsProvider> credentialsProviderInstance = getCredentialsProvider(beanName)) {
+            if (credentialsProviderInstance == null) {
+                throw new RuntimeException(
+                        "Unable to find credentials provider of name " + (beanName == null ? "default" : beanName));
+            }
 
-        return credentialsProvider.getCredentials(keyRingName);
+            String keyRingName = gitHubAppRuntimeConfig.credentialsProvider().get();
+
+            return credentialsProviderInstance.get().getCredentials(keyRingName);
+        }
     }
 
-    private static CredentialsProvider getCredentialsProvider(String name) {
+    private static InstanceHandle<CredentialsProvider> getCredentialsProvider(String name) {
         ArcContainer container = Arc.container();
-        CredentialsProvider credentialsProvider = name != null
-                ? (CredentialsProvider) container.instance(name).get()
-                : container.instance(CredentialsProvider.class).get();
-
-        if (credentialsProvider == null) {
-            throw new RuntimeException("Unable to find credentials provider of name " + (name == null ? "default" : name));
-        }
+        InstanceHandle<CredentialsProvider> credentialsProvider = name != null
+                ? container.instance(name)
+                : container.instance(CredentialsProvider.class);
 
         return credentialsProvider;
     }
