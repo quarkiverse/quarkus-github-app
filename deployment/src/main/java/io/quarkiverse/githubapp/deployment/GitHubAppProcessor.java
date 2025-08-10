@@ -696,9 +696,11 @@ class GitHubAppProcessor {
 
         CatchBlockCreator catchBlockCreator = tryBlock.addCatch(Throwable.class);
         catchBlockCreator.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(ErrorHandlerBridgeFunction.class, "apply", Void.class, Throwable.class),
-                catchBlockCreator.newInstance(
-                        MethodDescriptor.ofConstructor(ErrorHandlerBridgeFunction.class, GitHubEvent.class), gitHubEventRh),
+                MethodDescriptor.ofMethod(ErrorHandlerBridgeFunction.class, "apply", Void.class, GitHubEvent.class,
+                        Throwable.class),
+                catchBlockCreator.readStaticField(
+                        FieldDescriptor.of(ErrorHandlerBridgeFunction.class, "INSTANCE", ErrorHandlerBridgeFunction.class)),
+                gitHubEventRh,
                 catchBlockCreator.getCaughtException());
 
         dispatchMethodCreator.returnValue(null);
