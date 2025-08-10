@@ -2,7 +2,7 @@
 
 [![Version](https://img.shields.io/maven-central/v/io.quarkiverse.githubapp/quarkus-github-app?logo=apache-maven&style=for-the-badge)](https://central.sonatype.com/artifact/io.quarkiverse.githubapp/quarkus-github-app)
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-8-orange.svg?style=for-the-badge)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-9-orange.svg?style=for-the-badge)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 <p align="center"><img src="https://design.jboss.org/quarkus/bot/final/images/quarkusbot_full.svg" width="128" height="128" /></p>
@@ -108,6 +108,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
     </tr>
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://www.ryandens.com"><img src="https://avatars.githubusercontent.com/u/8192732?v=4?s=100" width="100px;" alt="Ryan Dens"/><br /><sub><b>Ryan Dens</b></sub></a><br /><a href="https://github.com/quarkiverse/quarkus-github-app/commits?author=ryandens" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Munken"><img src="https://avatars.githubusercontent.com/u/773660?v=4?s=100" width="100px;" alt="Michael Munch"/><br /><sub><b>Michael Munch</b></sub></a><br /><a href="#ideas-Munken" title="Ideas, Planning, & Feedback">🤔</a> <a href="https://github.com/quarkiverse/quarkus-github-app/pulls?q=is%3Apr+reviewed-by%3AMunken" title="Reviewed Pull Requests">👀</a></td>
     </tr>
   </tbody>
 </table>
