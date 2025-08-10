@@ -1,0 +1,163 @@
+= OpenTelemetry Integration
+include::./includes/attributes.adoc[]
+
+== Enabling OpenTelemetry
+
+Quarkus GitHub App offers a fully functional OpenTelemetry integration.
+
+Enabling it is as simple as adding the https://quarkus.io/guides/opentelemetry[`quarkus-opentelemetry`] extension.
+
+You may also enable the https://quarkus.io/guides/observability-devservices-lgtm[Observability LGTM Dev Services] to experiment with this integration.
+
+== Spans
+
+Quarkus GitHub creates some specific spans that are linked to the span of the original HTTP request.
+
+As soon as the OpenTelemetry extension is present, traces are enabled by default but:
+
+- You can disable them at build time by setting `quarkus.github-app.telemetry.traces.enabled=false`.
+- You can deactivate them at runtime by setting `quarkus.github-app.telemetry.traces.active=false`.
+
+=== GitHub event span
+
+This span represents the processing of a single GitHub webhook event.
+
+- Name: `github-app.github-event <eventAction>`
+- Kind: `INTERNAL`
+
+[cols="1,1,2",options="header"]
+|===
+| Attribute | Type | Description
+| `gitHubEvent.installationId` | Long | GitHub App installation identifier
+| `gitHubEvent.appName` | String | App slug
+| `gitHubEvent.deliveryId` | String | Delivery identifier from the `X-GitHub-Delivery` header
+| `gitHubEvent.repository` | String | Repository full name (`owner/repo`)
+| `gitHubEvent.event` | String | Event name (for example: `issues`, `pull_request`)
+| `gitHubEvent.eventAction` | String | Event action (for example: `issues.opened`, `pull_request.closed`)
+| `gitHubEvent.payload` | String | Raw JSON payload when payload recording is enabled
+|===
+
+You can enable the recording of the payload with the `quarkus.github-app.telemetry.record-event-payload` runtime configuration property.
+
+=== GitHub event listener method span
+
+This span represents the execution of a specific listener method that handles the event.
+
+- Name: `github-app.github-event.method <class>.<method>`
+- Kind: `INTERNAL`
+
+[cols="1,1,2",options="header"]
+|===
+| Attribute | Type | Description
+| `gitHubEvent.installationId` | Long | GitHub App installation identifier
+| `gitHubEvent.appName` | String | App slug
+| `gitHubEvent.deliveryId` | String | Delivery identifier from the `X-GitHub-Delivery` header
+| `gitHubEvent.repository` | String | Repository full name (`owner/repo`)
+| `gitHubEvent.event` | String | Event name (for example: `issues`, `pull_request`)
+| `gitHubEvent.eventAction` | String | Event action (for example: `issues.opened`, `pull_request.closed`)
+| `gitHubEvent.eventMethod.class` | String | Fully-qualified name of the listener class
+| `gitHubEvent.eventMethod.method` | String | Listener method name
+| `gitHubEvent.eventMethod.methodSignature` | String | Listener method signature
+|===
+
+=== Command events
+
+When using the Command Airline extension, we add an event to the `github-app.github-event.method` span.
+The event will contain the actual status of the command execution.
+
+- Name: `github-app.command.method <commandClassName>`
+
+[cols="1,1,2",options="header"]
+|===
+| Attribute | Type | Description
+| `outcome` | String | Outcome of the command execution (`success` or `failure`)
+| `command.class` | String | Fully-qualified name of the command class
+| `command.commandLine` | String | Command line that was executed (present only when command recording is enabled)
+| `errorType` | String | Type of error when `outcome` is `failure` (present on errors only). Possible values: `PARSE_ERROR`, `PERMISSION_ERROR`, `EXECUTION_ERROR`
+| `errorMessage` | String | Error message when `outcome` is `failure` (present on errors only)
+|===
+
+You can enable the recording of the command line with the `quarkus.github-app.telemetry.record-command` runtime configuration property.
+
+== Metrics
+
+Quarkus GitHub creates some specific metrics.
+
+As soon as the OpenTelemetry extension is present, metrics are enabled by default but:
+
+- You can disable them at build time by setting `quarkus.github-app.telemetry.metrics.enabled=false`.
+- You can deactivate them at runtime by setting `quarkus.github-app.telemetry.metrics.active=false`.
+
+=== GitHub event counter
+
+Counts total GitHub events handled.
+
+- Name: `github-app.github-event`
+- Unit: `event`
+
+[cols="1,1,2",options="header"]
+|===
+| Attribute | Type | Description
+| `outcome` | String | Outcome of the processing (`success` or `failure`)
+| `errorMessage` | String | Error message when `outcome` is `failure` (present on errors only)
+| `gitHubEvent.repository` | String | Repository full name (`owner/repo`)
+| `gitHubEvent.event` | String | Event name (for example: `issues`, `pull_request`)
+| `gitHubEvent.eventAction` | String | Event action (for example: `issues.opened`, `pull_request.closed`)
+|===
+
+=== GitHub event listener method counter
+
+Counts total invocations of GitHub event listener methods.
+
+- Name: `github-app.github-event.method`
+- Unit: `invocation`
+
+[cols="1,1,2",options="header"]
+|===
+| Attribute | Type | Description
+| `outcome` | String | Outcome of the method execution (`success` or `failure`)
+| `errorMessage` | String | Error message when `outcome` is `failure` (present on errors only)
+| `gitHubEvent.repository` | String | Repository full name (`owner/repo`) when available
+| `gitHubEvent.event` | String | Event name (for example: `issues`, `pull_request`)
+| `gitHubEvent.eventAction` | String | Event action (for example: `issues.opened`, `pull_request.closed`)
+| `gitHubEvent.eventMethod.class` | String | Fully-qualified name of the listener class
+| `gitHubEvent.eventMethod.method` | String | Listener method name
+| `gitHubEvent.eventMethod.methodSignature` | String | Listener method signature
+|===
+
+=== Command counter
+
+Counts total invocations of commands when using the Command Airline extension.
+
+- Name: `github-app.command.method`
+- Unit: `invocation`
+
+[cols="1,1,2",options="header"]
+|===
+| Attribute | Type | Description
+| `outcome` | String | Outcome of the command execution (`success` or `failure`)
+| `command.class` | String | Fully-qualified name of the command class
+| `gitHubEvent.repository` | String | Repository full name (`owner/repo`) when available
+| `gitHubEvent.event` | String | Event name (for example: `issues`, `pull_request`)
+| `gitHubEvent.eventAction` | String | Event action (for example: `issues.opened`, `pull_request.closed`)
+| `errorType` | String | Type of error when `outcome` is `failure` (present on errors only). Possible values: `PARSE_ERROR`, `PERMISSION_ERROR`, `EXECUTION_ERROR`
+| `errorMessage` | String | Error message when `outcome` is `failure` (present on errors only)
+|===
+
+== Java HTTP Client
+
+We also automatically enable the OpenTelemetry integration for the Java HTTP Client used to send requests to the GitHub REST API.
+
+== Configuration
+
+See the xref:developer-reference.adoc#quarkus-github-app_section_quarkus-github-app-telemetry[Developer Reference] page for all the related configuration properties.
+
+== Advanced customization
+
+The OpenTelemetry integration is handled by CDI beans that provide a default implementation.
+
+For advanced use cases, you can provide your own CDI beans to override the default behavior.
+Note that it is still very much encouraged to provide feedback to improve the default implementation.
+
+You can find the API in the https://github.com/quarkiverse/quarkus-github-app/tree/main/runtime/src/main/java/io/quarkiverse/githubapp/telemetry[`io.quarkiverse.githubapp.telemetry` package]
+and the default implementation in the https://github.com/quarkiverse/quarkus-github-app/tree/main/runtime/src/main/java/io/quarkiverse/githubapp/runtime/telemetry/opentelemetry[`io.quarkiverse.githubapp.runtime.telemetry.opentelemetry` package].

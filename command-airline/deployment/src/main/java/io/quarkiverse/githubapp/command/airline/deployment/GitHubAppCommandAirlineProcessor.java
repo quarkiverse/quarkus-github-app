@@ -38,6 +38,7 @@ import org.kohsuke.github.GHPermissionType;
 import org.kohsuke.github.GHReaction;
 import org.kohsuke.github.ReactionContent;
 
+import io.quarkiverse.githubapp.GitHubEvent;
 import io.quarkiverse.githubapp.command.airline.CliOptions.ParseErrorStrategy;
 import io.quarkiverse.githubapp.command.airline.CommandOptions.CommandScope;
 import io.quarkiverse.githubapp.command.airline.CommandOptions.ExecutionErrorStrategy;
@@ -55,6 +56,7 @@ import io.quarkiverse.githubapp.command.airline.runtime.DefaultExecutionErrorHan
 import io.quarkiverse.githubapp.command.airline.runtime.DefaultParseErrorHandler;
 import io.quarkiverse.githubapp.command.airline.runtime.util.Reactions;
 import io.quarkiverse.githubapp.deployment.AdditionalEventDispatchingClassesIndexBuildItem;
+import io.quarkiverse.githubapp.deployment.GitHubAppDotNames;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
@@ -191,20 +193,26 @@ class GitHubAppCommandAirlineProcessor {
                 .filter(ai -> ai.target().kind() == Kind.METHOD_PARAMETER)
                 .collect(Collectors.groupingBy(ai -> ai.target().asMethodParameter().position()));
 
+        short gitHubEventPosition = -1;
         short issueCommentPayloadPosition = -1;
-        boolean originalMethodHasIssueCommentPayloadParameter = false;
 
         for (short i = 0; i < originalMethodParameterTypes.size(); i++) {
+            if (GitHubAppDotNames.GITHUB_EVENT.equals(originalMethodParameterTypes.get(i).name())) {
+                gitHubEventPosition = i;
+            }
             if (GH_EVENT_PAYLOAD_ISSUE_COMMENT.equals(originalMethodParameterTypes.get(i).name())) {
                 issueCommentPayloadPosition = i;
-                originalMethodHasIssueCommentPayloadParameter = true;
             }
         }
 
         List<String> parameterTypes = new ArrayList<>();
         originalMethodParameterTypes.stream().map(t -> t.name().toString())
                 .forEach(parameterTypes::add);
-        if (!originalMethodHasIssueCommentPayloadParameter) {
+        if (gitHubEventPosition < 0) {
+            parameterTypes.add(GitHubAppDotNames.GITHUB_EVENT.toString());
+            gitHubEventPosition = (short) (parameterTypes.size() - 1);
+        }
+        if (issueCommentPayloadPosition < 0) {
             parameterTypes.add(GH_EVENT_PAYLOAD_ISSUE_COMMENT.toString());
             issueCommentPayloadPosition = (short) (parameterTypes.size() - 1);
         }
@@ -226,17 +234,18 @@ class GitHubAppCommandAirlineProcessor {
                 }
             }
         }
-        if (!originalMethodHasIssueCommentPayloadParameter) {
+        if (issueCommentPayloadPosition < 0) {
             dispatchMethodCreator.getParameterAnnotations(issueCommentPayloadPosition)
                     .addAnnotation(ISSUE_COMMENT_CREATED.toString());
         }
 
         ResultHandle issueCommentPayloadRh = dispatchMethodCreator.getMethodParam(issueCommentPayloadPosition);
+        ResultHandle gitHubEventRh = dispatchMethodCreator.getMethodParam(gitHubEventPosition);
 
         ResultHandle commandExecutionContextOptional = dispatchMethodCreator.invokeSpecialMethod(
                 MethodDescriptor.ofMethod(AbstractCommandDispatcher.class, "getCommand", Optional.class,
-                        GHEventPayload.IssueComment.class),
-                dispatchMethodCreator.getThis(), issueCommentPayloadRh);
+                        GitHubEvent.class, GHEventPayload.IssueComment.class),
+                dispatchMethodCreator.getThis(), gitHubEventRh, issueCommentPayloadRh);
         BranchResult commandExecutionContextOptionalIsPresent = dispatchMethodCreator.ifTrue(dispatchMethodCreator
                 .invokeVirtualMethod(MethodDescriptor.ofMethod(Optional.class, "isPresent", boolean.class),
                         commandExecutionContextOptional));
@@ -271,6 +280,9 @@ class GitHubAppCommandAirlineProcessor {
         }
         tryBlock.invokeInterfaceMethod(runMethod.getMethod(), commandRh,
                 runMethodParameters.toArray(new ResultHandle[0]));
+        tryBlock.invokeSpecialMethod(MethodDescriptor.ofMethod(AbstractCommandDispatcher.class, "handleSuccess",
+                void.class, GitHubEvent.class, GHEventPayload.IssueComment.class, CommandExecutionContext.class),
+                tryBlock.getThis(), gitHubEventRh, issueCommentPayloadRh, commandExecutionContextRh);
         deleteReaction(tryBlock, issueCommentPayloadRh, ackReactionRh);
         BranchResult reactionOnNormalFlow = tryBlock.ifTrue(tryBlock.invokeVirtualMethod(
                 MethodDescriptor.ofMethod(ReactionStrategy.class, "reactionOnNormalFlow", boolean.class), reactionStrategyRh));
@@ -283,9 +295,9 @@ class GitHubAppCommandAirlineProcessor {
         createReaction(reactionOnError.trueBranch(), issueCommentPayloadRh, ReactionContent.MINUS_ONE);
 
         catchBlock.invokeSpecialMethod(MethodDescriptor.ofMethod(AbstractCommandDispatcher.class, "handleExecutionError",
-                void.class, GHEventPayload.IssueComment.class, CommandExecutionContext.class, Exception.class),
-                catchBlock.getThis(),
-                issueCommentPayloadRh, commandExecutionContextRh, catchBlock.getCaughtException());
+                void.class, GitHubEvent.class, GHEventPayload.IssueComment.class, CommandExecutionContext.class,
+                Exception.class), catchBlock.getThis(),
+                gitHubEventRh, issueCommentPayloadRh, commandExecutionContextRh, catchBlock.getCaughtException());
 
         catchBlock.throwException(catchBlock
                 .newInstance(MethodDescriptor.ofConstructor(CommandExecutionException.class, String.class, Exception.class),

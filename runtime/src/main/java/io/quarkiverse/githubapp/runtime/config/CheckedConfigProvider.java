@@ -15,6 +15,7 @@ import io.quarkiverse.githubapp.ConfigFile;
 import io.quarkiverse.githubapp.Credentials;
 import io.quarkiverse.githubapp.GitHubEvent;
 import io.quarkiverse.githubapp.runtime.config.GitHubAppRuntimeConfig.Debug;
+import io.quarkiverse.githubapp.runtime.config.GitHubAppRuntimeConfig.Telemetry;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
@@ -132,6 +133,10 @@ public class CheckedConfigProvider {
 
     public Debug debug() {
         return gitHubAppRuntimeConfig.debug();
+    }
+
+    public Telemetry telemetry() {
+        return gitHubAppRuntimeConfig.telemetry();
     }
 
     public ConfigFile.Source getEffectiveSource(ConfigFile.Source source) {
