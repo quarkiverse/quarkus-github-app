@@ -10,7 +10,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.stream.Collectors;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
@@ -56,8 +55,7 @@ class DispatchingConfiguration {
     }
 
     public boolean requiresGraphQLClient() {
-        for (EventDispatchingMethod eventDispatchingMethod : methods.values().stream().flatMap(Set::stream)
-                .collect(Collectors.toList())) {
+        for (EventDispatchingMethod eventDispatchingMethod : methods.values().stream().flatMap(Set::stream).toList()) {
             if (eventDispatchingMethod.requiresGraphQLClient()) {
                 return true;
             }
@@ -104,7 +102,7 @@ class DispatchingConfiguration {
             for (Set<EventAnnotation> eventAnnotations : eventAnnotations.values()) {
                 for (EventAnnotation eventAnnotation : eventAnnotations) {
                     literals.add(new EventAnnotationLiteral(eventAnnotation.getName(),
-                            eventAnnotation.getValues().stream().map(av -> av.name()).collect(Collectors.toList())));
+                            eventAnnotation.getValues().stream().map(AnnotationValue::name).toList()));
                 }
             }
             return literals;
