@@ -45,7 +45,7 @@ jobs:
           }
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
 
     - name: Set up JDK 21
       uses: actions/setup-java@v4
@@ -75,7 +75,7 @@ jobs:
         echo "::set-output name=version::$(mvn org.apache.maven.plugins:maven-help-plugin:3.2.0:evaluate -Dexpression=project.version -q -DforceStdout)"
       shell: bash
 
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
       with:
         repository: ${{ matrix.project.organization }}/${{ matrix.project.repository }}
         path: ${{ matrix.project.repository }}
