@@ -11,7 +11,7 @@ import io.quarkus.runtime.configuration.TrimmedStringConverter;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
-import io.smallrye.graphql.client.dynamic.api.DynamicGraphQLClient;
+import io.smallrye.config.WithName;
 
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
 @ConfigMapping(prefix = "quarkus.github-app")
@@ -144,17 +144,52 @@ public interface GitHubAppRuntimeConfig {
     boolean checkInstallationTokenValidity();
 
     /**
+     * Telemetry configuration.
+     */
+    Telemetry telemetry();
+
+    /**
      * Debug configuration.
      */
     Debug debug();
 
     @ConfigGroup
-    public interface Debug {
+    interface Debug {
 
         /**
          * A directory in which the payloads are saved.
          */
         @WithConverter(TrimmedStringConverter.class)
-        public Optional<Path> payloadDirectory();
+        Optional<Path> payloadDirectory();
+    }
+
+    @ConfigGroup
+    interface Telemetry {
+
+        /**
+         * Whether telemetry span collecting integration is active at runtime or not.
+         * <p>
+         * Always inactive if the telemetry integration is not present or disabled at build time.
+         */
+        @WithDefault("true")
+        @WithName("traces.active")
+        boolean tracesActive();
+
+        /**
+         * Whether telemetry metrics integration is active at runtime or not.
+         * <p>
+         * Always inactive if the telemetry integration is not present or disabled at build time.
+         */
+        @WithDefault("true")
+        @WithName("metrics.active")
+        boolean metricsActive();
+
+        /**
+         * Whether we record the event JSON payloads in the OpenTelemetry spans.
+         * <p>
+         * The payload is only recorded in the root {@code github-event} span.
+         */
+        @WithDefault("false")
+        boolean recordEventPayload();
     }
 }

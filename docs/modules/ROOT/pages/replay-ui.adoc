@@ -1,5 +1,4 @@
 = Replay UI
-
 include::./includes/attributes.adoc[]
 
 When developing GitHub Apps, more often than not, being able to replay an event is useful.

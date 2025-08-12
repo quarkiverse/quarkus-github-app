@@ -26,10 +26,15 @@ import io.quarkiverse.githubapp.runtime.config.CheckedConfigProvider;
 import io.quarkiverse.githubapp.runtime.error.GitHubEventDispatchingException;
 import io.quarkiverse.githubapp.runtime.replay.ReplayEventsRoute;
 import io.quarkiverse.githubapp.runtime.signing.PayloadSignatureChecker;
+import io.quarkiverse.githubapp.telemetry.TelemetryMetricsReporter;
+import io.quarkiverse.githubapp.telemetry.TelemetryScopeWrapper;
+import io.quarkiverse.githubapp.telemetry.TelemetrySpanWrapper;
+import io.quarkiverse.githubapp.telemetry.TelemetryTracesReporter;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.vertx.web.RoutingExchange;
 import io.quarkus.vertx.web.runtime.RoutingExchangeImpl;
+import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
@@ -57,6 +62,12 @@ public class Routes {
 
     @Inject
     Instance<ReplayEventsRoute> replayRouteInstance;
+
+    @Inject
+    TelemetryTracesReporter telemetryTracesReporter;
+
+    @Inject
+    TelemetryMetricsReporter telemetryMetricsReporter;
 
     public void init(@Observes StartupEvent startupEvent) throws IOException {
         if (checkedConfigProvider.debug().payloadDirectory().isPresent()) {
@@ -91,6 +102,8 @@ public class Routes {
 
         if (!launchMode.isDevOrTest() && (isBlank(deliveryId) || isBlank(hubSignature))) {
             routingExchange.response().setStatusCode(400).end();
+            telemetryTracesReporter.reportEarlyRequestError(deliveryId, event, "Incomplete request. Some mandatory header ("
+                    + X_GITHUB_DELIVERY + " or " + X_HUB_SIGNATURE_256 + ") is missing.");
             return;
         }
 
@@ -103,11 +116,11 @@ public class Routes {
 
         if (checkedConfigProvider.webhookSecret().isPresent() && !launchMode.isDevOrTest()) {
             if (!payloadSignatureChecker.matches(bodyBytes, hubSignature)) {
-                StringBuilder signatureError = new StringBuilder("Invalid signature for delivery: ").append(deliveryId)
-                        .append("\n");
-                signatureError.append("› Signature: ").append(hubSignature);
-                LOG.error(signatureError.toString());
+                String signatureError = "Invalid signature for delivery: " + deliveryId + "\n" +
+                        "› Signature: " + hubSignature;
+                LOG.error(signatureError);
 
+                telemetryTracesReporter.reportEarlyRequestError(deliveryId, event, signatureError);
                 routingExchange.response().setStatusCode(400).end("Invalid signature.");
                 return;
             }
@@ -136,21 +149,47 @@ public class Routes {
 
         Long installationId = extractInstallationId(payloadObject);
         String repository = extractRepository(payloadObject);
-        GitHubEvent gitHubEvent = new GitHubEvent(installationId, checkedConfigProvider.appName().orElse(null), deliveryId,
+        GitHubEvent gitHubEvent = new SimpleGitHubEvent(installationId, checkedConfigProvider.appName().orElse(null),
+                deliveryId,
                 repository, event, action, payload, payloadObject, "true".equals(replayed));
 
         if (launchMode == LaunchMode.DEVELOPMENT && replayRouteInstance.isResolvable()) {
             replayRouteInstance.get().pushEvent(gitHubEvent);
         }
 
-        try {
-            gitHubEventEmitter.fire(gitHubEvent);
-            routingExchange.ok().end();
+        TelemetrySpanWrapper span = telemetryTracesReporter.createGitHubEventSpan(gitHubEvent);
+        GitHubEvent decoratedGitHubEvent = telemetryTracesReporter.decorateGitHubEvent(gitHubEvent, span);
+
+        boolean success = true;
+        String errorMessage = null;
+
+        try (TelemetryScopeWrapper scope = telemetryTracesReporter.makeCurrent(span)) {
+            gitHubEventEmitter.fire(decoratedGitHubEvent);
+            telemetryTracesReporter.reportSuccess(decoratedGitHubEvent, span);
+            telemetryMetricsReporter.incrementGitHubEventSuccess(decoratedGitHubEvent);
         } catch (GitHubEventDispatchingException e) {
-            routingExchange.serverError().end(e.getMessage());
+            success = false;
+            errorMessage = e.getMessage();
+            telemetryTracesReporter.reportException(decoratedGitHubEvent, span, e);
+            telemetryMetricsReporter.incrementGitHubEventError(decoratedGitHubEvent, e);
         } catch (Exception e) {
+            success = false;
             // this shouldn't be needed but let's be safe
-            routingExchange.serverError().end();
+            telemetryTracesReporter.reportException(decoratedGitHubEvent, span, e);
+            telemetryMetricsReporter.incrementGitHubEventError(decoratedGitHubEvent, e);
+        } finally {
+            telemetryTracesReporter.endSpan(span);
+        }
+
+        if (success) {
+            routingExchange.ok().end();
+        } else {
+            HttpServerResponse response = routingExchange.serverError();
+            if (errorMessage != null) {
+                response.end(errorMessage);
+            } else {
+                response.end();
+            }
         }
     }
 

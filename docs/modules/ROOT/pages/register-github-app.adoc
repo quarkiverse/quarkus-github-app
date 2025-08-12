@@ -1,5 +1,4 @@
 = Register a GitHub App
-
 include::./includes/attributes.adoc[]
 
 The first step when working on a new GitHub App is to register it on GitHub.

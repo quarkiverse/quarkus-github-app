@@ -1,8 +1,6 @@
 package io.quarkiverse.githubapp.runtime.github;
 
 import java.io.IOException;
-import java.net.http.HttpClient;
-import java.net.http.HttpClient.Version;
 import java.security.GeneralSecurityException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -26,12 +24,15 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.Expiry;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 
+import io.quarkiverse.JavaHttpClientFactory;
 import io.quarkiverse.githubapp.GitHubClientProvider;
 import io.quarkiverse.githubapp.GitHubCustomizer;
 import io.quarkiverse.githubapp.InstallationTokenProvider;
 import io.quarkiverse.githubapp.InstallationTokenProvider.InstallationToken;
 import io.quarkiverse.githubapp.runtime.config.CheckedConfigProvider;
 import io.quarkiverse.githubapp.runtime.signing.JwtTokenCreator;
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InstanceHandle;
 import io.smallrye.graphql.client.dynamic.api.DynamicGraphQLClient;
 import io.smallrye.graphql.client.dynamic.api.DynamicGraphQLClientBuilder;
 
@@ -94,8 +95,10 @@ public class GitHubService implements GitHubClientProvider, InstallationTokenPro
                     }
                 })
                 .build(new CreateInstallationToken());
-        this.gitHubConnector = new HttpClientGitHubConnector(
-                HttpClient.newBuilder().version(Version.HTTP_1_1).followRedirects(HttpClient.Redirect.NEVER).build());
+        try (InstanceHandle<JavaHttpClientFactory> javaHttpClientFactory = Arc.container()
+                .instance(JavaHttpClientFactory.class)) {
+            this.gitHubConnector = new HttpClientGitHubConnector(javaHttpClientFactory.get().create());
+        }
         // if the customizer is not resolvable, we use a no-op customizer
         githubCustomizer = gitHubCustomizer.isResolvable() ? gitHubCustomizer.get() : NOOP_GITHUB_CUSTOMIZER;
 

@@ -21,6 +21,7 @@
     <modules>
         <module>testing-framework</module>
         <module>app</module>
+        <module>app-opentelemetry</module>
         <module>command-airline</module>
     </modules>
 

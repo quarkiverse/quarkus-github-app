@@ -23,6 +23,15 @@ final class GitHubAppDotNames {
     static final DotName GITHUB_EVENT = DotName.createSimple(GitHubEvent.class.getName());
     static final DotName DYNAMIC_GRAPHQL_CLIENT = DotName.createSimple(DynamicGraphQLClient.class.getName());
 
+    static final DotName OPENTELEMETRY_TRACES_REPORTER = DotName
+            .createSimple("io.quarkiverse.githubapp.runtime.telemetry.opentelemetry.OpenTelemetryTracesReporter");
+    static final DotName OPENTELEMETRY_METRICS_REPORTER = DotName
+            .createSimple("io.quarkiverse.githubapp.runtime.telemetry.opentelemetry.OpenTelemetryMetricsReporter");
+    static final DotName OPENTELEMETRY_JAVA_HTTP_CLIENT_FACTORY = DotName
+            .createSimple("io.quarkiverse.githubapp.runtime.telemetry.opentelemetry.OpenTelemetryJavaHttpClientFactory");
+    static final DotName JAVA_HTTP_CLIENT_TELEMETRY = DotName
+            .createSimple("io.opentelemetry.instrumentation.httpclient.JavaHttpClientTelemetry");
+
     private GitHubAppDotNames() {
     }
 }

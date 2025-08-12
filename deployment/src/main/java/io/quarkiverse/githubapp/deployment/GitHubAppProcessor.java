@@ -2,9 +2,14 @@ package io.quarkiverse.githubapp.deployment;
 
 import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.CONFIG_FILE;
 import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.DYNAMIC_GRAPHQL_CLIENT;
+import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.ERROR_HANDLER;
 import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.EVENT;
 import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.GITHUB;
 import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.GITHUB_EVENT;
+import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.JAVA_HTTP_CLIENT_TELEMETRY;
+import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.OPENTELEMETRY_JAVA_HTTP_CLIENT_FACTORY;
+import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.OPENTELEMETRY_METRICS_REPORTER;
+import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.OPENTELEMETRY_TRACES_REPORTER;
 import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.RAW_EVENT;
 import static io.quarkus.gizmo.Type.classType;
 import static io.quarkus.gizmo.Type.parameterizedType;
@@ -78,6 +83,7 @@ import io.quarkiverse.githubapp.runtime.UtilsProducer;
 import io.quarkiverse.githubapp.runtime.config.CheckedConfigProvider;
 import io.quarkiverse.githubapp.runtime.error.DefaultErrorHandler;
 import io.quarkiverse.githubapp.runtime.error.ErrorHandlerBridgeFunction;
+import io.quarkiverse.githubapp.runtime.github.DefaultJavaHttpClientFactory;
 import io.quarkiverse.githubapp.runtime.github.GitHubConfigFileProviderImpl;
 import io.quarkiverse.githubapp.runtime.github.GitHubFileDownloader;
 import io.quarkiverse.githubapp.runtime.github.GitHubService;
@@ -87,6 +93,12 @@ import io.quarkiverse.githubapp.runtime.replay.ReplayEventsRoute;
 import io.quarkiverse.githubapp.runtime.signing.JwtTokenCreator;
 import io.quarkiverse.githubapp.runtime.signing.PayloadSignatureChecker;
 import io.quarkiverse.githubapp.runtime.smee.SmeeIoForwarder;
+import io.quarkiverse.githubapp.runtime.telemetry.noop.NoopTelemetryMetricsReporter;
+import io.quarkiverse.githubapp.runtime.telemetry.noop.NoopTelemetryTracesReporter;
+import io.quarkiverse.githubapp.telemetry.TelemetryMetricsReporter;
+import io.quarkiverse.githubapp.telemetry.TelemetryScopeWrapper;
+import io.quarkiverse.githubapp.telemetry.TelemetrySpanWrapper;
+import io.quarkiverse.githubapp.telemetry.TelemetryTracesReporter;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
@@ -94,6 +106,9 @@ import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.MethodDescriptors;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -214,7 +229,11 @@ class GitHubAppProcessor {
     }
 
     @BuildStep
-    void additionalBeans(CombinedIndexBuildItem index, BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+    void additionalBeans(CombinedIndexBuildItem index, Capabilities capabilities,
+            GitHubAppBuildTimeConfig gitHubAppBuildTimeConfig,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+            BuildProducer<GitHubAppOpenTelemetryTracesIntegrationEnabledBuildItem> openTelemetryTracesIntegrationEnabled,
+            BuildProducer<GitHubAppOpenTelemetryMetricsIntegrationEnabledBuildItem> openTelemetryMetricsIntegrationEnabled) {
         AdditionalBeanBuildItem.Builder additionalBeanBuildItemBuilder = new AdditionalBeanBuildItem.Builder().addBeanClasses(
                 Routes.class,
                 UtilsProducer.class,
@@ -231,8 +250,30 @@ class GitHubAppProcessor {
                 TokenGitHubClients.class)
                 .setUnremovable();
 
-        for (ClassInfo errorHandler : index.getIndex().getAllKnownImplementors(GitHubAppDotNames.ERROR_HANDLER)) {
+        for (ClassInfo errorHandler : index.getIndex().getAllKnownImplementations(ERROR_HANDLER)) {
             additionalBeanBuildItemBuilder.addBeanClass(errorHandler.name().toString());
+        }
+
+        if (capabilities.isPresent(Capability.OPENTELEMETRY_TRACER)
+                && gitHubAppBuildTimeConfig.telemetry().tracesEnabled().orElse(true)) {
+            openTelemetryTracesIntegrationEnabled.produce(new GitHubAppOpenTelemetryTracesIntegrationEnabledBuildItem());
+            additionalBeanBuildItemBuilder.addBeanClass(OPENTELEMETRY_TRACES_REPORTER.toString());
+            if (QuarkusClassLoader.isClassPresentAtRuntime(JAVA_HTTP_CLIENT_TELEMETRY.toString())) {
+                additionalBeanBuildItemBuilder.addBeanClass(OPENTELEMETRY_JAVA_HTTP_CLIENT_FACTORY.toString());
+            } else {
+                additionalBeanBuildItemBuilder.addBeanClass(DefaultJavaHttpClientFactory.class);
+            }
+        } else {
+            additionalBeanBuildItemBuilder.addBeanClass(NoopTelemetryTracesReporter.class);
+            additionalBeanBuildItemBuilder.addBeanClass(DefaultJavaHttpClientFactory.class);
+        }
+
+        if (capabilities.isPresent(Capability.OPENTELEMETRY_METRICS)
+                && gitHubAppBuildTimeConfig.telemetry().metricsEnabled().orElse(true)) {
+            openTelemetryMetricsIntegrationEnabled.produce(new GitHubAppOpenTelemetryMetricsIntegrationEnabledBuildItem());
+            additionalBeanBuildItemBuilder.addBeanClass(OPENTELEMETRY_METRICS_REPORTER.toString());
+        } else {
+            additionalBeanBuildItemBuilder.addBeanClass(NoopTelemetryMetricsReporter.class);
         }
 
         additionalBeans.produce(additionalBeanBuildItemBuilder.build());
@@ -282,6 +323,8 @@ class GitHubAppProcessor {
     @BuildStep
     void generateClasses(CombinedIndexBuildItem combinedIndex, LaunchModeBuildItem launchMode,
             List<AdditionalEventDispatchingClassesIndexBuildItem> additionalEventDispatchingIndexes,
+            Optional<GitHubAppOpenTelemetryTracesIntegrationEnabledBuildItem> openTelemetryTracesIntegrationEnabled,
+            Optional<GitHubAppOpenTelemetryMetricsIntegrationEnabledBuildItem> openTelemetryMetricsIntegrationEnabled,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
@@ -312,7 +355,9 @@ class GitHubAppProcessor {
 
         ClassOutput beanClassOutput = new GeneratedBeanGizmoAdaptor(generatedBeans);
         generateDispatcher(beanClassOutput, launchMode, dispatchingConfiguration, reflectiveClasses);
-        generateMultiplexers(beanClassOutput, index, dispatchingConfiguration, reflectiveClasses);
+        generateMultiplexers(beanClassOutput, index, dispatchingConfiguration,
+                openTelemetryTracesIntegrationEnabled.isPresent(), openTelemetryMetricsIntegrationEnabled.isPresent(),
+                reflectiveClasses);
     }
 
     @BuildStep
@@ -560,16 +605,16 @@ class GitHubAppProcessor {
 
         ResultHandle gitHubEventRh = dispatchMethodCreator.getMethodParam(0);
 
-        ResultHandle installationIdRh = dispatchMethodCreator.invokeVirtualMethod(
+        ResultHandle installationIdRh = dispatchMethodCreator.invokeInterfaceMethod(
                 MethodDescriptor.ofMethod(GitHubEvent.class, "getInstallationId", Long.class),
                 gitHubEventRh);
-        ResultHandle dispatchedEventRh = dispatchMethodCreator.invokeVirtualMethod(
+        ResultHandle dispatchedEventRh = dispatchMethodCreator.invokeInterfaceMethod(
                 MethodDescriptor.ofMethod(GitHubEvent.class, "getEvent", String.class),
                 gitHubEventRh);
-        ResultHandle dispatchedActionRh = dispatchMethodCreator.invokeVirtualMethod(
+        ResultHandle dispatchedActionRh = dispatchMethodCreator.invokeInterfaceMethod(
                 MethodDescriptor.ofMethod(GitHubEvent.class, "getAction", String.class),
                 gitHubEventRh);
-        ResultHandle dispatchedPayloadRh = dispatchMethodCreator.invokeVirtualMethod(
+        ResultHandle dispatchedPayloadRh = dispatchMethodCreator.invokeInterfaceMethod(
                 MethodDescriptor.ofMethod(GitHubEvent.class, "getPayload", String.class),
                 gitHubEventRh);
 
@@ -727,6 +772,8 @@ class GitHubAppProcessor {
     private static void generateMultiplexers(ClassOutput beanClassOutput,
             IndexView index,
             DispatchingConfiguration dispatchingConfiguration,
+            boolean openTelemetryTracesIntegrationEnabled,
+            boolean openTelemetryMetricsIntegrationEnabled,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
         for (Entry<DotName, TreeSet<EventDispatchingMethod>> eventDispatchingMethodsEntry : dispatchingConfiguration
                 .getMethods().entrySet()) {
@@ -754,6 +801,32 @@ class GitHubAppProcessor {
 
             for (AnnotationInstance classAnnotation : declaringClass.declaredAnnotations()) {
                 multiplexerClassCreator.addAnnotation(classAnnotation);
+            }
+
+            // OpenTelemetry integration
+            final FieldDescriptor telemetryTracesReporterFieldDescriptor;
+            if (openTelemetryTracesIntegrationEnabled) {
+                telemetryTracesReporterFieldDescriptor = FieldDescriptor.of(multiplexerClassName, "telemetryTracesReporter",
+                        TelemetryTracesReporter.class);
+                FieldCreator telemetryTracesReporterFieldCreator = multiplexerClassCreator
+                        .getFieldCreator(telemetryTracesReporterFieldDescriptor);
+                telemetryTracesReporterFieldCreator.addAnnotation(Inject.class);
+                telemetryTracesReporterFieldCreator.setModifiers(Modifier.PROTECTED);
+            } else {
+                // won't be used, as the consumer code is protected by the same condition
+                telemetryTracesReporterFieldDescriptor = null;
+            }
+            final FieldDescriptor telemetryMetricsReporterFieldDescriptor;
+            if (openTelemetryMetricsIntegrationEnabled) {
+                telemetryMetricsReporterFieldDescriptor = FieldDescriptor.of(multiplexerClassName, "telemetryMetricsReporter",
+                        TelemetryMetricsReporter.class);
+                FieldCreator telemetryMetricsReporterFieldCreator = multiplexerClassCreator
+                        .getFieldCreator(telemetryMetricsReporterFieldDescriptor);
+                telemetryMetricsReporterFieldCreator.addAnnotation(Inject.class);
+                telemetryMetricsReporterFieldCreator.setModifiers(Modifier.PROTECTED);
+            } else {
+                // won't be used, as the consumer code is protected by the same condition
+                telemetryMetricsReporterFieldDescriptor = null;
             }
 
             // Inject ErrorHandler
@@ -915,6 +988,26 @@ class GitHubAppProcessor {
                     payloadRh = methodCreator.loadNull();
                 }
 
+                final ResultHandle telemetrySpanWrapperRh;
+                final ResultHandle telemetryScopeWrapperRh;
+                if (openTelemetryTracesIntegrationEnabled) {
+                    telemetrySpanWrapperRh = methodCreator.invokeInterfaceMethod(
+                            MethodDescriptor.ofMethod(TelemetryTracesReporter.class, "createGitHubEventListeningMethodSpan",
+                                    TelemetrySpanWrapper.class, GitHubEvent.class, String.class, String.class, String.class),
+                            methodCreator.readInstanceField(telemetryTracesReporterFieldDescriptor, methodCreator.getThis()),
+                            gitHubEventRh, methodCreator.load(declaringClassName.toString()),
+                            methodCreator.load(originalMethod.name()), methodCreator.load(originalMethod.toString()));
+                    telemetryScopeWrapperRh = methodCreator.invokeInterfaceMethod(
+                            MethodDescriptor.ofMethod(TelemetryTracesReporter.class, "makeCurrent", TelemetryScopeWrapper.class,
+                                    TelemetrySpanWrapper.class),
+                            methodCreator.readInstanceField(telemetryTracesReporterFieldDescriptor, methodCreator.getThis()),
+                            telemetrySpanWrapperRh);
+                } else {
+                    // won't be used, as the consumer code is protected by the same condition
+                    telemetrySpanWrapperRh = null;
+                    telemetryScopeWrapperRh = null;
+                }
+
                 TryBlock tryBlock = methodCreator.tryBlock();
 
                 // generate the code of the method
@@ -967,7 +1060,7 @@ class GitHubAppProcessor {
                         } else {
                             ghRepositoryRh = tryBlock.invokeStaticMethod(MethodDescriptor
                                     .ofMethod(GitHub.class, "getRepository", GHRepository.class, String.class),
-                                    tryBlock.invokeVirtualMethod(
+                                    tryBlock.invokeInterfaceMethod(
                                             MethodDescriptor.ofMethod(GitHubEvent.class, "getRepositoryOrThrow", String.class),
                                             gitHubEventRh));
                         }
@@ -998,6 +1091,31 @@ class GitHubAppProcessor {
 
                 ResultHandle returnValue = tryBlock.invokeVirtualMethod(originalMethod, tryBlock.getThis(),
                         parameterValues);
+                // OpenTelemetry integration
+                if (openTelemetryTracesIntegrationEnabled) {
+                    tryBlock.invokeInterfaceMethod(
+                            MethodDescriptor.ofMethod(TelemetryTracesReporter.class, "reportSuccess", void.class,
+                                    GitHubEvent.class, TelemetrySpanWrapper.class),
+                            tryBlock.readInstanceField(telemetryTracesReporterFieldDescriptor, tryBlock.getThis()),
+                            gitHubEventRh, telemetrySpanWrapperRh);
+                    // we don't have a finally clause in Gizmo 1, so we copy this clause in both the try and the catch...
+                    tryBlock.invokeInterfaceMethod(MethodDescriptor.ofMethod(AutoCloseable.class, "close", void.class),
+                            telemetryScopeWrapperRh);
+                    tryBlock.invokeInterfaceMethod(
+                            MethodDescriptor.ofMethod(TelemetryTracesReporter.class, "endSpan", void.class,
+                                    TelemetrySpanWrapper.class),
+                            tryBlock.readInstanceField(telemetryTracesReporterFieldDescriptor, tryBlock.getThis()),
+                            telemetrySpanWrapperRh);
+                }
+                if (openTelemetryMetricsIntegrationEnabled) {
+                    tryBlock.invokeInterfaceMethod(
+                            MethodDescriptor.ofMethod(TelemetryMetricsReporter.class, "incrementGitHubEventMethodSuccess",
+                                    void.class,
+                                    GitHubEvent.class, String.class, String.class, String.class),
+                            tryBlock.readInstanceField(telemetryMetricsReporterFieldDescriptor, tryBlock.getThis()),
+                            gitHubEventRh, tryBlock.load(declaringClassName.toString()),
+                            tryBlock.load(originalMethod.name()), tryBlock.load(originalMethod.toString()));
+                }
                 tryBlock.returnValue(returnValue);
 
                 CatchBlockCreator catchBlock = tryBlock.addCatch(Throwable.class);
@@ -1008,6 +1126,33 @@ class GitHubAppProcessor {
                         gitHubEventRh,
                         payloadRh,
                         catchBlock.getCaughtException());
+                // OpenTelemetry integration
+                if (openTelemetryTracesIntegrationEnabled) {
+                    catchBlock.invokeInterfaceMethod(
+                            MethodDescriptor.ofMethod(TelemetryTracesReporter.class, "reportException", void.class,
+                                    GitHubEvent.class,
+                                    TelemetrySpanWrapper.class, Throwable.class),
+                            catchBlock.readInstanceField(telemetryTracesReporterFieldDescriptor, catchBlock.getThis()),
+                            gitHubEventRh, telemetrySpanWrapperRh, catchBlock.getCaughtException());
+                    // we don't have a finally clause in Gizmo 1, so we copy this clause in both the try and the catch...
+                    catchBlock.invokeInterfaceMethod(MethodDescriptor.ofMethod(AutoCloseable.class, "close", void.class),
+                            telemetryScopeWrapperRh);
+                    catchBlock.invokeInterfaceMethod(
+                            MethodDescriptor.ofMethod(TelemetryTracesReporter.class, "endSpan", void.class,
+                                    TelemetrySpanWrapper.class),
+                            catchBlock.readInstanceField(telemetryTracesReporterFieldDescriptor, catchBlock.getThis()),
+                            telemetrySpanWrapperRh);
+                }
+                if (openTelemetryMetricsIntegrationEnabled) {
+                    catchBlock.invokeInterfaceMethod(
+                            MethodDescriptor.ofMethod(TelemetryMetricsReporter.class, "incrementGitHubEventMethodError",
+                                    void.class,
+                                    GitHubEvent.class, String.class, String.class, String.class, Throwable.class),
+                            catchBlock.readInstanceField(telemetryMetricsReporterFieldDescriptor, catchBlock.getThis()),
+                            gitHubEventRh, catchBlock.load(declaringClassName.toString()),
+                            catchBlock.load(originalMethod.name()), catchBlock.load(originalMethod.toString()),
+                            catchBlock.getCaughtException());
+                }
                 catchBlock.returnValue(null);
             }
 

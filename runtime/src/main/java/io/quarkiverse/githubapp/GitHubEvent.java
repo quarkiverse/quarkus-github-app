@@ -6,111 +6,33 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import io.vertx.core.json.JsonObject;
 
-/**
- * This object will be serialized to JSON when the replay is enabled.
- * <p>
- * Thus you need to be extra careful adding the proper {@link JsonIgnore} annotations.
- * <p>
- * This object is also used in the Replay UI's Javascript code so be careful when updating it.
- */
-public class GitHubEvent {
+public interface GitHubEvent {
 
-    private final Long installationId;
+    Long getInstallationId();
 
-    private final Optional<String> appName;
+    Optional<String> getAppName();
 
-    private final String deliveryId;
+    String getDeliveryId();
 
-    private final Optional<String> repository;
-
-    private final String event;
-
-    private final String action;
-
-    private final String eventAction;
-
-    private final String payload;
-
-    private final JsonObject parsedPayload;
-
-    private final boolean replayed;
-
-    public GitHubEvent(Long installationId, String appName, String deliveryId, String repository, String event, String action,
-            String payload, JsonObject parsedPayload, boolean replayed) {
-        this.installationId = installationId;
-        this.appName = Optional.ofNullable(appName);
-        this.deliveryId = deliveryId;
-        this.repository = Optional.ofNullable(repository);
-        this.event = event;
-        this.action = action;
-        this.payload = payload;
-        this.parsedPayload = parsedPayload;
-        this.replayed = replayed;
-
-        StringBuilder eventActionSb = new StringBuilder();
-        if (event != null && !event.isBlank()) {
-            eventActionSb.append(event);
-        }
-        if (action != null && !action.isBlank()) {
-            eventActionSb.append(".").append(action);
-        }
-        this.eventAction = eventActionSb.toString();
-    }
-
-    public Long getInstallationId() {
-        return installationId;
-    }
-
-    public Optional<String> getAppName() {
-        return appName;
-    }
-
-    public String getDeliveryId() {
-        return deliveryId;
-    }
-
-    public Optional<String> getRepository() {
-        return repository;
-    }
+    Optional<String> getRepository();
 
     @JsonIgnore
-    public String getRepositoryOrThrow() {
-        return repository
-                .orElseThrow(() -> new IllegalStateException("The payload did not provide any repository information"));
-    }
+    String getRepositoryOrThrow();
 
-    public String getEvent() {
-        return event;
-    }
+    String getEvent();
 
-    public String getAction() {
-        return action;
-    }
+    String getAction();
 
-    public String getEventAction() {
-        return eventAction;
-    }
+    String getEventAction();
 
-    public String getPayload() {
-        return payload;
-    }
+    String getPayload();
 
     @JsonIgnore
-    public JsonObject getParsedPayload() {
-        if (parsedPayload == null) {
-            throw new IllegalStateException("getParsedPayload() may not be called on GitHubEvents that have been serialized");
-        }
+    JsonObject getParsedPayload();
 
-        return parsedPayload;
-    }
+    boolean isReplayed();
 
-    public boolean isReplayed() {
-        return replayed;
-    }
-
-    @Override
-    public String toString() {
-        return "GitHubEvent [installationId=" + installationId + ", deliveryId=" + deliveryId + ", repository=" + repository
-                + ", event=" + event + ", action=" + action + ", payload=" + payload + ", replayed=" + replayed + "]";
+    default <T extends GitHubEvent> T as(Class<T> clazz) {
+        return (T) this;
     }
 }

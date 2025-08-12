@@ -1,0 +1,10 @@
+= OpenTelemetry Integration
+include::./includes/attributes.adoc[]
+
+== Enabling OpenTelemetry
+
+== Spans
+
+== Java HTTP Client
+
+== Configuration

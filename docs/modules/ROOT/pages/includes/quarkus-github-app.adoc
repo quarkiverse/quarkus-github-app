@@ -7,6 +7,52 @@ h|[.header-title]##Configuration property##
 h|Type
 h|Default
 
+a|icon:lock[title=Fixed at build time] [[quarkus-github-app_quarkus-github-app-telemetry-traces-enabled]] [.property-path]##link:#quarkus-github-app_quarkus-github-app-telemetry-traces-enabled[`quarkus.github-app.telemetry.traces.enabled`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.github-app.telemetry.traces.enabled+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Whether telemetry traces integration is active at runtime or not.
+
+Defaults to true when the Quarkus OpenTelemetry integration is present and enabled.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_GITHUB_APP_TELEMETRY_TRACES_ENABLED+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_GITHUB_APP_TELEMETRY_TRACES_ENABLED+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|
+
+a|icon:lock[title=Fixed at build time] [[quarkus-github-app_quarkus-github-app-telemetry-metrics-enabled]] [.property-path]##link:#quarkus-github-app_quarkus-github-app-telemetry-metrics-enabled[`quarkus.github-app.telemetry.metrics.enabled`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.github-app.telemetry.metrics.enabled+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Whether telemetry metrics integration is active at runtime or not.
+
+Defaults to true when the Quarkus OpenTelemetry integration is present and enabled.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_GITHUB_APP_TELEMETRY_METRICS_ENABLED+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_GITHUB_APP_TELEMETRY_METRICS_ENABLED+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|
+
 a| [[quarkus-github-app_quarkus-github-app-app-id]] [.property-path]##link:#quarkus-github-app_quarkus-github-app-app-id[`quarkus.github-app.app-id`]##
 ifdef::add-copy-button-to-config-props[]
 config_property_copy_button:+++quarkus.github-app.app-id+++[]
@@ -332,6 +378,75 @@ endif::add-copy-button-to-env-var[]
 --
 |boolean
 |`true`
+
+a| [[quarkus-github-app_quarkus-github-app-telemetry-traces-active]] [.property-path]##link:#quarkus-github-app_quarkus-github-app-telemetry-traces-active[`quarkus.github-app.telemetry.traces.active`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.github-app.telemetry.traces.active+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Whether telemetry span collecting integration is active at runtime or not.
+
+Always inactive if the telemetry integration is not present or disabled at build time.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_GITHUB_APP_TELEMETRY_TRACES_ACTIVE+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_GITHUB_APP_TELEMETRY_TRACES_ACTIVE+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|`true`
+
+a| [[quarkus-github-app_quarkus-github-app-telemetry-metrics-active]] [.property-path]##link:#quarkus-github-app_quarkus-github-app-telemetry-metrics-active[`quarkus.github-app.telemetry.metrics.active`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.github-app.telemetry.metrics.active+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Whether telemetry metrics integration is active at runtime or not.
+
+Always inactive if the telemetry integration is not present or disabled at build time.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_GITHUB_APP_TELEMETRY_METRICS_ACTIVE+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_GITHUB_APP_TELEMETRY_METRICS_ACTIVE+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|`true`
+
+a| [[quarkus-github-app_quarkus-github-app-telemetry-record-event-payload]] [.property-path]##link:#quarkus-github-app_quarkus-github-app-telemetry-record-event-payload[`quarkus.github-app.telemetry.record-event-payload`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.github-app.telemetry.record-event-payload+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Whether we record the event JSON payloads in the OpenTelemetry spans.
+
+The payload is only recorded in the root `github-event` span.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_GITHUB_APP_TELEMETRY_RECORD_EVENT_PAYLOAD+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_GITHUB_APP_TELEMETRY_RECORD_EVENT_PAYLOAD+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|`false`
 
 a| [[quarkus-github-app_quarkus-github-app-debug-payload-directory]] [.property-path]##link:#quarkus-github-app_quarkus-github-app-debug-payload-directory[`quarkus.github-app.debug.payload-directory`]##
 ifdef::add-copy-button-to-config-props[]
