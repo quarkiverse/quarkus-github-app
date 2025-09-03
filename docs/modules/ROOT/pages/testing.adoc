@@ -1,5 +1,4 @@
 = Testing
-
 include::./includes/attributes.adoc[]
 
 [[manual-vs-automated]]

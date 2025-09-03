@@ -4,7 +4,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
+
+import jakarta.inject.Inject;
 
 import org.jboss.logging.Logger;
 import org.kohsuke.github.GHEventPayload;
@@ -22,6 +23,7 @@ import com.github.rvesse.airline.model.MetadataLoader;
 import com.github.rvesse.airline.parser.ParseResult;
 import com.github.rvesse.airline.parser.errors.handlers.CollectAll;
 
+import io.quarkiverse.githubapp.GitHubEvent;
 import io.quarkiverse.githubapp.command.airline.AirlineInject;
 import io.quarkiverse.githubapp.command.airline.CommandOptions.DefaultExecutionErrorHandlerMarker;
 import io.quarkiverse.githubapp.command.airline.ExecutionErrorHandler;
@@ -30,6 +32,9 @@ import io.quarkiverse.githubapp.command.airline.ParseErrorHandler;
 import io.quarkiverse.githubapp.command.airline.ParseErrorHandler.ParseErrorContext;
 import io.quarkiverse.githubapp.command.airline.runtime.util.Commandline;
 import io.quarkiverse.githubapp.command.airline.runtime.util.Reactions;
+import io.quarkiverse.githubapp.runtime.telemetry.opentelemetry.OpenTelemetryAttributes.CommandErrorType;
+import io.quarkiverse.githubapp.telemetry.TelemetryMetricsReporter;
+import io.quarkiverse.githubapp.telemetry.TelemetryTracesReporter;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 
@@ -42,6 +47,11 @@ public abstract class AbstractCommandDispatcher<C> {
     private final Map<String, CommandConfig> commandConfigs;
     private final Map<String, CommandPermissionConfig> commandPermissionConfigs;
     private final Map<String, CommandTeamConfig> commandTeamConfigs;
+
+    @Inject
+    TelemetryTracesReporter openTelemetryTracesReporter;
+    @Inject
+    TelemetryMetricsReporter openTelemetryMetricsReporter;
 
     protected AbstractCommandDispatcher(Class<?> cliClass, CliConfig cliConfig) {
         ParserBuilder<C> parserBuilder = new ParserBuilder<C>();
@@ -62,7 +72,8 @@ public abstract class AbstractCommandDispatcher<C> {
 
     protected abstract Map<String, CommandTeamConfig> getCommandTeamConfigs();
 
-    protected Optional<CommandExecutionContext<C>> getCommand(GHEventPayload.IssueComment issueCommentPayload) {
+    protected Optional<CommandExecutionContext<C>> getCommand(GitHubEvent gitHubEvent,
+            GHEventPayload.IssueComment issueCommentPayload) {
         String body = issueCommentPayload.getComment().getBody();
 
         if (body == null || body.isBlank()) {
@@ -86,7 +97,7 @@ public abstract class AbstractCommandDispatcher<C> {
             commandLine = Commandline.translateCommandline(firstLine);
             commandLine.remove(0);
         } catch (IllegalArgumentException e) {
-            handleParseError(issueCommentPayload, firstLine, null, e.getMessage());
+            handleParseError(gitHubEvent, issueCommentPayload, firstLine, null, e.getMessage());
 
             if (cliConfig.getDefaultCommandConfig().getReactionStrategy().reactionOnError()) {
                 Reactions.createReaction(issueCommentPayload, ReactionContent.CONFUSED);
@@ -116,6 +127,10 @@ public abstract class AbstractCommandDispatcher<C> {
                 if (commandConfig.getReactionStrategy().reactionOnError()) {
                     Reactions.createReaction(issueCommentPayload, ReactionContent.MINUS_ONE);
                 }
+                openTelemetryTracesReporter.reportCommandMethodError(gitHubEvent, commandClassName, firstLine,
+                        CommandErrorType.PERMISSION_ERROR, null);
+                openTelemetryMetricsReporter.incrementCommandMethodError(gitHubEvent, commandClassName,
+                        CommandErrorType.PERMISSION_ERROR, null);
                 return Optional.empty();
             }
 
@@ -134,7 +149,7 @@ public abstract class AbstractCommandDispatcher<C> {
             Reactions.createReaction(issueCommentPayload, ReactionContent.CONFUSED);
         }
 
-        handleParseError(issueCommentPayload, firstLine, parseResult, null);
+        handleParseError(gitHubEvent, issueCommentPayload, firstLine, parseResult, null);
 
         return Optional.empty();
     }
@@ -169,7 +184,7 @@ public abstract class AbstractCommandDispatcher<C> {
 
                 List<GHTeam> matchingTeams = repository.getTeams().stream()
                         .filter(t -> commandTeamConfig.getTeams().contains(t.getSlug()))
-                        .collect(Collectors.toList());
+                        .toList();
 
                 for (GHTeam matchingTeam : matchingTeams) {
                     if (matchingTeam.hasMember(user)) {
@@ -195,7 +210,7 @@ public abstract class AbstractCommandDispatcher<C> {
                 cliConfig.getDefaultCommandConfig());
     }
 
-    protected void handleParseError(IssueComment issueCommentPayload, String command,
+    protected void handleParseError(GitHubEvent gitHubEvent, IssueComment issueCommentPayload, String command,
             ParseResult<C> parseResult, String error) {
         Class<? extends ParseErrorHandler> parseErrorHandlerClass = cliConfig.getParseErrorHandler();
 
@@ -209,9 +224,14 @@ public abstract class AbstractCommandDispatcher<C> {
             parseErrorHandlerInstance.get().handleParseError(issueCommentPayload,
                     new ParseErrorContext(cliConfig, cli, command, parseResult, error));
         }
+
+        openTelemetryTracesReporter.reportCommandMethodError(gitHubEvent, null, command, CommandErrorType.PARSE_ERROR,
+                error);
+        openTelemetryMetricsReporter.incrementCommandMethodError(gitHubEvent, null, CommandErrorType.PARSE_ERROR,
+                error);
     }
 
-    protected void handleExecutionError(GHEventPayload.IssueComment issueCommentPayload,
+    protected void handleExecutionError(GitHubEvent gitHubEvent, GHEventPayload.IssueComment issueCommentPayload,
             CommandExecutionContext<C> commandExecutionContext, Exception exception) {
         Class<? extends ExecutionErrorHandler> executionErrorHandlerClass = commandExecutionContext.getCommandConfig()
                 .getExecutionErrorHandler();
@@ -232,6 +252,21 @@ public abstract class AbstractCommandDispatcher<C> {
             executionErrorHandlerInstance.get().handleExecutionError(issueCommentPayload,
                     new ExecutionErrorContext(commandExecutionContext, exception));
         }
+
+        openTelemetryTracesReporter.reportCommandMethodError(gitHubEvent,
+                commandExecutionContext.getCommand().getClass().getName(), commandExecutionContext.getCommandLine(),
+                CommandErrorType.EXECUTION_ERROR, exception.getMessage());
+        openTelemetryMetricsReporter.incrementCommandMethodError(gitHubEvent,
+                commandExecutionContext.getCommand().getClass().getName(), CommandErrorType.EXECUTION_ERROR,
+                exception.getMessage());
+    }
+
+    protected void handleSuccess(GitHubEvent gitHubEvent, GHEventPayload.IssueComment issueCommentPayload,
+            CommandExecutionContext<C> commandExecutionContext) {
+        openTelemetryTracesReporter.reportCommandMethodSuccess(gitHubEvent,
+                commandExecutionContext.getCommand().getClass().getName(), commandExecutionContext.getCommandLine());
+        openTelemetryMetricsReporter.incrementCommandMethodSuccess(gitHubEvent,
+                commandExecutionContext.getCommand().getClass().getName());
     }
 
     public static class CommandExecutionContext<C> {

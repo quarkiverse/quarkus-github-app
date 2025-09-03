@@ -21,7 +21,7 @@
         <maven.compiler.target>17</maven.compiler.target>
         <maven.compiler.release>17</maven.compiler.release>
         <maven.compiler.parameters>true</maven.compiler.parameters>
-        <quarkus.version>3.20.0</quarkus.version>
+        <quarkus.version>3.25.0</quarkus.version>
         <compiler-plugin.version>3.13.0</compiler-plugin.version>
         <resource-plugin.version>3.3.1</resource-plugin.version>
         <dependency-plugin.version>3.8.1</dependency-plugin.version>

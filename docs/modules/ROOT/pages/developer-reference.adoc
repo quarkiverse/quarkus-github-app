@@ -1,5 +1,4 @@
 = Developer Reference
-
 include::./includes/attributes.adoc[]
 
 :webhook-documentation-url: {github-reference-documentation-root-url}/webhooks-and-events/webhook-events-and-payloads

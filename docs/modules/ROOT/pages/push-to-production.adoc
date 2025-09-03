@@ -1,5 +1,4 @@
 = Push to Production
-
 include::./includes/attributes.adoc[]
 
 == Register another GitHub App

@@ -1,5 +1,4 @@
 = Comment-Based Commands
-
 include::./includes/attributes.adoc[]
 
 A popular requirement for GitHub Apps is to react to comments to perform commands e.g. `@bot do something`.

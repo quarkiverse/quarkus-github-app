@@ -1,5 +1,4 @@
 = Create a GitHub App
-
 include::./includes/attributes.adoc[]
 
 == Initialize your Quarkus application
