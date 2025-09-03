@@ -9,6 +9,13 @@ Enabling it is as simple as adding the https://quarkus.io/guides/opentelemetry[`
 
 You may also enable the https://quarkus.io/guides/observability-devservices-lgtm[Observability LGTM Dev Services] to experiment with this integration.
 
+[WARNING]
+====
+This OpenTelemetry integration is currently experimental.
+
+Your feedback on how the spans and metrics are structured is greatly appreciated.
+====
+
 == Spans
 
 Quarkus GitHub creates some specific spans that are linked to the span of the original HTTP request.
