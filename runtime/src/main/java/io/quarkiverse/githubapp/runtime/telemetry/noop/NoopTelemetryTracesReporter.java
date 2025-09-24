@@ -3,7 +3,7 @@ package io.quarkiverse.githubapp.runtime.telemetry.noop;
 import jakarta.inject.Singleton;
 
 import io.quarkiverse.githubapp.GitHubEvent;
-import io.quarkiverse.githubapp.runtime.telemetry.opentelemetry.OpenTelemetryAttributes.CommandErrorType;
+import io.quarkiverse.githubapp.telemetry.CommandErrorType;
 import io.quarkiverse.githubapp.telemetry.TelemetryScopeWrapper;
 import io.quarkiverse.githubapp.telemetry.TelemetrySpanWrapper;
 import io.quarkiverse.githubapp.telemetry.TelemetryTracesReporter;

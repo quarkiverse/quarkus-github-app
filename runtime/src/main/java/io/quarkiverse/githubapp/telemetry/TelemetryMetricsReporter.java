@@ -1,7 +1,6 @@
 package io.quarkiverse.githubapp.telemetry;
 
 import io.quarkiverse.githubapp.GitHubEvent;
-import io.quarkiverse.githubapp.runtime.telemetry.opentelemetry.OpenTelemetryAttributes.CommandErrorType;
 
 /**
  * Report metrics to OpenTelemetry.

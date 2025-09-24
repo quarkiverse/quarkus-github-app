@@ -1,7 +1,6 @@
 package io.quarkiverse.githubapp.telemetry;
 
 import io.quarkiverse.githubapp.GitHubEvent;
-import io.quarkiverse.githubapp.runtime.telemetry.opentelemetry.OpenTelemetryAttributes.CommandErrorType;
 
 /**
  * Report spans to OpenTelemetry.
@@ -29,4 +28,5 @@ public interface TelemetryTracesReporter {
 
     void reportCommandMethodError(GitHubEvent gitHubEvent, String commandClassName,
             String commandLine, CommandErrorType errorType, String errorMessage);
+
 }

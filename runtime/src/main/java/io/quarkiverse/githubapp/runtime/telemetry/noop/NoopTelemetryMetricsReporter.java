@@ -1,7 +1,7 @@
 package io.quarkiverse.githubapp.runtime.telemetry.noop;
 
 import io.quarkiverse.githubapp.GitHubEvent;
-import io.quarkiverse.githubapp.runtime.telemetry.opentelemetry.OpenTelemetryAttributes.CommandErrorType;
+import io.quarkiverse.githubapp.telemetry.CommandErrorType;
 import io.quarkiverse.githubapp.telemetry.TelemetryMetricsReporter;
 
 public class NoopTelemetryMetricsReporter implements TelemetryMetricsReporter {
