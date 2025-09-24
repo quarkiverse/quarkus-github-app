@@ -3,6 +3,7 @@ package io.quarkiverse.githubapp.runtime.telemetry.opentelemetry;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.AttributesBuilder;
 import io.quarkiverse.githubapp.GitHubEvent;
+import io.quarkiverse.githubapp.telemetry.CommandErrorType;
 
 public class OpenTelemetryAttributes {
 
@@ -79,11 +80,5 @@ public class OpenTelemetryAttributes {
         if (errorMessage != null) {
             attributesBuilder.put(ERROR_MESSAGE, errorMessage);
         }
-    }
-
-    public enum CommandErrorType {
-        PARSE_ERROR,
-        PERMISSION_ERROR,
-        EXECUTION_ERROR
     }
 }

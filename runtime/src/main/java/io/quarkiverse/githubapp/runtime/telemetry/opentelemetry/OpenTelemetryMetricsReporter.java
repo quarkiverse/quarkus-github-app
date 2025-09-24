@@ -8,7 +8,7 @@ import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
 import io.quarkiverse.githubapp.GitHubEvent;
 import io.quarkiverse.githubapp.runtime.config.CheckedConfigProvider;
-import io.quarkiverse.githubapp.runtime.telemetry.opentelemetry.OpenTelemetryAttributes.CommandErrorType;
+import io.quarkiverse.githubapp.telemetry.CommandErrorType;
 import io.quarkiverse.githubapp.telemetry.TelemetryMetricsReporter;
 import io.quarkus.arc.DefaultBean;
 

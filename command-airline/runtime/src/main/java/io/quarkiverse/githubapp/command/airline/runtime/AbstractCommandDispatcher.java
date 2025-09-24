@@ -32,7 +32,7 @@ import io.quarkiverse.githubapp.command.airline.ParseErrorHandler;
 import io.quarkiverse.githubapp.command.airline.ParseErrorHandler.ParseErrorContext;
 import io.quarkiverse.githubapp.command.airline.runtime.util.Commandline;
 import io.quarkiverse.githubapp.command.airline.runtime.util.Reactions;
-import io.quarkiverse.githubapp.runtime.telemetry.opentelemetry.OpenTelemetryAttributes.CommandErrorType;
+import io.quarkiverse.githubapp.telemetry.CommandErrorType;
 import io.quarkiverse.githubapp.telemetry.TelemetryMetricsReporter;
 import io.quarkiverse.githubapp.telemetry.TelemetryTracesReporter;
 import io.quarkus.arc.Arc;
