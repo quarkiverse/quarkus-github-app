@@ -500,64 +500,67 @@ class GitHubAppProcessor {
     }
 
     private static void generateAnnotationLiterals(ClassOutput classOutput, DispatchingConfiguration dispatchingConfiguration) {
-        for (EventDispatchingConfiguration eventDispatchingConfiguration : dispatchingConfiguration.getEventConfigurations()
-                .values()) {
-            for (EventAnnotationLiteral eventAnnotationLiteral : eventDispatchingConfiguration.getEventAnnotationLiterals()) {
-                String literalClassName = getLiteralClassName(eventAnnotationLiteral.getName());
+        Set<EventAnnotationLiteral> eventAnnotationLiterals = dispatchingConfiguration.getEventConfigurations().values()
+                .stream()
+                .map(EventDispatchingConfiguration::getEventAnnotationLiterals)
+                .flatMap(Set::stream)
+                .collect(Collectors.toSet());
 
-                String signature = SignatureBuilder.forClass()
-                        .setSuperClass(parameterizedType(classType(AnnotationLiteral.class),
-                                classType(eventAnnotationLiteral.getName())))
-                        .addInterface(classType(eventAnnotationLiteral.getName()))
-                        .build();
+        for (EventAnnotationLiteral eventAnnotationLiteral : eventAnnotationLiterals) {
+            String literalClassName = getLiteralClassName(eventAnnotationLiteral.getName());
 
-                ClassCreator literalClassCreator = ClassCreator.builder().classOutput(classOutput)
-                        .className(literalClassName)
-                        .signature(signature)
-                        .superClass(AnnotationLiteral.class)
-                        .interfaces(eventAnnotationLiteral.getName().toString())
-                        .build();
+            String signature = SignatureBuilder.forClass()
+                    .setSuperClass(parameterizedType(classType(AnnotationLiteral.class),
+                            classType(eventAnnotationLiteral.getName())))
+                    .addInterface(classType(eventAnnotationLiteral.getName()))
+                    .build();
 
-                Class<?>[] parameterTypes = new Class<?>[eventAnnotationLiteral.getAttributes().size()];
-                Arrays.fill(parameterTypes, String.class);
+            ClassCreator literalClassCreator = ClassCreator.builder().classOutput(classOutput)
+                    .className(literalClassName)
+                    .signature(signature)
+                    .superClass(AnnotationLiteral.class)
+                    .interfaces(eventAnnotationLiteral.getName().toString())
+                    .build();
 
-                MethodCreator constructorCreator = literalClassCreator.getMethodCreator("<init>", "V",
-                        (Object[]) parameterTypes);
-                constructorCreator.invokeSpecialMethod(MethodDescriptor.ofConstructor(AnnotationLiteral.class),
-                        constructorCreator.getThis());
-                for (int i = 0; i < eventAnnotationLiteral.getAttributes().size(); i++) {
-                    constructorCreator.writeInstanceField(
-                            FieldDescriptor.of(literalClassName, eventAnnotationLiteral.getAttributes().get(i), String.class),
-                            constructorCreator.getThis(), constructorCreator.getMethodParam(i));
-                    constructorCreator.setModifiers(Modifier.PUBLIC);
-                }
-                constructorCreator.returnValue(null);
+            Class<?>[] parameterTypes = new Class<?>[eventAnnotationLiteral.getAttributes().size()];
+            Arrays.fill(parameterTypes, String.class);
 
-                for (String attribute : eventAnnotationLiteral.getAttributes()) {
-                    // we only support String for now
-                    literalClassCreator.getFieldCreator(attribute, String.class)
-                            .setModifiers(Modifier.PRIVATE);
-                    MethodCreator getterCreator = literalClassCreator.getMethodCreator(attribute, String.class);
-                    getterCreator.setModifiers(Modifier.PUBLIC);
-                    getterCreator.returnValue(getterCreator.readInstanceField(
-                            FieldDescriptor.of(literalClassName, attribute, String.class), getterCreator.getThis()));
-                }
-
-                if (eventAnnotationLiteral.getAttributes().isEmpty()) {
-                    FieldCreator arrayInstanceFieldCreator = literalClassCreator.getFieldCreator(ARRAY_INSTANCE_FIELD_NAME,
-                            "[L" + literalClassName + ";");
-                    arrayInstanceFieldCreator.setModifiers(ACC_PUBLIC | ACC_STATIC | ACC_FINAL);
-                    MethodCreator clinit = literalClassCreator.getMethodCreator("<clinit>", void.class);
-                    clinit.setModifiers(ACC_STATIC);
-                    ResultHandle singletonInstance = clinit.newArray(literalClassName, 1);
-                    clinit.writeArrayValue(singletonInstance, clinit.load(0),
-                            clinit.newInstance(constructorCreator.getMethodDescriptor()));
-                    clinit.writeStaticField(arrayInstanceFieldCreator.getFieldDescriptor(), singletonInstance);
-                    clinit.returnVoid();
-                }
-
-                literalClassCreator.close();
+            MethodCreator constructorCreator = literalClassCreator.getMethodCreator("<init>", "V",
+                    (Object[]) parameterTypes);
+            constructorCreator.invokeSpecialMethod(MethodDescriptor.ofConstructor(AnnotationLiteral.class),
+                    constructorCreator.getThis());
+            for (int i = 0; i < eventAnnotationLiteral.getAttributes().size(); i++) {
+                constructorCreator.writeInstanceField(
+                        FieldDescriptor.of(literalClassName, eventAnnotationLiteral.getAttributes().get(i), String.class),
+                        constructorCreator.getThis(), constructorCreator.getMethodParam(i));
+                constructorCreator.setModifiers(Modifier.PUBLIC);
             }
+            constructorCreator.returnValue(null);
+
+            for (String attribute : eventAnnotationLiteral.getAttributes()) {
+                // we only support String for now
+                literalClassCreator.getFieldCreator(attribute, String.class)
+                        .setModifiers(Modifier.PRIVATE);
+                MethodCreator getterCreator = literalClassCreator.getMethodCreator(attribute, String.class);
+                getterCreator.setModifiers(Modifier.PUBLIC);
+                getterCreator.returnValue(getterCreator.readInstanceField(
+                        FieldDescriptor.of(literalClassName, attribute, String.class), getterCreator.getThis()));
+            }
+
+            if (eventAnnotationLiteral.getAttributes().isEmpty()) {
+                FieldCreator arrayInstanceFieldCreator = literalClassCreator.getFieldCreator(ARRAY_INSTANCE_FIELD_NAME,
+                        "[L" + literalClassName + ";");
+                arrayInstanceFieldCreator.setModifiers(ACC_PUBLIC | ACC_STATIC | ACC_FINAL);
+                MethodCreator clinit = literalClassCreator.getMethodCreator("<clinit>", void.class);
+                clinit.setModifiers(ACC_STATIC);
+                ResultHandle singletonInstance = clinit.newArray(literalClassName, 1);
+                clinit.writeArrayValue(singletonInstance, clinit.load(0),
+                        clinit.newInstance(constructorCreator.getMethodDescriptor()));
+                clinit.writeStaticField(arrayInstanceFieldCreator.getFieldDescriptor(), singletonInstance);
+                clinit.returnVoid();
+            }
+
+            literalClassCreator.close();
         }
     }
 
