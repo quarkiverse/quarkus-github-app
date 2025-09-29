@@ -1,4 +1,4 @@
 name: Quarkus GitHub App
 release:
-  current-version: 2.12.0
+  current-version: 2.12.1
   next-version: 999-SNAPSHOT
