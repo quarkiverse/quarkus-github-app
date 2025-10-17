@@ -608,6 +608,9 @@ class GitHubAppProcessor {
 
         ResultHandle gitHubEventRh = dispatchMethodCreator.getMethodParam(0);
 
+        ResultHandle supportsInstallationRh = dispatchMethodCreator.invokeInterfaceMethod(
+                MethodDescriptor.ofMethod(GitHubEvent.class, "supportsInstallation", boolean.class),
+                gitHubEventRh);
         ResultHandle installationIdRh = dispatchMethodCreator.invokeInterfaceMethod(
                 MethodDescriptor.ofMethod(GitHubEvent.class, "getInstallationId", Long.class),
                 gitHubEventRh);
@@ -623,45 +626,55 @@ class GitHubAppProcessor {
 
         TryBlock tryBlock = dispatchMethodCreator.tryBlock();
 
-        // if the installation id is defined, we can push the installation client
+        // if the event supports installation, we can push the installation client
         // if not, we have to use the very limited application client
         AssignableResultHandle gitHubRh = tryBlock.createVariable(GitHub.class);
         AssignableResultHandle gitHubGraphQLClientRh = tryBlock.createVariable(DynamicGraphQLClient.class);
-        BranchResult testInstallationId = tryBlock.ifNotNull(installationIdRh);
-        BytecodeCreator installationIdSet = testInstallationId.trueBranch();
-        installationIdSet.assign(gitHubRh, installationIdSet.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(GitHubService.class, "getInstallationClient", GitHub.class, long.class),
-                installationIdSet.readInstanceField(
-                        FieldDescriptor.of(dispatcherClassCreator.getClassName(), GITHUB_SERVICE_FIELD, GitHubService.class),
-                        installationIdSet.getThis()),
-                installationIdRh));
-        if (dispatchingConfiguration.requiresGraphQLClient()) {
-            installationIdSet.assign(gitHubGraphQLClientRh, installationIdSet.invokeVirtualMethod(
-                    MethodDescriptor.ofMethod(GitHubService.class, "getInstallationGraphQLClient", DynamicGraphQLClient.class,
-                            long.class),
-                    installationIdSet.readInstanceField(
+        BranchResult testSupportsInstallation = tryBlock.ifTrue(supportsInstallationRh);
+        BytecodeCreator supportsInstallationTrue = testSupportsInstallation.trueBranch();
+        if (dispatchingConfiguration.requiresGitHubClient()) {
+            supportsInstallationTrue.assign(gitHubRh, supportsInstallationTrue.invokeVirtualMethod(
+                    MethodDescriptor.ofMethod(GitHubService.class, "getInstallationClient", GitHub.class, long.class),
+                    supportsInstallationTrue.readInstanceField(
                             FieldDescriptor.of(dispatcherClassCreator.getClassName(), GITHUB_SERVICE_FIELD,
                                     GitHubService.class),
-                            installationIdSet.getThis()),
+                            supportsInstallationTrue.getThis()),
                     installationIdRh));
         } else {
-            installationIdSet.assign(gitHubGraphQLClientRh, installationIdSet.loadNull());
+            supportsInstallationTrue.assign(gitHubRh, supportsInstallationTrue.loadNull());
         }
-        BytecodeCreator installationIdNull = testInstallationId.falseBranch();
-        installationIdNull.assign(gitHubRh, installationIdNull.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(GitHubService.class, "getTokenOrApplicationClient", GitHub.class),
-                installationIdNull.readInstanceField(
-                        FieldDescriptor.of(dispatcherClassCreator.getClassName(), GITHUB_SERVICE_FIELD, GitHubService.class),
-                        installationIdNull.getThis())));
         if (dispatchingConfiguration.requiresGraphQLClient()) {
-            installationIdNull.assign(gitHubGraphQLClientRh, installationIdNull.invokeVirtualMethod(
-                    MethodDescriptor.ofMethod(GitHubService.class, "getTokenGraphQLClientOrNull", DynamicGraphQLClient.class),
-                    installationIdNull.readInstanceField(
+            supportsInstallationTrue.assign(gitHubGraphQLClientRh, supportsInstallationTrue.invokeVirtualMethod(
+                    MethodDescriptor.ofMethod(GitHubService.class, "getInstallationGraphQLClient", DynamicGraphQLClient.class,
+                            long.class),
+                    supportsInstallationTrue.readInstanceField(
                             FieldDescriptor.of(dispatcherClassCreator.getClassName(), GITHUB_SERVICE_FIELD,
                                     GitHubService.class),
-                            installationIdNull.getThis())));
+                            supportsInstallationTrue.getThis()),
+                    installationIdRh));
         } else {
-            installationIdNull.assign(gitHubGraphQLClientRh, installationIdNull.loadNull());
+            supportsInstallationTrue.assign(gitHubGraphQLClientRh, supportsInstallationTrue.loadNull());
+        }
+        BytecodeCreator supportsInstallationFalse = testSupportsInstallation.falseBranch();
+        if (dispatchingConfiguration.requiresGitHubClient()) {
+            supportsInstallationFalse.assign(gitHubRh, supportsInstallationFalse.invokeVirtualMethod(
+                    MethodDescriptor.ofMethod(GitHubService.class, "getTokenOrApplicationClient", GitHub.class),
+                    supportsInstallationFalse.readInstanceField(
+                            FieldDescriptor.of(dispatcherClassCreator.getClassName(), GITHUB_SERVICE_FIELD,
+                                    GitHubService.class),
+                            supportsInstallationFalse.getThis())));
+        } else {
+            supportsInstallationFalse.assign(gitHubRh, supportsInstallationFalse.loadNull());
+        }
+        if (dispatchingConfiguration.requiresGraphQLClient()) {
+            supportsInstallationFalse.assign(gitHubGraphQLClientRh, supportsInstallationFalse.invokeVirtualMethod(
+                    MethodDescriptor.ofMethod(GitHubService.class, "getTokenGraphQLClientOrNull", DynamicGraphQLClient.class),
+                    supportsInstallationFalse.readInstanceField(
+                            FieldDescriptor.of(dispatcherClassCreator.getClassName(), GITHUB_SERVICE_FIELD,
+                                    GitHubService.class),
+                            supportsInstallationFalse.getThis())));
+        } else {
+            supportsInstallationFalse.assign(gitHubGraphQLClientRh, supportsInstallationFalse.loadNull());
         }
 
         for (EventDispatchingConfiguration eventDispatchingConfiguration : dispatchingConfiguration.getEventConfigurations()

@@ -1,6 +1,7 @@
 package io.quarkiverse.githubapp.deployment;
 
 import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.DYNAMIC_GRAPHQL_CLIENT;
+import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.GITHUB;
 import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.GITHUB_EVENT;
 
 import java.util.HashSet;
@@ -53,6 +54,22 @@ class DispatchingConfiguration {
     public void addEventDispatchingMethod(EventDispatchingMethod eventDispatchingMethod) {
         methods.computeIfAbsent(eventDispatchingMethod.getMethod().declaringClass().name(), k -> new TreeSet<>())
                 .add(eventDispatchingMethod);
+    }
+
+    public boolean requiresGitHubClient() {
+        for (EventDispatchingConfiguration eventDispatchingConfiguration : eventConfigurations.values()) {
+            // if any event is a GitHub API GHEventPayload (i.e. not a @RawEvent)
+            if (eventDispatchingConfiguration.getPayloadType() != null) {
+                return true;
+            }
+        }
+        for (EventDispatchingMethod eventDispatchingMethod : methods.values().stream().flatMap(Set::stream).toList()) {
+            if (eventDispatchingMethod.requiresGitHubClient()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public boolean requiresGraphQLClient() {
@@ -245,6 +262,10 @@ class DispatchingConfiguration {
 
         public boolean requiresGraphQLClient() {
             return method.parameterTypes().stream().map(Type::name).anyMatch(DYNAMIC_GRAPHQL_CLIENT::equals);
+        }
+
+        public boolean requiresGitHubClient() {
+            return method.parameterTypes().stream().map(Type::name).anyMatch(GITHUB::equals);
         }
 
         @Override

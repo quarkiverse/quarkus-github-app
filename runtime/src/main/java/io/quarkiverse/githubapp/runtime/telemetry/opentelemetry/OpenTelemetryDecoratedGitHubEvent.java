@@ -25,6 +25,11 @@ class OpenTelemetryDecoratedGitHubEvent implements GitHubEvent {
     }
 
     @Override
+    public boolean supportsInstallation() {
+        return originalGitHubEvent.supportsInstallation();
+    }
+
+    @Override
     public Optional<String> getAppName() {
         return originalGitHubEvent.getAppName();
     }
