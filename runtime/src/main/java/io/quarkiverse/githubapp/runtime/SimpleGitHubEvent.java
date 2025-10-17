@@ -16,6 +16,8 @@ import io.vertx.core.json.JsonObject;
  */
 public class SimpleGitHubEvent implements GitHubEvent {
 
+    private static final String INSTALLATION_DELETED = "installation.deleted";
+
     private final Long installationId;
 
     private final Optional<String> appName;
@@ -62,6 +64,11 @@ public class SimpleGitHubEvent implements GitHubEvent {
     @Override
     public Long getInstallationId() {
         return installationId;
+    }
+
+    @Override
+    public boolean supportsInstallation() {
+        return installationId != null && !INSTALLATION_DELETED.equals(eventAction);
     }
 
     @Override

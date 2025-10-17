@@ -10,6 +10,8 @@ public interface GitHubEvent {
 
     Long getInstallationId();
 
+    boolean supportsInstallation();
+
     Optional<String> getAppName();
 
     String getDeliveryId();
