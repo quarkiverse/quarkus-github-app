@@ -6,7 +6,7 @@ import jakarta.enterprise.context.Dependent;
 import jakarta.inject.Inject;
 
 import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.instrumentation.httpclient.JavaHttpClientTelemetry;
+import io.opentelemetry.instrumentation.javahttpclient.JavaHttpClientTelemetry;
 import io.quarkiverse.githubapp.runtime.github.AbstractJavaHttpClientFactory;
 import io.quarkus.arc.DefaultBean;
 
