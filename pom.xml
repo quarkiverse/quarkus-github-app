@@ -34,7 +34,7 @@
 
         <webjar.fomantic-ui.version>2.9.0</webjar.fomantic-ui.version>
         <webjar.vue.version>2.6.12</webjar.vue.version>
-        <webjar.jquery.version>3.7.1</webjar.jquery.version>
+        <webjar.jquery.version>4.0.0</webjar.jquery.version>
     </properties>
 
     <modules>
