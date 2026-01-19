@@ -133,9 +133,9 @@ class GitHubAppCommandAirlineProcessor {
             List<String> aliases = getAliases(cliAnnotationInstance);
 
             Map<DotName, ClassInfo> allCommands = getAllCommands(index.getIndex(), cliAnnotationInstance);
-            for (ClassInfo commandClassInfo : allCommands.values()) {
-                reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, commandClassInfo.toString()));
-            }
+            final String[] forReflection = allCommands.values().stream().map(ClassInfo::toString).toArray(String[]::new);
+            reflectiveClasses
+                    .produce(ReflectiveClassBuildItem.builder(forReflection).constructors().methods().fields().build());
 
             generateCommandDispatcher(index.getIndex(), classOutput, cliAnnotationInstance, aliases,
                     findCommonInterfaceWithRunMethod(index.getIndex(), aliases.get(0), allCommands.values()),
