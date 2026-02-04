@@ -24,6 +24,11 @@ On Windows and macOS, it is recommended to concatenate all the options on one li
 as the `\` might not be correctly interpreted.
 ====
 
+[TIP]
+====
+If you prefer a Kotlin application, add the Kotlin extension (e.g. `-x quarkus-github-app,kotlin`).
+====
+
 [NOTE]
 ======
 We highly recommend the usage of the https://quarkus.io/guides/cli-tooling[Quarkus CLI] but if you cannot install it or prefer using Maven,
