@@ -1,6 +1,7 @@
 ---
 artifact: ${project.groupId}:${project.artifactId}:${project.version}
 name: "GitHub App Command Airline"
+icon-url: "https://upload.wikimedia.org/wikipedia/commons/9/91/Octicons-mark-github.svg"
 metadata:
   keywords:
   - "github"
