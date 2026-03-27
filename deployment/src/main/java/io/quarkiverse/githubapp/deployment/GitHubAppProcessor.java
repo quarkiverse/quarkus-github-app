@@ -11,17 +11,13 @@ import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.OPENTELEMETR
 import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.OPENTELEMETRY_METRICS_REPORTER;
 import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.OPENTELEMETRY_TRACES_REPORTER;
 import static io.quarkiverse.githubapp.deployment.GitHubAppDotNames.RAW_EVENT;
-import static io.quarkus.gizmo.Type.classType;
-import static io.quarkus.gizmo.Type.parameterizedType;
-import static org.objectweb.asm.Opcodes.ACC_FINAL;
-import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
-import static org.objectweb.asm.Opcodes.ACC_STATIC;
+import static org.jboss.jandex.gizmo2.Jandex2Gizmo.classDescOf;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.io.Reader;
 import java.io.StringReader;
 import java.lang.annotation.Annotation;
+import java.lang.constant.ClassDesc;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,6 +33,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.event.Event;
@@ -54,6 +51,7 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.Type;
+import org.jboss.jandex.gizmo2.Jandex2Gizmo;
 import org.jboss.logging.Logger;
 import org.kohsuke.github.GHEventPayload;
 import org.kohsuke.github.GHRepository;
@@ -102,14 +100,13 @@ import io.quarkiverse.githubapp.telemetry.TelemetryTracesReporter;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
-import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
+import io.quarkus.arc.deployment.GeneratedBeanGizmo2Adaptor;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
-import io.quarkus.arc.processor.MethodDescriptors;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
-import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
+import io.quarkus.deployment.GeneratedClassGizmo2Adaptor;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -124,21 +121,18 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
-import io.quarkus.gizmo.AnnotatedElement;
-import io.quarkus.gizmo.AssignableResultHandle;
-import io.quarkus.gizmo.BranchResult;
-import io.quarkus.gizmo.BytecodeCreator;
-import io.quarkus.gizmo.CatchBlockCreator;
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.ClassOutput;
-import io.quarkus.gizmo.FieldCreator;
-import io.quarkus.gizmo.FieldDescriptor;
-import io.quarkus.gizmo.Gizmo;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.gizmo.SignatureBuilder;
-import io.quarkus.gizmo.TryBlock;
+import io.quarkus.gizmo2.ClassOutput;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.GenericType;
+import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.LocalVar;
+import io.quarkus.gizmo2.ParamVar;
+import io.quarkus.gizmo2.TypeArgument;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.gizmo2.desc.ConstructorDesc;
+import io.quarkus.gizmo2.desc.FieldDesc;
+import io.quarkus.gizmo2.desc.MethodDesc;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.util.HashUtil;
@@ -159,14 +153,14 @@ class GitHubAppProcessor {
     private static final String EVENT_EMITTER_FIELD = "eventEmitter";
     private static final String GITHUB_SERVICE_FIELD = "gitHubService";
 
-    private static final MethodDescriptor EVENT_SELECT = MethodDescriptor.ofMethod(Event.class, "select", Event.class,
+    private static final MethodDesc EVENT_SELECT = MethodDesc.of(Event.class, "select", Event.class,
             Annotation[].class);
-    private static final MethodDescriptor EVENT_FIRE_ASYNC = MethodDescriptor.ofMethod(Event.class, "fireAsync",
+    private static final MethodDesc EVENT_FIRE_ASYNC = MethodDesc.of(Event.class, "fireAsync",
             CompletionStage.class, Object.class);
-    private static final MethodDescriptor COMPLETION_STAGE_TO_COMPLETABLE_FUTURE = MethodDescriptor.ofMethod(
+    private static final MethodDesc COMPLETION_STAGE_TO_COMPLETABLE_FUTURE = MethodDesc.of(
             CompletionStage.class,
             "toCompletableFuture", CompletableFuture.class);
-    private static final MethodDescriptor COMPLETABLE_FUTURE_JOIN = MethodDescriptor.ofMethod(CompletableFuture.class,
+    private static final MethodDesc COMPLETABLE_FUTURE_JOIN = MethodDesc.of(CompletableFuture.class,
             "join", Object.class);
     private static final String ARRAY_INSTANCE_FIELD_NAME = "ARRAY_INSTANCE";
 
@@ -350,10 +344,11 @@ class GitHubAppProcessor {
         DispatchingConfiguration dispatchingConfiguration = getDispatchingConfiguration(
                 index, allEventDefinitions);
 
-        ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClasses, true);
+        ClassOutput classOutput = new GeneratedClassGizmo2Adaptor(generatedClasses, null,
+                (Predicate<String>) (s -> true));
         generateAnnotationLiterals(classOutput, dispatchingConfiguration);
 
-        ClassOutput beanClassOutput = new GeneratedBeanGizmoAdaptor(generatedBeans);
+        ClassOutput beanClassOutput = new GeneratedBeanGizmo2Adaptor(generatedBeans);
         generateDispatcher(beanClassOutput, launchMode, dispatchingConfiguration, reflectiveClasses);
         generateMultiplexers(beanClassOutput, index, dispatchingConfiguration,
                 openTelemetryTracesIntegrationEnabled.isPresent(), openTelemetryMetricsIntegrationEnabled.isPresent(),
@@ -506,61 +501,74 @@ class GitHubAppProcessor {
                 .flatMap(Set::stream)
                 .collect(Collectors.toSet());
 
+        Gizmo gizmo = Gizmo.create(classOutput).withDebugInfo(false).withParameters(false);
+
         for (EventAnnotationLiteral eventAnnotationLiteral : eventAnnotationLiterals) {
             String literalClassName = getLiteralClassName(eventAnnotationLiteral.getName());
 
-            String signature = SignatureBuilder.forClass()
-                    .setSuperClass(parameterizedType(classType(AnnotationLiteral.class),
-                            classType(eventAnnotationLiteral.getName())))
-                    .addInterface(classType(eventAnnotationLiteral.getName()))
-                    .build();
+            gizmo.class_(literalClassName, cc -> {
+                cc.extends_(GenericType.ofClass(AnnotationLiteral.class,
+                        TypeArgument.of(classDescOf(eventAnnotationLiteral.getName()))));
+                cc.implements_(classDescOf(eventAnnotationLiteral.getName()));
 
-            ClassCreator literalClassCreator = ClassCreator.builder().classOutput(classOutput)
-                    .className(literalClassName)
-                    .signature(signature)
-                    .superClass(AnnotationLiteral.class)
-                    .interfaces(eventAnnotationLiteral.getName().toString())
-                    .build();
+                List<String> attributes = eventAnnotationLiteral.getAttributes();
 
-            Class<?>[] parameterTypes = new Class<?>[eventAnnotationLiteral.getAttributes().size()];
-            Arrays.fill(parameterTypes, String.class);
+                // Create instance fields for attributes and collect their descriptors
+                List<FieldDesc> attributeFields = new ArrayList<>();
+                for (String attribute : attributes) {
+                    FieldDesc fieldDesc = cc.field(attribute, fc -> {
+                        fc.setType(String.class);
+                        fc.private_();
+                    });
+                    attributeFields.add(fieldDesc);
+                }
 
-            MethodCreator constructorCreator = literalClassCreator.getMethodCreator("<init>", "V",
-                    (Object[]) parameterTypes);
-            constructorCreator.invokeSpecialMethod(MethodDescriptor.ofConstructor(AnnotationLiteral.class),
-                    constructorCreator.getThis());
-            for (int i = 0; i < eventAnnotationLiteral.getAttributes().size(); i++) {
-                constructorCreator.writeInstanceField(
-                        FieldDescriptor.of(literalClassName, eventAnnotationLiteral.getAttributes().get(i), String.class),
-                        constructorCreator.getThis(), constructorCreator.getMethodParam(i));
-                constructorCreator.setModifiers(Modifier.PUBLIC);
-            }
-            constructorCreator.returnValue(null);
+                // Create constructor
+                cc.constructor(constr -> {
+                    constr.public_();
+                    List<ParamVar> params = new ArrayList<>();
+                    for (int i = 0; i < attributes.size(); i++) {
+                        params.add(constr.parameter("param" + i, String.class));
+                    }
+                    constr.body(bc -> {
+                        bc.invokeSpecial(ConstructorDesc.of(AnnotationLiteral.class), cc.this_());
+                        for (int i = 0; i < attributes.size(); i++) {
+                            bc.set(cc.this_().field(attributeFields.get(i)), params.get(i));
+                        }
+                        bc.return_();
+                    });
+                });
 
-            for (String attribute : eventAnnotationLiteral.getAttributes()) {
-                // we only support String for now
-                literalClassCreator.getFieldCreator(attribute, String.class)
-                        .setModifiers(Modifier.PRIVATE);
-                MethodCreator getterCreator = literalClassCreator.getMethodCreator(attribute, String.class);
-                getterCreator.setModifiers(Modifier.PUBLIC);
-                getterCreator.returnValue(getterCreator.readInstanceField(
-                        FieldDescriptor.of(literalClassName, attribute, String.class), getterCreator.getThis()));
-            }
+                // Create getter methods
+                for (int i = 0; i < attributes.size(); i++) {
+                    String attribute = attributes.get(i);
+                    FieldDesc fieldDesc = attributeFields.get(i);
+                    cc.method(attribute, mc -> {
+                        mc.public_();
+                        mc.returning(String.class);
+                        mc.body(bc -> {
+                            bc.return_(cc.this_().field(fieldDesc));
+                        });
+                    });
+                }
 
-            if (eventAnnotationLiteral.getAttributes().isEmpty()) {
-                FieldCreator arrayInstanceFieldCreator = literalClassCreator.getFieldCreator(ARRAY_INSTANCE_FIELD_NAME,
-                        "[L" + literalClassName + ";");
-                arrayInstanceFieldCreator.setModifiers(ACC_PUBLIC | ACC_STATIC | ACC_FINAL);
-                MethodCreator clinit = literalClassCreator.getMethodCreator("<clinit>", void.class);
-                clinit.setModifiers(ACC_STATIC);
-                ResultHandle singletonInstance = clinit.newArray(literalClassName, 1);
-                clinit.writeArrayValue(singletonInstance, clinit.load(0),
-                        clinit.newInstance(constructorCreator.getMethodDescriptor()));
-                clinit.writeStaticField(arrayInstanceFieldCreator.getFieldDescriptor(), singletonInstance);
-                clinit.returnVoid();
-            }
-
-            literalClassCreator.close();
+                // If no attributes, create static array instance field with initializer
+                if (attributes.isEmpty()) {
+                    ClassDesc literalClassDesc = ClassDesc.of(literalClassName);
+                    ClassDesc arrayType = literalClassDesc.arrayType();
+                    cc.staticField(ARRAY_INSTANCE_FIELD_NAME, fc -> {
+                        fc.setType(arrayType);
+                        fc.public_();
+                        fc.final_();
+                        fc.setInitializer(bc -> {
+                            // Create a single-element array with one instance of the annotation literal
+                            List<Expr> arrayElements = new ArrayList<>();
+                            arrayElements.add(bc.new_(ConstructorDesc.of(literalClassDesc)));
+                            bc.yield(bc.newArray(literalClassDesc, arrayElements));
+                        });
+                    });
+                }
+            });
         }
     }
 
@@ -581,193 +589,249 @@ class GitHubAppProcessor {
 
         reflectiveClasses.produce(ReflectiveClassBuildItem.builder(dispatcherClassName).methods(true).fields(true).build());
 
-        ClassCreator dispatcherClassCreator = ClassCreator.builder().classOutput(beanClassOutput)
-                .className(dispatcherClassName)
-                .build();
+        Gizmo gizmo = Gizmo.create(beanClassOutput).withDebugInfo(false).withParameters(false);
 
-        dispatcherClassCreator.addAnnotation(Singleton.class);
+        gizmo.class_(dispatcherClassName, cc -> {
+            cc.addAnnotation(Singleton.class);
+            cc.defaultConstructor();
 
-        FieldCreator eventFieldCreator = dispatcherClassCreator.getFieldCreator(EVENT_EMITTER_FIELD, Event.class);
-        eventFieldCreator.addAnnotation(Inject.class);
-        eventFieldCreator.setModifiers(Modifier.PROTECTED);
-        eventFieldCreator.setSignature(SignatureBuilder.forField()
-                .setType(parameterizedType(classType(Event.class), classType(MultiplexedEvent.class)))
-                .build());
+            // Event field
+            cc.field(EVENT_EMITTER_FIELD, fc -> {
+                fc.setType(GenericType.ofClass(Event.class,
+                        TypeArgument.of(MultiplexedEvent.class)));
+                fc.addAnnotation(Inject.class);
+                fc.protected_();
+            });
 
-        FieldCreator gitHubServiceFieldCreator = dispatcherClassCreator.getFieldCreator(GITHUB_SERVICE_FIELD,
-                GitHubService.class);
-        gitHubServiceFieldCreator.addAnnotation(Inject.class);
-        gitHubServiceFieldCreator.setModifiers(Modifier.PROTECTED);
+            // GitHubService field
+            cc.field(GITHUB_SERVICE_FIELD, fc -> {
+                fc.setType(GitHubService.class);
+                fc.addAnnotation(Inject.class);
+                fc.protected_();
+            });
 
-        MethodCreator dispatchMethodCreator = dispatcherClassCreator.getMethodCreator(
-                "dispatch",
-                void.class,
-                GitHubEvent.class);
-        dispatchMethodCreator.setModifiers(Modifier.PUBLIC);
-        dispatchMethodCreator.getParameterAnnotations(0).addAnnotation(DotNames.OBSERVES.toString());
+            // dispatch method
+            cc.method("dispatch", mc -> {
+                mc.public_();
+                mc.returning(void.class);
+                ParamVar gitHubEventParam = mc.parameter("gitHubEvent", pc -> {
+                    pc.setType(GitHubEvent.class);
+                    pc.addAnnotation(ClassDesc.of(DotNames.OBSERVES.toString()),
+                            java.lang.annotation.RetentionPolicy.RUNTIME, ab -> {
+                            });
+                });
 
-        ResultHandle gitHubEventRh = dispatchMethodCreator.getMethodParam(0);
+                mc.body(b0 -> {
+                    Expr thisExpr = mc.this_();
+                    Expr gitHubEventExpr = gitHubEventParam;
 
-        ResultHandle supportsInstallationRh = dispatchMethodCreator.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod(GitHubEvent.class, "supportsInstallation", boolean.class),
-                gitHubEventRh);
-        ResultHandle installationIdRh = dispatchMethodCreator.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod(GitHubEvent.class, "getInstallationId", Long.class),
-                gitHubEventRh);
-        ResultHandle dispatchedEventRh = dispatchMethodCreator.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod(GitHubEvent.class, "getEvent", String.class),
-                gitHubEventRh);
-        ResultHandle dispatchedActionRh = dispatchMethodCreator.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod(GitHubEvent.class, "getAction", String.class),
-                gitHubEventRh);
-        ResultHandle dispatchedPayloadRh = dispatchMethodCreator.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod(GitHubEvent.class, "getPayload", String.class),
-                gitHubEventRh);
+                    LocalVar supportsInstallationVar = b0.localVar("supportsInstallation", boolean.class,
+                            b0.invokeInterface(
+                                    MethodDesc.of(GitHubEvent.class, "supportsInstallation", boolean.class),
+                                    gitHubEventExpr));
+                    LocalVar installationIdVar = b0.localVar("installationId", Long.class,
+                            b0.invokeInterface(
+                                    MethodDesc.of(GitHubEvent.class, "getInstallationId", Long.class),
+                                    gitHubEventExpr));
+                    LocalVar dispatchedEventVar = b0.localVar("dispatchedEvent", String.class,
+                            b0.invokeInterface(
+                                    MethodDesc.of(GitHubEvent.class, "getEvent", String.class),
+                                    gitHubEventExpr));
+                    LocalVar dispatchedActionVar = b0.localVar("dispatchedAction", String.class,
+                            b0.invokeInterface(
+                                    MethodDesc.of(GitHubEvent.class, "getAction", String.class),
+                                    gitHubEventExpr));
+                    LocalVar dispatchedPayloadVar = b0.localVar("dispatchedPayload", String.class,
+                            b0.invokeInterface(
+                                    MethodDesc.of(GitHubEvent.class, "getPayload", String.class),
+                                    gitHubEventExpr));
 
-        TryBlock tryBlock = dispatchMethodCreator.tryBlock();
+                    b0.try_(tc -> {
+                        tc.body(b1 -> {
+                            // if the event supports installation, we can push the installation client
+                            // if not, we have to use the very limited application client
+                            LocalVar gitHubVar = b1.localVar("gitHub", GitHub.class, Const.ofNull(GitHub.class));
+                            LocalVar gitHubGraphQLClientVar = b1.localVar("gitHubGraphQLClient", DynamicGraphQLClient.class,
+                                    Const.ofNull(DynamicGraphQLClient.class));
 
-        // if the event supports installation, we can push the installation client
-        // if not, we have to use the very limited application client
-        AssignableResultHandle gitHubRh = tryBlock.createVariable(GitHub.class);
-        AssignableResultHandle gitHubGraphQLClientRh = tryBlock.createVariable(DynamicGraphQLClient.class);
-        BranchResult testSupportsInstallation = tryBlock.ifTrue(supportsInstallationRh);
-        BytecodeCreator supportsInstallationTrue = testSupportsInstallation.trueBranch();
-        if (dispatchingConfiguration.requiresGitHubClient()) {
-            supportsInstallationTrue.assign(gitHubRh, supportsInstallationTrue.invokeVirtualMethod(
-                    MethodDescriptor.ofMethod(GitHubService.class, "getInstallationClient", GitHub.class, long.class),
-                    supportsInstallationTrue.readInstanceField(
-                            FieldDescriptor.of(dispatcherClassCreator.getClassName(), GITHUB_SERVICE_FIELD,
-                                    GitHubService.class),
-                            supportsInstallationTrue.getThis()),
-                    installationIdRh));
+                            b1.ifElse(supportsInstallationVar,
+                                    b2 -> {
+                                        // if the event supports installation
+                                        if (dispatchingConfiguration.requiresGitHubClient()) {
+                                            b2.set(gitHubVar, b2.invokeVirtual(
+                                                    MethodDesc.of(GitHubService.class, "getInstallationClient", GitHub.class,
+                                                            long.class),
+                                                    thisExpr.field(
+                                                            FieldDesc.of(ClassDesc.of(dispatcherClassName),
+                                                                    GITHUB_SERVICE_FIELD,
+                                                                    GitHubService.class)),
+                                                    installationIdVar));
+                                        } else {
+                                            b2.set(gitHubVar, Const.ofNull(GitHub.class));
+                                        }
+                                        if (dispatchingConfiguration.requiresGraphQLClient()) {
+                                            b2.set(gitHubGraphQLClientVar, b2.invokeVirtual(
+                                                    MethodDesc.of(GitHubService.class, "getInstallationGraphQLClient",
+                                                            DynamicGraphQLClient.class, long.class),
+                                                    thisExpr.field(
+                                                            FieldDesc.of(ClassDesc.of(dispatcherClassName),
+                                                                    GITHUB_SERVICE_FIELD,
+                                                                    GitHubService.class)),
+                                                    installationIdVar));
+                                        } else {
+                                            b2.set(gitHubGraphQLClientVar, Const.ofNull(DynamicGraphQLClient.class));
+                                        }
+                                    },
+                                    b2 -> {
+                                        // if the event does not support installation
+                                        if (dispatchingConfiguration.requiresGitHubClient()) {
+                                            b2.set(gitHubVar, b2.invokeVirtual(
+                                                    MethodDesc.of(GitHubService.class, "getTokenOrApplicationClient",
+                                                            GitHub.class),
+                                                    thisExpr.field(
+                                                            FieldDesc.of(ClassDesc.of(dispatcherClassName),
+                                                                    GITHUB_SERVICE_FIELD,
+                                                                    GitHubService.class))));
+                                        } else {
+                                            b2.set(gitHubVar, Const.ofNull(GitHub.class));
+                                        }
+                                        if (dispatchingConfiguration.requiresGraphQLClient()) {
+                                            b2.set(gitHubGraphQLClientVar, b2.invokeVirtual(
+                                                    MethodDesc.of(GitHubService.class, "getTokenGraphQLClientOrNull",
+                                                            DynamicGraphQLClient.class),
+                                                    thisExpr.field(
+                                                            FieldDesc.of(ClassDesc.of(dispatcherClassName),
+                                                                    GITHUB_SERVICE_FIELD,
+                                                                    GitHubService.class))));
+                                        } else {
+                                            b2.set(gitHubGraphQLClientVar, Const.ofNull(DynamicGraphQLClient.class));
+                                        }
+                                    });
+
+                            for (EventDispatchingConfiguration eventDispatchingConfiguration : dispatchingConfiguration
+                                    .getEventConfigurations()
+                                    .values()) {
+                                Expr eventExpr = Const.of(eventDispatchingConfiguration.getEvent());
+                                String payloadType = eventDispatchingConfiguration.getPayloadType();
+
+                                if (Events.ALL.equals(eventDispatchingConfiguration.getEvent())) {
+                                    // Process all events
+                                    processEventDispatching(b1, dispatcherClassName, launchMode.getLaunchMode(),
+                                            gitHubEventExpr, dispatchedEventVar, dispatchedActionVar, dispatchedPayloadVar,
+                                            gitHubVar, gitHubGraphQLClientVar, eventDispatchingConfiguration, payloadType,
+                                            thisExpr);
+                                } else {
+                                    // Process event only if it matches
+                                    b1.if_(b1.invokeVirtual(MethodDesc.of(Object.class, "equals", boolean.class, Object.class),
+                                            eventExpr, dispatchedEventVar),
+                                            b2 -> processEventDispatching(b2, dispatcherClassName, launchMode.getLaunchMode(),
+                                                    gitHubEventExpr, dispatchedEventVar, dispatchedActionVar,
+                                                    dispatchedPayloadVar,
+                                                    gitHubVar, gitHubGraphQLClientVar, eventDispatchingConfiguration,
+                                                    payloadType, thisExpr));
+                                }
+                            }
+                        });
+
+                        tc.catch_(Throwable.class, "t", (b1, caughtException) -> {
+                            b1.invokeVirtual(
+                                    MethodDesc.of(ErrorHandlerBridgeFunction.class, "apply", Void.class, GitHubEvent.class,
+                                            Throwable.class),
+                                    b1.getStaticField(FieldDesc.of(ErrorHandlerBridgeFunction.class, "INSTANCE")),
+                                    gitHubEventExpr,
+                                    caughtException);
+                        });
+                    });
+
+                    b0.return_();
+                });
+            });
+        });
+    }
+
+    private static void processEventDispatching(BlockCreator bc, String dispatcherClassName, LaunchMode launchMode,
+            Expr gitHubEventExpr, LocalVar dispatchedEventVar, LocalVar dispatchedActionVar, LocalVar dispatchedPayloadVar,
+            LocalVar gitHubVar, LocalVar gitHubGraphQLClientVar,
+            EventDispatchingConfiguration eventDispatchingConfiguration, String payloadType,
+            Expr thisExpr) {
+
+        LocalVar payloadInstanceVar;
+        if (payloadType != null) {
+            payloadInstanceVar = bc.localVar("payloadInstance", GHEventPayload.class,
+                    bc.invokeVirtual(
+                            MethodDesc.of(GitHub.class, "parseEventPayload", GHEventPayload.class, Reader.class, Class.class),
+                            gitHubVar,
+                            bc.new_(ConstructorDesc.of(StringReader.class, String.class), dispatchedPayloadVar),
+                            Const.of(ClassDesc.of(payloadType))));
         } else {
-            supportsInstallationTrue.assign(gitHubRh, supportsInstallationTrue.loadNull());
-        }
-        if (dispatchingConfiguration.requiresGraphQLClient()) {
-            supportsInstallationTrue.assign(gitHubGraphQLClientRh, supportsInstallationTrue.invokeVirtualMethod(
-                    MethodDescriptor.ofMethod(GitHubService.class, "getInstallationGraphQLClient", DynamicGraphQLClient.class,
-                            long.class),
-                    supportsInstallationTrue.readInstanceField(
-                            FieldDescriptor.of(dispatcherClassCreator.getClassName(), GITHUB_SERVICE_FIELD,
-                                    GitHubService.class),
-                            supportsInstallationTrue.getThis()),
-                    installationIdRh));
-        } else {
-            supportsInstallationTrue.assign(gitHubGraphQLClientRh, supportsInstallationTrue.loadNull());
-        }
-        BytecodeCreator supportsInstallationFalse = testSupportsInstallation.falseBranch();
-        if (dispatchingConfiguration.requiresGitHubClient()) {
-            supportsInstallationFalse.assign(gitHubRh, supportsInstallationFalse.invokeVirtualMethod(
-                    MethodDescriptor.ofMethod(GitHubService.class, "getTokenOrApplicationClient", GitHub.class),
-                    supportsInstallationFalse.readInstanceField(
-                            FieldDescriptor.of(dispatcherClassCreator.getClassName(), GITHUB_SERVICE_FIELD,
-                                    GitHubService.class),
-                            supportsInstallationFalse.getThis())));
-        } else {
-            supportsInstallationFalse.assign(gitHubRh, supportsInstallationFalse.loadNull());
-        }
-        if (dispatchingConfiguration.requiresGraphQLClient()) {
-            supportsInstallationFalse.assign(gitHubGraphQLClientRh, supportsInstallationFalse.invokeVirtualMethod(
-                    MethodDescriptor.ofMethod(GitHubService.class, "getTokenGraphQLClientOrNull", DynamicGraphQLClient.class),
-                    supportsInstallationFalse.readInstanceField(
-                            FieldDescriptor.of(dispatcherClassCreator.getClassName(), GITHUB_SERVICE_FIELD,
-                                    GitHubService.class),
-                            supportsInstallationFalse.getThis())));
-        } else {
-            supportsInstallationFalse.assign(gitHubGraphQLClientRh, supportsInstallationFalse.loadNull());
+            // all events are raw, no need to actually parse the payload
+            payloadInstanceVar = bc.localVar("payloadInstance", GHEventPayload.class, Const.ofNull(GHEventPayload.class));
         }
 
-        for (EventDispatchingConfiguration eventDispatchingConfiguration : dispatchingConfiguration.getEventConfigurations()
-                .values()) {
-            ResultHandle eventRh = tryBlock.load(eventDispatchingConfiguration.getEvent());
-            String payloadType = eventDispatchingConfiguration.getPayloadType();
+        LocalVar multiplexedEventVar = bc.localVar("multiplexedEvent", MultiplexedEvent.class,
+                bc.new_(
+                        ConstructorDesc.of(MultiplexedEvent.class, GitHubEvent.class, GHEventPayload.class, GitHub.class,
+                                DynamicGraphQLClient.class),
+                        gitHubEventExpr, payloadInstanceVar, gitHubVar, gitHubGraphQLClientVar));
 
-            BytecodeCreator eventMatchesCreator;
+        for (Entry<String, Set<EventAnnotation>> eventAnnotationsEntry : eventDispatchingConfiguration.getEventAnnotations()
+                .entrySet()) {
+            String action = eventAnnotationsEntry.getKey();
 
-            if (Events.ALL.equals(eventDispatchingConfiguration.getEvent())) {
-                eventMatchesCreator = tryBlock;
-            } else {
-                eventMatchesCreator = tryBlock
-                        .ifTrue(tryBlock.invokeVirtualMethod(MethodDescriptors.OBJECT_EQUALS, eventRh,
-                                dispatchedEventRh))
-                        .trueBranch();
-            }
+            for (EventAnnotation eventAnnotation : eventAnnotationsEntry.getValue()) {
+                LocalVar annotationLiteralArrayVar;
+                String literalClassName = getLiteralClassName(eventAnnotation.getName());
 
-            ResultHandle payloadInstanceRh;
-            if (payloadType != null) {
-                payloadInstanceRh = eventMatchesCreator.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(GitHub.class, "parseEventPayload", GHEventPayload.class, Reader.class,
-                                Class.class),
-                        gitHubRh,
-                        eventMatchesCreator.newInstance(MethodDescriptor.ofConstructor(StringReader.class, String.class),
-                                dispatchedPayloadRh),
-                        eventMatchesCreator.loadClass(payloadType));
-            } else {
-                // all events are raw, no need to actually parse the payload
-                payloadInstanceRh = eventMatchesCreator.loadNull();
-            }
-
-            ResultHandle multiplexedEventRh = eventMatchesCreator.newInstance(MethodDescriptor
-                    .ofConstructor(MultiplexedEvent.class, GitHubEvent.class, GHEventPayload.class, GitHub.class,
-                            DynamicGraphQLClient.class),
-                    gitHubEventRh, payloadInstanceRh, gitHubRh, gitHubGraphQLClientRh);
-
-            for (Entry<String, Set<EventAnnotation>> eventAnnotationsEntry : eventDispatchingConfiguration.getEventAnnotations()
-                    .entrySet()) {
-                String action = eventAnnotationsEntry.getKey();
-
-                for (EventAnnotation eventAnnotation : eventAnnotationsEntry.getValue()) {
-                    ResultHandle annotationLiteralArrayRh;
-                    String literalClassName = getLiteralClassName(eventAnnotation.getName());
-
-                    if (eventAnnotation.getValues().isEmpty()) {
-                        annotationLiteralArrayRh = eventMatchesCreator
-                                .readStaticField(
-                                        FieldDescriptor.of(literalClassName, ARRAY_INSTANCE_FIELD_NAME,
-                                                "[L" + literalClassName + ";"));
-                    } else {
-                        Class<?>[] literalParameterTypes = new Class<?>[eventAnnotation.getValues().size()];
-                        Arrays.fill(literalParameterTypes, String.class);
-                        List<ResultHandle> literalParameters = new ArrayList<>(eventAnnotation.getValues().size());
-                        for (AnnotationValue eventAnnotationValue : eventAnnotation.getValues()) {
-                            literalParameters.add(eventMatchesCreator.load(eventAnnotationValue.asString()));
-                        }
-
-                        ResultHandle annotationLiteralRh = eventMatchesCreator.newInstance(MethodDescriptor
-                                .ofConstructor(literalClassName, (Object[]) literalParameterTypes),
-                                literalParameters.toArray(ResultHandle[]::new));
-                        annotationLiteralArrayRh = eventMatchesCreator.newArray(Annotation.class, 1);
-                        eventMatchesCreator.writeArrayValue(annotationLiteralArrayRh, 0, annotationLiteralRh);
+                if (eventAnnotation.getValues().isEmpty()) {
+                    annotationLiteralArrayVar = bc.localVar("annotationLiteralArray", Annotation[].class,
+                            bc.getStaticField(
+                                    FieldDesc.of(ClassDesc.of(literalClassName), ARRAY_INSTANCE_FIELD_NAME,
+                                            ClassDesc.of(literalClassName).arrayType())));
+                } else {
+                    List<Expr> literalParameters = new ArrayList<>(eventAnnotation.getValues().size());
+                    for (AnnotationValue eventAnnotationValue : eventAnnotation.getValues()) {
+                        literalParameters.add(Const.of(eventAnnotationValue.asString()));
                     }
 
-                    if (Actions.ALL.equals(action)) {
-                        fireAsyncAction(eventMatchesCreator, launchMode.getLaunchMode(), dispatcherClassCreator.getClassName(),
-                                gitHubEventRh, multiplexedEventRh, annotationLiteralArrayRh);
-                    } else {
-                        BytecodeCreator actionMatchesCreator = eventMatchesCreator
-                                .ifTrue(eventMatchesCreator.invokeVirtualMethod(MethodDescriptors.OBJECT_EQUALS,
-                                        eventMatchesCreator.load(action), dispatchedActionRh))
-                                .trueBranch();
+                    ClassDesc stringClassDesc = ClassDesc.of(String.class.getName());
+                    ClassDesc[] paramTypes = Collections.nCopies(eventAnnotation.getValues().size(), stringClassDesc)
+                            .toArray(new ClassDesc[0]);
+                    Expr annotationLiteralExpr = bc.new_(
+                            ConstructorDesc.of(ClassDesc.of(literalClassName), paramTypes),
+                            literalParameters.toArray(new Expr[0]));
+                    List<Expr> arrayElements = new ArrayList<>();
+                    arrayElements.add(annotationLiteralExpr);
+                    annotationLiteralArrayVar = bc.localVar("annotationLiteralArray", Annotation[].class,
+                            bc.newArray(Annotation.class, arrayElements));
+                }
 
-                        fireAsyncAction(actionMatchesCreator, launchMode.getLaunchMode(), dispatcherClassCreator.getClassName(),
-                                gitHubEventRh, multiplexedEventRh, annotationLiteralArrayRh);
-                    }
+                if (Actions.ALL.equals(action)) {
+                    fireAsyncAction(bc, launchMode, dispatcherClassName, gitHubEventExpr, multiplexedEventVar,
+                            annotationLiteralArrayVar, thisExpr);
+                } else {
+                    bc.if_(bc.invokeVirtual(MethodDesc.of(Object.class, "equals", boolean.class, Object.class),
+                            Const.of(action), dispatchedActionVar),
+                            b2 -> fireAsyncAction(b2, launchMode, dispatcherClassName, gitHubEventExpr, multiplexedEventVar,
+                                    annotationLiteralArrayVar, thisExpr));
                 }
             }
         }
+    }
 
-        CatchBlockCreator catchBlockCreator = tryBlock.addCatch(Throwable.class);
-        catchBlockCreator.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(ErrorHandlerBridgeFunction.class, "apply", Void.class, GitHubEvent.class,
-                        Throwable.class),
-                catchBlockCreator.readStaticField(
-                        FieldDescriptor.of(ErrorHandlerBridgeFunction.class, "INSTANCE", ErrorHandlerBridgeFunction.class)),
-                gitHubEventRh,
-                catchBlockCreator.getCaughtException());
+    private static Expr fireAsyncAction(BlockCreator bc, LaunchMode launchMode, String className,
+            Expr gitHubEventExpr, Expr multiplexedEventVar, Expr annotationLiteralArrayVar, Expr thisExpr) {
+        Expr cdiEventExpr = bc.invokeInterface(EVENT_SELECT,
+                thisExpr.field(FieldDesc.of(ClassDesc.of(className), EVENT_EMITTER_FIELD, Event.class)),
+                annotationLiteralArrayVar);
 
-        dispatchMethodCreator.returnValue(null);
+        Expr fireAsyncCompletionStageExpr = bc.invokeInterface(EVENT_FIRE_ASYNC, cdiEventExpr, multiplexedEventVar);
 
-        dispatcherClassCreator.close();
+        if (LaunchMode.TEST.equals(launchMode)) {
+            Expr toFutureExpr = bc.invokeInterface(COMPLETION_STAGE_TO_COMPLETABLE_FUTURE, fireAsyncCompletionStageExpr);
+            return bc.invokeVirtual(COMPLETABLE_FUTURE_JOIN, toFutureExpr);
+        } else {
+            return fireAsyncCompletionStageExpr;
+        }
     }
 
     /**
@@ -804,408 +868,471 @@ class GitHubAppProcessor {
             reflectiveClasses
                     .produce(ReflectiveClassBuildItem.builder(multiplexerClassName).methods(true).fields(true).build());
 
-            ClassCreator multiplexerClassCreator = ClassCreator.builder().classOutput(beanClassOutput)
-                    .className(multiplexerClassName)
-                    .superClass(declaringClassName.toString())
-                    .build();
+            Gizmo gizmo = Gizmo.create(beanClassOutput).withDebugInfo(false).withParameters(false);
 
-            multiplexerClassCreator.addAnnotation(Multiplexer.class);
+            gizmo.class_(multiplexerClassName, cc -> {
+                cc.extends_(classDescOf(declaringClassName));
+                cc.addAnnotation(Multiplexer.class);
 
-            if (!BuiltinScope.isDeclaredOn(declaringClass)) {
-                multiplexerClassCreator.addAnnotation(Singleton.class);
-            }
-
-            for (AnnotationInstance classAnnotation : declaringClass.declaredAnnotations()) {
-                multiplexerClassCreator.addAnnotation(classAnnotation);
-            }
-
-            // OpenTelemetry integration
-            final FieldDescriptor telemetryTracesReporterFieldDescriptor;
-            if (openTelemetryTracesIntegrationEnabled) {
-                telemetryTracesReporterFieldDescriptor = FieldDescriptor.of(multiplexerClassName, "telemetryTracesReporter",
-                        TelemetryTracesReporter.class);
-                FieldCreator telemetryTracesReporterFieldCreator = multiplexerClassCreator
-                        .getFieldCreator(telemetryTracesReporterFieldDescriptor);
-                telemetryTracesReporterFieldCreator.addAnnotation(Inject.class);
-                telemetryTracesReporterFieldCreator.setModifiers(Modifier.PROTECTED);
-            } else {
-                // won't be used, as the consumer code is protected by the same condition
-                telemetryTracesReporterFieldDescriptor = null;
-            }
-            final FieldDescriptor telemetryMetricsReporterFieldDescriptor;
-            if (openTelemetryMetricsIntegrationEnabled) {
-                telemetryMetricsReporterFieldDescriptor = FieldDescriptor.of(multiplexerClassName, "telemetryMetricsReporter",
-                        TelemetryMetricsReporter.class);
-                FieldCreator telemetryMetricsReporterFieldCreator = multiplexerClassCreator
-                        .getFieldCreator(telemetryMetricsReporterFieldDescriptor);
-                telemetryMetricsReporterFieldCreator.addAnnotation(Inject.class);
-                telemetryMetricsReporterFieldCreator.setModifiers(Modifier.PROTECTED);
-            } else {
-                // won't be used, as the consumer code is protected by the same condition
-                telemetryMetricsReporterFieldDescriptor = null;
-            }
-
-            // Inject ErrorHandler
-            FieldDescriptor errorHandlerFieldDescriptor = FieldDescriptor.of(multiplexerClassName, "errorHandler",
-                    ErrorHandler.class);
-            FieldCreator errorHandlerFieldCreator = multiplexerClassCreator.getFieldCreator(errorHandlerFieldDescriptor);
-            errorHandlerFieldCreator.addAnnotation(Inject.class);
-            errorHandlerFieldCreator.setModifiers(Modifier.PROTECTED);
-
-            // Copy the constructors
-            for (MethodInfo originalConstructor : declaringClass.constructors()) {
-                MethodCreator constructorCreator = multiplexerClassCreator.getMethodCreator(MethodDescriptor.ofConstructor(
-                        multiplexerClassName,
-                        originalConstructor.parameterTypes().stream().map(t -> t.name().toString()).toArray(String[]::new)));
-
-                List<AnnotationInstance> originalMethodAnnotations = originalConstructor.annotations().stream()
-                        .filter(ai -> ai.target().kind() == Kind.METHOD).toList();
-                for (AnnotationInstance originalMethodAnnotation : originalMethodAnnotations) {
-                    constructorCreator.addAnnotation(originalMethodAnnotation);
+                if (!BuiltinScope.isDeclaredOn(declaringClass)) {
+                    cc.addAnnotation(Singleton.class);
                 }
 
-                Map<Short, List<AnnotationInstance>> originalConstructorParameterAnnotationMapping = originalConstructor
-                        .annotations().stream()
-                        .filter(ai -> ai.target().kind() == Kind.METHOD_PARAMETER)
-                        .collect(Collectors.groupingBy(ai -> ai.target().asMethodParameter().position()));
-
-                List<ResultHandle> parametersRh = new ArrayList<>();
-                for (short i = 0; i < originalConstructor.parameterTypes().size(); i++) {
-                    parametersRh.add(constructorCreator.getMethodParam(i));
-
-                    AnnotatedElement parameterAnnotations = constructorCreator.getParameterAnnotations(i);
-                    List<AnnotationInstance> originalConstructorParameterAnnotations = originalConstructorParameterAnnotationMapping
-                            .getOrDefault(i, Collections.emptyList());
-                    for (AnnotationInstance originalConstructorParameterAnnotation : originalConstructorParameterAnnotations) {
-                        parameterAnnotations.addAnnotation(originalConstructorParameterAnnotation);
-                    }
+                for (AnnotationInstance classAnnotation : declaringClass.declaredAnnotations()) {
+                    Jandex2Gizmo.addAnnotation(cc, classAnnotation, index);
                 }
 
-                constructorCreator.invokeSpecialMethod(MethodDescriptor.of(originalConstructor), constructorCreator.getThis(),
-                        parametersRh.toArray(ResultHandle[]::new));
-                constructorCreator.returnValue(null);
-            }
-
-            // Generate the multiplexed event dispatching methods
-            for (EventDispatchingMethod eventDispatchingMethod : eventDispatchingMethods) {
-                AnnotationInstance eventSubscriberInstance = eventDispatchingMethod.getEventSubscriberInstance();
-                MethodInfo originalMethod = eventDispatchingMethod.getMethod();
-                Map<Short, List<AnnotationInstance>> originalMethodParameterAnnotationMapping = originalMethod.annotations()
-                        .stream()
-                        .filter(ai -> ai.target().kind() == Kind.METHOD_PARAMETER)
-                        .collect(Collectors.groupingBy(ai -> ai.target().asMethodParameter().position()));
-
-                // if the method already has an @Observes or @ObservesAsync annotation
-                if (originalMethod.hasAnnotation(DotNames.OBSERVES) || originalMethod.hasAnnotation(DotNames.OBSERVES_ASYNC)) {
-                    LOG.warn(
-                            "Methods listening to GitHub events may not be annotated with @Observes or @ObservesAsync. Offending method: "
-                                    + originalMethod.declaringClass().name() + "#" + originalMethod);
-                }
-
-                List<String> parameterTypes = new ArrayList<>();
-                List<Type> originalMethodParameterTypes = originalMethod.parameterTypes();
-
-                // detect the parameter that is a payload
-                short payloadParameterPosition = -1;
-                boolean isPayloadGitHubEvent = false;
-                for (short i = 0; i < originalMethodParameterTypes.size(); i++) {
-                    List<AnnotationInstance> parameterAnnotations = originalMethodParameterAnnotationMapping.getOrDefault(i,
-                            Collections.emptyList());
-                    if (parameterAnnotations.stream().anyMatch(ai -> ai.name().equals(eventSubscriberInstance.name()))) {
-                        payloadParameterPosition = i;
-                        isPayloadGitHubEvent = GITHUB_EVENT
-                                .equals(originalMethodParameterTypes.get(payloadParameterPosition).name());
-                        break;
-                    }
-                }
-
-                if (payloadParameterPosition == -1) {
-                    throw new IllegalStateException("Unable to find the payload parameter position. Offending method: "
-                            + originalMethod.declaringClass().name() + "#" + originalMethod);
-                }
-
-                short j = 0;
-                Map<Short, Short> parameterMapping = new HashMap<>();
-                for (short i = 0; i < originalMethodParameterTypes.size(); i++) {
-                    List<AnnotationInstance> originalMethodAnnotations = originalMethodParameterAnnotationMapping
-                            .getOrDefault(i, Collections.emptyList());
-                    if (originalMethodAnnotations.stream().anyMatch(ai -> CONFIG_FILE.equals(ai.name())) ||
-                            GITHUB.equals(originalMethodParameterTypes.get(i).name()) ||
-                            (GITHUB_EVENT.equals(originalMethodParameterTypes.get(i).name()) && i != payloadParameterPosition)
-                            ||
-                            DYNAMIC_GRAPHQL_CLIENT.equals(originalMethodParameterTypes.get(i).name())) {
-                        // if the parameter is annotated with @ConfigFile or is of type GitHub, GitHubEvent or DynamicGraphQLClient, we skip it
-                        continue;
-                    }
-
-                    String parameterType;
-
-                    if (i == payloadParameterPosition) {
-                        parameterType = MultiplexedEvent.class.getName();
-                    } else {
-                        parameterType = originalMethodParameterTypes.get(i).name().toString();
-                    }
-
-                    parameterTypes.add(parameterType);
-                    parameterMapping.put(i, j);
-                    j++;
-                }
-                if (originalMethod.hasAnnotation(CONFIG_FILE)) {
-                    parameterTypes.add(RequestScopeCachingGitHubConfigFileProvider.class.getName());
-                }
-
-                MethodCreator methodCreator = multiplexerClassCreator.getMethodCreator(
-                        originalMethod.name() + "_" + HashUtil.sha1(eventSubscriberInstance.toString()),
-                        originalMethod.returnType().name().toString(),
-                        parameterTypes.toArray());
-
-                for (Type exceptionType : originalMethod.exceptions()) {
-                    methodCreator.addException(exceptionType.name().toString());
-                }
-
-                ResultHandle[] parameterValues = new ResultHandle[originalMethod.parameterTypes().size()];
-
-                // copy annotations except for @ConfigFile
-                for (short i = 0; i < originalMethodParameterTypes.size(); i++) {
-                    List<AnnotationInstance> parameterAnnotations = originalMethodParameterAnnotationMapping.getOrDefault(i,
-                            Collections.emptyList());
-                    if (parameterAnnotations.isEmpty()) {
-                        continue;
-                    }
-
-                    // @ConfigFile elements are not in the mapping
-                    Short generatedParameterIndex = parameterMapping.get(i);
-                    if (generatedParameterIndex == null) {
-                        continue;
-                    }
-
-                    AnnotatedElement generatedParameterAnnotations = methodCreator
-                            .getParameterAnnotations(generatedParameterIndex);
-                    if (parameterAnnotations.stream().anyMatch(ai -> ai.name().equals(eventSubscriberInstance.name()))) {
-                        generatedParameterAnnotations.addAnnotation(DotNames.OBSERVES_ASYNC.toString());
-                        generatedParameterAnnotations.addAnnotation(eventSubscriberInstance);
-                    } else {
-                        for (AnnotationInstance annotationInstance : parameterAnnotations) {
-                            generatedParameterAnnotations.addAnnotation(annotationInstance);
-                        }
-                    }
-                }
-
-                ResultHandle multiplexedEventRh = methodCreator.getMethodParam(parameterMapping.get(payloadParameterPosition));
-                ResultHandle gitHubEventRh = methodCreator.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(MultiplexedEvent.class, "getGitHubEvent", GitHubEvent.class),
-                        multiplexedEventRh);
-                ResultHandle payloadRh;
-                if (!isPayloadGitHubEvent) {
-                    payloadRh = methodCreator.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(MultiplexedEvent.class, "getPayload", GHEventPayload.class),
-                            multiplexedEventRh);
-                } else {
-                    payloadRh = methodCreator.loadNull();
-                }
-
-                final ResultHandle telemetrySpanWrapperRh;
-                final ResultHandle telemetryScopeWrapperRh;
+                // OpenTelemetry integration
+                final FieldDesc telemetryTracesReporterFieldDescriptor;
                 if (openTelemetryTracesIntegrationEnabled) {
-                    telemetrySpanWrapperRh = methodCreator.invokeInterfaceMethod(
-                            MethodDescriptor.ofMethod(TelemetryTracesReporter.class, "createGitHubEventListeningMethodSpan",
-                                    TelemetrySpanWrapper.class, GitHubEvent.class, String.class, String.class, String.class),
-                            methodCreator.readInstanceField(telemetryTracesReporterFieldDescriptor, methodCreator.getThis()),
-                            gitHubEventRh, methodCreator.load(declaringClassName.toString()),
-                            methodCreator.load(originalMethod.name()), methodCreator.load(originalMethod.toString()));
-                    telemetryScopeWrapperRh = methodCreator.invokeInterfaceMethod(
-                            MethodDescriptor.ofMethod(TelemetryTracesReporter.class, "makeCurrent", TelemetryScopeWrapper.class,
-                                    TelemetrySpanWrapper.class),
-                            methodCreator.readInstanceField(telemetryTracesReporterFieldDescriptor, methodCreator.getThis()),
-                            telemetrySpanWrapperRh);
+                    telemetryTracesReporterFieldDescriptor = cc.field("telemetryTracesReporter", fc -> {
+                        fc.setType(TelemetryTracesReporter.class);
+                        fc.addAnnotation(Inject.class);
+                        fc.protected_();
+                    });
                 } else {
                     // won't be used, as the consumer code is protected by the same condition
-                    telemetrySpanWrapperRh = null;
-                    telemetryScopeWrapperRh = null;
+                    telemetryTracesReporterFieldDescriptor = null;
+                }
+                final FieldDesc telemetryMetricsReporterFieldDescriptor;
+                if (openTelemetryMetricsIntegrationEnabled) {
+                    telemetryMetricsReporterFieldDescriptor = cc.field("telemetryMetricsReporter", fc -> {
+                        fc.setType(TelemetryMetricsReporter.class);
+                        fc.addAnnotation(Inject.class);
+                        fc.protected_();
+                    });
+                } else {
+                    // won't be used, as the consumer code is protected by the same condition
+                    telemetryMetricsReporterFieldDescriptor = null;
                 }
 
-                TryBlock tryBlock = methodCreator.tryBlock();
+                // Inject ErrorHandler
+                FieldDesc errorHandlerFieldDescriptor = cc.field("errorHandler", fc -> {
+                    fc.setType(ErrorHandler.class);
+                    fc.addAnnotation(Inject.class);
+                    fc.protected_();
+                });
 
-                // generate the code of the method
-                for (short originalMethodParameterIndex = 0; originalMethodParameterIndex < originalMethodParameterTypes
-                        .size(); originalMethodParameterIndex++) {
-                    List<AnnotationInstance> parameterAnnotations = originalMethodParameterAnnotationMapping.getOrDefault(
-                            originalMethodParameterIndex,
-                            Collections.emptyList());
-                    Short multiplexerMethodParameterIndex = parameterMapping.get(originalMethodParameterIndex);
-                    if (originalMethodParameterIndex == payloadParameterPosition && !isPayloadGitHubEvent) {
-                        parameterValues[originalMethodParameterIndex] = payloadRh;
-                    } else if (GITHUB.equals(originalMethodParameterTypes.get(originalMethodParameterIndex).name())) {
-                        parameterValues[originalMethodParameterIndex] = tryBlock.invokeVirtualMethod(
-                                MethodDescriptor.ofMethod(MultiplexedEvent.class, "getGitHub", GitHub.class),
-                                multiplexedEventRh);
-                    } else if (GITHUB_EVENT.equals(originalMethodParameterTypes.get(originalMethodParameterIndex).name())) {
-                        parameterValues[originalMethodParameterIndex] = gitHubEventRh;
-                    } else if (DYNAMIC_GRAPHQL_CLIENT
-                            .equals(originalMethodParameterTypes.get(originalMethodParameterIndex).name())) {
-                        parameterValues[originalMethodParameterIndex] = tryBlock.invokeVirtualMethod(
-                                MethodDescriptor.ofMethod(MultiplexedEvent.class, "getGitHubGraphQLClient",
-                                        DynamicGraphQLClient.class),
-                                multiplexedEventRh);
-                    } else if (parameterAnnotations.stream().anyMatch(ai -> ai.name().equals(CONFIG_FILE))) {
-                        AnnotationInstance configFileAnnotationInstance = parameterAnnotations.stream()
-                                .filter(ai -> ai.name().equals(CONFIG_FILE)).findFirst().get();
-                        String configObjectType = originalMethodParameterTypes.get(originalMethodParameterIndex).name()
-                                .toString();
+                // Copy the constructors
+                for (MethodInfo originalConstructor : declaringClass.constructors()) {
+                    List<AnnotationInstance> originalMethodAnnotations = originalConstructor.annotations().stream()
+                            .filter(ai -> ai.target().kind() == Kind.METHOD).toList();
+                    Map<Short, List<AnnotationInstance>> originalConstructorParameterAnnotationMapping = originalConstructor
+                            .annotations().stream()
+                            .filter(ai -> ai.target().kind() == Kind.METHOD_PARAMETER)
+                            .collect(Collectors.groupingBy(ai -> ai.target().asMethodParameter().position()));
 
-                        boolean isOptional = false;
-                        if (Optional.class.getName().equals(configObjectType)) {
-                            if (originalMethodParameterTypes.get(originalMethodParameterIndex)
-                                    .kind() != Type.Kind.PARAMETERIZED_TYPE) {
-                                throw new IllegalStateException("Optional is used but not parameterized for method " +
-                                        originalMethod.declaringClass().name() + "#" + originalMethod);
-                            }
-                            isOptional = true;
-                            configObjectType = originalMethodParameterTypes.get(originalMethodParameterIndex)
-                                    .asParameterizedType().arguments().get(0)
-                                    .name().toString();
+                    cc.constructor(constr -> {
+                        // Add method-level annotations
+                        for (AnnotationInstance originalMethodAnnotation : originalMethodAnnotations) {
+                            Jandex2Gizmo.addAnnotation(constr, originalMethodAnnotation, index);
                         }
 
-                        // it's a config file, we will use the ConfigFileReader (last parameter of the method) and inject the result
-                        ResultHandle configFileReaderRh = tryBlock.getMethodParam(parameterTypes.size() - 1);
-                        ResultHandle ghRepositoryRh;
-                        if (!isPayloadGitHubEvent) {
-                            ghRepositoryRh = tryBlock.invokeStaticMethod(MethodDescriptor
-                                    .ofMethod(PayloadHelper.class, "getRepository", GHRepository.class, GHEventPayload.class),
-                                    payloadRh);
-                        } else {
-                            ghRepositoryRh = tryBlock.invokeStaticMethod(MethodDescriptor
-                                    .ofMethod(GitHub.class, "getRepository", GHRepository.class, String.class),
-                                    tryBlock.invokeInterfaceMethod(
-                                            MethodDescriptor.ofMethod(GitHubEvent.class, "getRepositoryOrThrow", String.class),
-                                            gitHubEventRh));
-                        }
-                        ResultHandle configObject = tryBlock.invokeVirtualMethod(
-                                MethodDescriptor.ofMethod(RequestScopeCachingGitHubConfigFileProvider.class, "getConfigObject",
-                                        Object.class,
-                                        GHRepository.class, String.class, ConfigFile.Source.class, Class.class),
-                                configFileReaderRh,
-                                ghRepositoryRh,
-                                tryBlock.load(configFileAnnotationInstance.value().asString()),
-                                tryBlock.load(ConfigFile.Source
-                                        .valueOf(configFileAnnotationInstance.valueWithDefault(index, "source").asEnum())),
-                                tryBlock.loadClass(configObjectType));
-                        configObject = tryBlock.checkCast(configObject, configObjectType);
+                        // Create parameters with annotations
+                        List<ParamVar> constructorParamsVar = new ArrayList<>();
+                        for (short i = 0; i < originalConstructor.parameterTypes().size(); i++) {
+                            final short paramIndex = i;
+                            List<AnnotationInstance> originalConstructorParameterAnnotations = originalConstructorParameterAnnotationMapping
+                                    .getOrDefault(paramIndex, Collections.emptyList());
 
-                        if (isOptional) {
-                            configObject = tryBlock.invokeStaticMethod(
-                                    MethodDescriptor.ofMethod(Optional.class, "ofNullable", Optional.class, Object.class),
-                                    configObject);
+                            ParamVar param = constr.parameter("param" + i, pc -> {
+                                pc.setType(classDescOf(originalConstructor.parameterTypes().get(paramIndex).name()));
+
+                                // Add parameter annotations
+                                for (AnnotationInstance originalConstructorParameterAnnotation : originalConstructorParameterAnnotations) {
+                                    Jandex2Gizmo.addAnnotation(pc, originalConstructorParameterAnnotation, index);
+                                }
+                            });
+                            constructorParamsVar.add(param);
                         }
 
-                        parameterValues[originalMethodParameterIndex] = configObject;
-                    } else {
-                        parameterValues[originalMethodParameterIndex] = tryBlock
-                                .getMethodParam(multiplexerMethodParameterIndex);
+                        constr.body(bc -> {
+                            bc.invokeSpecial(
+                                    ConstructorDesc.of(classDescOf(originalConstructor.declaringClass().name()),
+                                            originalConstructor.parameterTypes().stream()
+                                                    .map(t -> classDescOf(t.name()))
+                                                    .toArray(ClassDesc[]::new)),
+                                    cc.this_(),
+                                    constructorParamsVar.toArray(new Expr[0]));
+                            bc.return_();
+                        });
+                    });
+                }
+
+                // Generate the multiplexed event dispatching methods
+                for (EventDispatchingMethod eventDispatchingMethod : eventDispatchingMethods) {
+                    AnnotationInstance eventSubscriberInstance = eventDispatchingMethod.getEventSubscriberInstance();
+                    MethodInfo originalMethod = eventDispatchingMethod.getMethod();
+                    Map<Short, List<AnnotationInstance>> originalMethodParameterAnnotationMapping = originalMethod.annotations()
+                            .stream()
+                            .filter(ai -> ai.target().kind() == Kind.METHOD_PARAMETER)
+                            .collect(Collectors.groupingBy(ai -> ai.target().asMethodParameter().position()));
+
+                    // if the method already has an @Observes or @ObservesAsync annotation
+                    if (originalMethod.hasAnnotation(DotNames.OBSERVES)
+                            || originalMethod.hasAnnotation(DotNames.OBSERVES_ASYNC)) {
+                        LOG.warn(
+                                "Methods listening to GitHub events may not be annotated with @Observes or @ObservesAsync. Offending method: "
+                                        + originalMethod.declaringClass().name() + "#" + originalMethod);
                     }
+
+                    List<ClassDesc> parameterTypes = new ArrayList<>();
+                    List<Type> originalMethodParameterTypes = originalMethod.parameterTypes();
+
+                    // detect the parameter that is a payload
+                    short payloadParameterPosition = -1;
+                    boolean isPayloadGitHubEvent = false;
+                    for (short i = 0; i < originalMethodParameterTypes.size(); i++) {
+                        List<AnnotationInstance> parameterAnnotations = originalMethodParameterAnnotationMapping.getOrDefault(i,
+                                Collections.emptyList());
+                        if (parameterAnnotations.stream().anyMatch(ai -> ai.name().equals(eventSubscriberInstance.name()))) {
+                            payloadParameterPosition = i;
+                            isPayloadGitHubEvent = GITHUB_EVENT
+                                    .equals(originalMethodParameterTypes.get(payloadParameterPosition).name());
+                            break;
+                        }
+                    }
+
+                    if (payloadParameterPosition == -1) {
+                        throw new IllegalStateException("Unable to find the payload parameter position. Offending method: "
+                                + originalMethod.declaringClass().name() + "#" + originalMethod);
+                    }
+
+                    short j = 0;
+                    Map<Short, Short> parameterMapping = new HashMap<>();
+                    for (short i = 0; i < originalMethodParameterTypes.size(); i++) {
+                        List<AnnotationInstance> originalMethodAnnotations = originalMethodParameterAnnotationMapping
+                                .getOrDefault(i, Collections.emptyList());
+                        if (originalMethodAnnotations.stream().anyMatch(ai -> CONFIG_FILE.equals(ai.name())) ||
+                                GITHUB.equals(originalMethodParameterTypes.get(i).name()) ||
+                                (GITHUB_EVENT.equals(originalMethodParameterTypes.get(i).name())
+                                        && i != payloadParameterPosition)
+                                ||
+                                DYNAMIC_GRAPHQL_CLIENT.equals(originalMethodParameterTypes.get(i).name())) {
+                            // if the parameter is annotated with @ConfigFile or is of type GitHub, GitHubEvent or DynamicGraphQLClient, we skip it
+                            continue;
+                        }
+
+                        ClassDesc parameterType;
+
+                        if (i == payloadParameterPosition) {
+                            parameterType = ClassDesc.of(MultiplexedEvent.class.getName());
+                        } else {
+                            parameterType = classDescOf(originalMethodParameterTypes.get(i).name());
+                        }
+
+                        parameterTypes.add(parameterType);
+                        parameterMapping.put(i, j);
+                        j++;
+                    }
+                    if (originalMethod.hasAnnotation(CONFIG_FILE)) {
+                        parameterTypes.add(ClassDesc.of(RequestScopeCachingGitHubConfigFileProvider.class.getName()));
+                    }
+
+                    final short finalPayloadParameterPosition = payloadParameterPosition;
+                    final boolean finalIsPayloadGitHubEvent = isPayloadGitHubEvent;
+
+                    cc.method(originalMethod.name() + "_" + HashUtil.sha1(eventSubscriberInstance.toString()), mc -> {
+                        mc.returning(classDescOf(originalMethod.returnType().name()));
+
+                        // Add exceptions
+                        for (Type exceptionType : originalMethod.exceptions()) {
+                            mc.throws_(classDescOf(exceptionType.name()));
+                        }
+
+                        // Create parameters and store them
+                        List<ParamVar> methodParams = new ArrayList<>();
+                        for (short i = 0; i < parameterTypes.size(); i++) {
+                            final short paramIndex = i;
+                            ParamVar param = mc.parameter("param" + i, pc -> {
+                                pc.setType(parameterTypes.get(paramIndex));
+
+                                // Find the original parameter index for this generated parameter
+                                for (Map.Entry<Short, Short> mappingEntry : parameterMapping.entrySet()) {
+                                    if (mappingEntry.getValue() == paramIndex) {
+                                        short origParamIndex = mappingEntry.getKey();
+                                        List<AnnotationInstance> parameterAnnotations = originalMethodParameterAnnotationMapping
+                                                .getOrDefault(origParamIndex, Collections.emptyList());
+
+                                        if (!parameterAnnotations.isEmpty()) {
+                                            if (parameterAnnotations.stream()
+                                                    .anyMatch(ai -> ai.name().equals(eventSubscriberInstance.name()))) {
+                                                pc.addAnnotation(ClassDesc.of(DotNames.OBSERVES_ASYNC.toString()),
+                                                        java.lang.annotation.RetentionPolicy.RUNTIME, ab -> {
+                                                        });
+                                                Jandex2Gizmo.addAnnotation(pc, eventSubscriberInstance, index);
+                                            } else {
+                                                for (AnnotationInstance annotationInstance : parameterAnnotations) {
+                                                    Jandex2Gizmo.addAnnotation(pc, annotationInstance, index);
+                                                }
+                                            }
+                                        }
+                                        break;
+                                    }
+                                }
+                            });
+                            methodParams.add(param);
+                        }
+
+                        mc.body(b0 -> {
+                            Expr thisExpr = mc.this_();
+                            Expr multiplexedEventExpr = methodParams.get(parameterMapping.get(finalPayloadParameterPosition));
+
+                            // Store gitHubEvent and payload in locals for use across nested blocks
+                            LocalVar gitHubEventVar = b0.localVar("gitHubEventVar", GitHubEvent.class,
+                                    b0.invokeVirtual(
+                                            MethodDesc.of(MultiplexedEvent.class, "getGitHubEvent", GitHubEvent.class),
+                                            multiplexedEventExpr));
+                            LocalVar payloadVar;
+                            if (!finalIsPayloadGitHubEvent) {
+                                payloadVar = b0.localVar("payloadVar", GHEventPayload.class,
+                                        b0.invokeVirtual(
+                                                MethodDesc.of(MultiplexedEvent.class, "getPayload", GHEventPayload.class),
+                                                multiplexedEventExpr));
+                            } else {
+                                payloadVar = b0.localVar("payloadVar", GHEventPayload.class,
+                                        Const.ofNull(GHEventPayload.class));
+                            }
+
+                            // OpenTelemetry integration
+                            final LocalVar telemetrySpanWrapperVar;
+                            final LocalVar telemetryScopeWrapperVar;
+                            if (openTelemetryTracesIntegrationEnabled) {
+                                telemetrySpanWrapperVar = b0.localVar("telemetrySpanWrapper", TelemetrySpanWrapper.class,
+                                        b0.invokeInterface(
+                                                MethodDesc.of(TelemetryTracesReporter.class,
+                                                        "createGitHubEventListeningMethodSpan",
+                                                        TelemetrySpanWrapper.class, GitHubEvent.class, String.class,
+                                                        String.class,
+                                                        String.class),
+                                                thisExpr.field(telemetryTracesReporterFieldDescriptor),
+                                                gitHubEventVar, Const.of(declaringClassName.toString()),
+                                                Const.of(originalMethod.name()), Const.of(originalMethod.toString())));
+
+                                telemetryScopeWrapperVar = b0.localVar("telemetryScopeWrapper", TelemetryScopeWrapper.class,
+                                        b0.invokeInterface(
+                                                MethodDesc.of(TelemetryTracesReporter.class, "makeCurrent",
+                                                        TelemetryScopeWrapper.class,
+                                                        TelemetrySpanWrapper.class),
+                                                thisExpr.field(telemetryTracesReporterFieldDescriptor),
+                                                telemetrySpanWrapperVar));
+                            } else {
+                                // won't be used, as the consumer code is protected by the same condition
+                                telemetrySpanWrapperVar = null;
+                                telemetryScopeWrapperVar = null;
+                            }
+
+                            b0.try_(tc -> {
+                                tc.body(b1 -> {
+                                    // Build parameter values for the original method call
+                                    Expr[] parameterValues = new Expr[originalMethod.parameterTypes().size()];
+
+                                    for (short originalMethodParameterIndex = 0; originalMethodParameterIndex < originalMethodParameterTypes
+                                            .size(); originalMethodParameterIndex++) {
+                                        List<AnnotationInstance> parameterAnnotations = originalMethodParameterAnnotationMapping
+                                                .getOrDefault(
+                                                        originalMethodParameterIndex,
+                                                        Collections.emptyList());
+                                        Short multiplexerMethodParameterIndex = parameterMapping
+                                                .get(originalMethodParameterIndex);
+
+                                        if (originalMethodParameterIndex == finalPayloadParameterPosition
+                                                && !finalIsPayloadGitHubEvent) {
+                                            parameterValues[originalMethodParameterIndex] = b1.cast(payloadVar,
+                                                    classDescOf(originalMethodParameterTypes
+                                                            .get(originalMethodParameterIndex).name()));
+                                        } else if (GITHUB
+                                                .equals(originalMethodParameterTypes.get(originalMethodParameterIndex)
+                                                        .name())) {
+                                            parameterValues[originalMethodParameterIndex] = b1.invokeVirtual(
+                                                    MethodDesc.of(MultiplexedEvent.class, "getGitHub", GitHub.class),
+                                                    multiplexedEventExpr);
+                                        } else if (GITHUB_EVENT.equals(
+                                                originalMethodParameterTypes.get(originalMethodParameterIndex).name())) {
+                                            parameterValues[originalMethodParameterIndex] = gitHubEventVar;
+                                        } else if (DYNAMIC_GRAPHQL_CLIENT
+                                                .equals(originalMethodParameterTypes.get(originalMethodParameterIndex)
+                                                        .name())) {
+                                            parameterValues[originalMethodParameterIndex] = b1.invokeVirtual(
+                                                    MethodDesc.of(MultiplexedEvent.class, "getGitHubGraphQLClient",
+                                                            DynamicGraphQLClient.class),
+                                                    multiplexedEventExpr);
+                                        } else if (parameterAnnotations.stream()
+                                                .anyMatch(ai -> ai.name().equals(CONFIG_FILE))) {
+                                            AnnotationInstance configFileAnnotationInstance = parameterAnnotations.stream()
+                                                    .filter(ai -> ai.name().equals(CONFIG_FILE)).findFirst().get();
+                                            String configObjectType = originalMethodParameterTypes
+                                                    .get(originalMethodParameterIndex).name()
+                                                    .toString();
+
+                                            boolean isOptional = false;
+                                            if (Optional.class.getName().equals(configObjectType)) {
+                                                if (originalMethodParameterTypes.get(originalMethodParameterIndex)
+                                                        .kind() != Type.Kind.PARAMETERIZED_TYPE) {
+                                                    throw new IllegalStateException(
+                                                            "Optional is used but not parameterized for method " +
+                                                                    originalMethod.declaringClass().name() + "#"
+                                                                    + originalMethod);
+                                                }
+                                                isOptional = true;
+                                                configObjectType = originalMethodParameterTypes
+                                                        .get(originalMethodParameterIndex)
+                                                        .asParameterizedType().arguments().get(0)
+                                                        .name().toString();
+                                            }
+
+                                            // it's a config file, we will use the ConfigFileReader (last parameter of the method) and inject the result
+                                            Expr configFileReaderExpr = methodParams.get(parameterTypes.size() - 1);
+                                            Expr ghRepositoryExpr;
+                                            if (!finalIsPayloadGitHubEvent) {
+                                                ghRepositoryExpr = b1.invokeStatic(
+                                                        MethodDesc.of(PayloadHelper.class, "getRepository", GHRepository.class,
+                                                                GHEventPayload.class),
+                                                        payloadVar);
+                                            } else {
+                                                ghRepositoryExpr = b1.invokeStatic(
+                                                        MethodDesc.of(GitHub.class, "getRepository", GHRepository.class,
+                                                                String.class),
+                                                        b1.invokeInterface(
+                                                                MethodDesc.of(GitHubEvent.class, "getRepositoryOrThrow",
+                                                                        String.class),
+                                                                gitHubEventVar));
+                                            }
+
+                                            Expr configObjectExpr = b1.invokeVirtual(
+                                                    MethodDesc.of(RequestScopeCachingGitHubConfigFileProvider.class,
+                                                            "getConfigObject",
+                                                            Object.class,
+                                                            GHRepository.class, String.class, ConfigFile.Source.class,
+                                                            Class.class),
+                                                    configFileReaderExpr,
+                                                    ghRepositoryExpr,
+                                                    Const.of(configFileAnnotationInstance.value().asString()),
+                                                    Const.of(ConfigFile.Source.valueOf(
+                                                            configFileAnnotationInstance.valueWithDefault(index, "source")
+                                                                    .asEnum())),
+                                                    Const.of(ClassDesc.of(configObjectType)));
+                                            configObjectExpr = b1.cast(configObjectExpr, ClassDesc.of(configObjectType));
+
+                                            if (isOptional) {
+                                                configObjectExpr = b1.invokeStatic(
+                                                        MethodDesc.of(Optional.class, "ofNullable", Optional.class,
+                                                                Object.class),
+                                                        configObjectExpr);
+                                            }
+
+                                            parameterValues[originalMethodParameterIndex] = configObjectExpr;
+                                        } else {
+                                            parameterValues[originalMethodParameterIndex] = methodParams
+                                                    .get(multiplexerMethodParameterIndex);
+                                        }
+                                    }
+
+                                    // Invoke the original method
+                                    ClassDesc originalMethodOwner = classDescOf(originalMethod.declaringClass().name());
+                                    ClassDesc originalMethodReturnType = classDescOf(originalMethod.returnType().name());
+                                    ClassDesc[] originalMethodParamTypes = originalMethod.parameterTypes().stream()
+                                            .map(t -> classDescOf(t.name()))
+                                            .toArray(ClassDesc[]::new);
+                                    java.lang.constant.MethodTypeDesc originalMethodTypeDesc = java.lang.constant.MethodTypeDesc
+                                            .of(originalMethodReturnType, originalMethodParamTypes);
+                                    MethodDesc originalMethodDesc = io.quarkus.gizmo2.desc.ClassMethodDesc.of(
+                                            originalMethodOwner,
+                                            originalMethod.name(),
+                                            originalMethodTypeDesc);
+                                    Expr returnValue = b1.invokeVirtual(originalMethodDesc, thisExpr, parameterValues);
+
+                                    // OpenTelemetry integration - success path
+                                    if (openTelemetryTracesIntegrationEnabled) {
+                                        b1.invokeInterface(
+                                                MethodDesc.of(TelemetryTracesReporter.class, "reportSuccess", void.class,
+                                                        GitHubEvent.class, TelemetrySpanWrapper.class),
+                                                thisExpr.field(telemetryTracesReporterFieldDescriptor),
+                                                gitHubEventVar, telemetrySpanWrapperVar);
+                                        // we don't have a finally clause in Gizmo 2 that works with catch returns,
+                                        // so we duplicate the close/endSpan in both the try and catch blocks
+                                        b1.invokeInterface(MethodDesc.of(AutoCloseable.class, "close", void.class),
+                                                telemetryScopeWrapperVar);
+                                        b1.invokeInterface(
+                                                MethodDesc.of(TelemetryTracesReporter.class, "endSpan", void.class,
+                                                        TelemetrySpanWrapper.class),
+                                                thisExpr.field(telemetryTracesReporterFieldDescriptor),
+                                                telemetrySpanWrapperVar);
+                                    }
+                                    if (openTelemetryMetricsIntegrationEnabled) {
+                                        b1.invokeInterface(
+                                                MethodDesc.of(TelemetryMetricsReporter.class,
+                                                        "incrementGitHubEventMethodSuccess",
+                                                        void.class,
+                                                        GitHubEvent.class, String.class, String.class, String.class),
+                                                thisExpr.field(telemetryMetricsReporterFieldDescriptor),
+                                                gitHubEventVar, Const.of(declaringClassName.toString()),
+                                                Const.of(originalMethod.name()), Const.of(originalMethod.toString()));
+                                    }
+
+                                    if (originalMethod.returnType().kind() == Type.Kind.VOID) {
+                                        b1.return_();
+                                    } else {
+                                        b1.return_(returnValue);
+                                    }
+                                });
+
+                                tc.catch_(Throwable.class, "t", (b1, caughtException) -> {
+                                    b1.invokeInterface(
+                                            MethodDesc.of(ErrorHandler.class, "handleError", void.class, GitHubEvent.class,
+                                                    GHEventPayload.class, Throwable.class),
+                                            thisExpr.field(errorHandlerFieldDescriptor),
+                                            gitHubEventVar,
+                                            payloadVar,
+                                            caughtException);
+
+                                    // OpenTelemetry integration - exception path
+                                    if (openTelemetryTracesIntegrationEnabled) {
+                                        b1.invokeInterface(
+                                                MethodDesc.of(TelemetryTracesReporter.class, "reportException", void.class,
+                                                        GitHubEvent.class,
+                                                        TelemetrySpanWrapper.class, Throwable.class),
+                                                thisExpr.field(telemetryTracesReporterFieldDescriptor),
+                                                gitHubEventVar, telemetrySpanWrapperVar, caughtException);
+                                        // close/endSpan duplicated here since finally doesn't run on catch return
+                                        b1.invokeInterface(MethodDesc.of(AutoCloseable.class, "close", void.class),
+                                                telemetryScopeWrapperVar);
+                                        b1.invokeInterface(
+                                                MethodDesc.of(TelemetryTracesReporter.class, "endSpan", void.class,
+                                                        TelemetrySpanWrapper.class),
+                                                thisExpr.field(telemetryTracesReporterFieldDescriptor),
+                                                telemetrySpanWrapperVar);
+                                    }
+                                    if (openTelemetryMetricsIntegrationEnabled) {
+                                        b1.invokeInterface(
+                                                MethodDesc.of(TelemetryMetricsReporter.class,
+                                                        "incrementGitHubEventMethodError",
+                                                        void.class,
+                                                        GitHubEvent.class, String.class, String.class, String.class,
+                                                        Throwable.class),
+                                                thisExpr.field(telemetryMetricsReporterFieldDescriptor),
+                                                gitHubEventVar, Const.of(declaringClassName.toString()),
+                                                Const.of(originalMethod.name()), Const.of(originalMethod.toString()),
+                                                caughtException);
+                                    }
+
+                                    if (originalMethod.returnType().kind() == org.jboss.jandex.Type.Kind.VOID) {
+                                        b1.return_();
+                                    } else {
+                                        b1.return_(Const.ofNull(classDescOf(originalMethod.returnType().name())));
+                                    }
+                                });
+                            });
+                        });
+                    });
                 }
 
-                ResultHandle returnValue = tryBlock.invokeVirtualMethod(originalMethod, tryBlock.getThis(),
-                        parameterValues);
-                // OpenTelemetry integration
-                if (openTelemetryTracesIntegrationEnabled) {
-                    tryBlock.invokeInterfaceMethod(
-                            MethodDescriptor.ofMethod(TelemetryTracesReporter.class, "reportSuccess", void.class,
-                                    GitHubEvent.class, TelemetrySpanWrapper.class),
-                            tryBlock.readInstanceField(telemetryTracesReporterFieldDescriptor, tryBlock.getThis()),
-                            gitHubEventRh, telemetrySpanWrapperRh);
-                    // we don't have a finally clause in Gizmo 1, so we copy this clause in both the try and the catch...
-                    tryBlock.invokeInterfaceMethod(MethodDescriptor.ofMethod(AutoCloseable.class, "close", void.class),
-                            telemetryScopeWrapperRh);
-                    tryBlock.invokeInterfaceMethod(
-                            MethodDescriptor.ofMethod(TelemetryTracesReporter.class, "endSpan", void.class,
-                                    TelemetrySpanWrapper.class),
-                            tryBlock.readInstanceField(telemetryTracesReporterFieldDescriptor, tryBlock.getThis()),
-                            telemetrySpanWrapperRh);
-                }
-                if (openTelemetryMetricsIntegrationEnabled) {
-                    tryBlock.invokeInterfaceMethod(
-                            MethodDescriptor.ofMethod(TelemetryMetricsReporter.class, "incrementGitHubEventMethodSuccess",
-                                    void.class,
-                                    GitHubEvent.class, String.class, String.class, String.class),
-                            tryBlock.readInstanceField(telemetryMetricsReporterFieldDescriptor, tryBlock.getThis()),
-                            gitHubEventRh, tryBlock.load(declaringClassName.toString()),
-                            tryBlock.load(originalMethod.name()), tryBlock.load(originalMethod.toString()));
-                }
-                tryBlock.returnValue(returnValue);
-
-                CatchBlockCreator catchBlock = tryBlock.addCatch(Throwable.class);
-                catchBlock.invokeInterfaceMethod(
-                        MethodDescriptor.ofMethod(ErrorHandler.class, "handleError", void.class, GitHubEvent.class,
-                                GHEventPayload.class, Throwable.class),
-                        catchBlock.readInstanceField(errorHandlerFieldDescriptor, catchBlock.getThis()),
-                        gitHubEventRh,
-                        payloadRh,
-                        catchBlock.getCaughtException());
-                // OpenTelemetry integration
-                if (openTelemetryTracesIntegrationEnabled) {
-                    catchBlock.invokeInterfaceMethod(
-                            MethodDescriptor.ofMethod(TelemetryTracesReporter.class, "reportException", void.class,
-                                    GitHubEvent.class,
-                                    TelemetrySpanWrapper.class, Throwable.class),
-                            catchBlock.readInstanceField(telemetryTracesReporterFieldDescriptor, catchBlock.getThis()),
-                            gitHubEventRh, telemetrySpanWrapperRh, catchBlock.getCaughtException());
-                    // we don't have a finally clause in Gizmo 1, so we copy this clause in both the try and the catch...
-                    catchBlock.invokeInterfaceMethod(MethodDescriptor.ofMethod(AutoCloseable.class, "close", void.class),
-                            telemetryScopeWrapperRh);
-                    catchBlock.invokeInterfaceMethod(
-                            MethodDescriptor.ofMethod(TelemetryTracesReporter.class, "endSpan", void.class,
-                                    TelemetrySpanWrapper.class),
-                            catchBlock.readInstanceField(telemetryTracesReporterFieldDescriptor, catchBlock.getThis()),
-                            telemetrySpanWrapperRh);
-                }
-                if (openTelemetryMetricsIntegrationEnabled) {
-                    catchBlock.invokeInterfaceMethod(
-                            MethodDescriptor.ofMethod(TelemetryMetricsReporter.class, "incrementGitHubEventMethodError",
-                                    void.class,
-                                    GitHubEvent.class, String.class, String.class, String.class, Throwable.class),
-                            catchBlock.readInstanceField(telemetryMetricsReporterFieldDescriptor, catchBlock.getThis()),
-                            gitHubEventRh, catchBlock.load(declaringClassName.toString()),
-                            catchBlock.load(originalMethod.name()), catchBlock.load(originalMethod.toString()),
-                            catchBlock.getCaughtException());
-                }
-                catchBlock.returnValue(null);
-            }
-
-            multiplexerClassCreator.close();
-        }
-    }
-
-    private static ResultHandle fireAsyncAction(BytecodeCreator bytecodeCreator, LaunchMode launchMode, String className,
-            ResultHandle gitHubEventRh, ResultHandle multiplexedEventRh, ResultHandle annotationLiteralArrayRh) {
-        ResultHandle cdiEventRh = bytecodeCreator.invokeInterfaceMethod(EVENT_SELECT,
-                bytecodeCreator.readInstanceField(
-                        FieldDescriptor.of(className, EVENT_EMITTER_FIELD, Event.class),
-                        bytecodeCreator.getThis()),
-                annotationLiteralArrayRh);
-
-        ResultHandle fireAsyncCompletionStageRH = bytecodeCreator.invokeInterfaceMethod(EVENT_FIRE_ASYNC, cdiEventRh,
-                multiplexedEventRh);
-
-        if (LaunchMode.TEST.equals(launchMode)) {
-            ResultHandle toFutureRH = bytecodeCreator.invokeInterfaceMethod(COMPLETION_STAGE_TO_COMPLETABLE_FUTURE,
-                    fireAsyncCompletionStageRH);
-            return bytecodeCreator.invokeVirtualMethod(COMPLETABLE_FUTURE_JOIN, toFutureRH);
-        } else {
-            return fireAsyncCompletionStageRH;
-        }
+            }); // Close cc lambda
+        } // Close for loop
     }
 
     private static String getLiteralClassName(DotName annotationName) {
         return annotationName + "_AnnotationLiteral";
-    }
-
-    @SuppressWarnings("unused")
-    private static void systemOutPrintln(BytecodeCreator bytecodeCreator, ResultHandle resultHandle) {
-        bytecodeCreator.invokeVirtualMethod(MethodDescriptor.ofMethod(PrintStream.class, "println", void.class, String.class),
-                bytecodeCreator.readStaticField(FieldDescriptor.of(System.class, "out", PrintStream.class)),
-                bytecodeCreator.invokeVirtualMethod(MethodDescriptor.ofMethod(Object.class, "toString", String.class),
-                        resultHandle));
     }
 
     private static class RemoveBridgeMethodsClassVisitor extends ClassVisitor {
@@ -1216,7 +1343,7 @@ class GitHubAppProcessor {
         private final Set<String> methodsWithBridges;
 
         public RemoveBridgeMethodsClassVisitor(ClassVisitor visitor, String className, Set<String> methodsWithBridges) {
-            super(Gizmo.ASM_API_VERSION, visitor);
+            super(Opcodes.ASM9, visitor);
 
             this.className = className;
             this.methodsWithBridges = methodsWithBridges;

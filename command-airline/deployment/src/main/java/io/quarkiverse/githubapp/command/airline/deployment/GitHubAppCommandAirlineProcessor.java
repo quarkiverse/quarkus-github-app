@@ -7,10 +7,11 @@ import static io.quarkiverse.githubapp.command.airline.deployment.GitHubAppComma
 import static io.quarkiverse.githubapp.command.airline.deployment.GitHubAppCommandAirlineDotNames.COMMAND_OPTIONS;
 import static io.quarkiverse.githubapp.command.airline.deployment.GitHubAppCommandAirlineDotNames.DEPENDENT;
 import static io.quarkiverse.githubapp.command.airline.deployment.GitHubAppCommandAirlineDotNames.GH_EVENT_PAYLOAD_ISSUE_COMMENT;
-import static io.quarkiverse.githubapp.command.airline.deployment.GitHubAppCommandAirlineDotNames.ISSUE_COMMENT_CREATED;
 import static io.quarkiverse.githubapp.command.airline.deployment.GitHubAppCommandAirlineDotNames.PERMISSION;
 import static io.quarkiverse.githubapp.command.airline.deployment.GitHubAppCommandAirlineDotNames.TEAM;
+import static org.jboss.jandex.gizmo2.Jandex2Gizmo.classDescOf;
 
+import java.lang.constant.ClassDesc;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -31,8 +32,8 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+import org.jboss.jandex.gizmo2.Jandex2Gizmo;
 import org.kohsuke.github.GHEventPayload;
-import org.kohsuke.github.GHEventPayload.IssueComment;
 import org.kohsuke.github.GHIssueComment;
 import org.kohsuke.github.GHPermissionType;
 import org.kohsuke.github.GHReaction;
@@ -57,11 +58,12 @@ import io.quarkiverse.githubapp.command.airline.runtime.DefaultParseErrorHandler
 import io.quarkiverse.githubapp.command.airline.runtime.util.Reactions;
 import io.quarkiverse.githubapp.deployment.AdditionalEventDispatchingClassesIndexBuildItem;
 import io.quarkiverse.githubapp.deployment.GitHubAppDotNames;
+import io.quarkiverse.githubapp.event.IssueComment;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
-import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
+import io.quarkus.arc.deployment.GeneratedBeanGizmo2Adaptor;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -69,15 +71,15 @@ import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.gizmo.BranchResult;
-import io.quarkus.gizmo.BytecodeCreator;
-import io.quarkus.gizmo.CatchBlockCreator;
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.ClassOutput;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.gizmo.TryBlock;
+import io.quarkus.gizmo2.ClassOutput;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.LocalVar;
+import io.quarkus.gizmo2.ParamVar;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.gizmo2.desc.ConstructorDesc;
+import io.quarkus.gizmo2.desc.MethodDesc;
 
 class GitHubAppCommandAirlineProcessor {
 
@@ -127,7 +129,7 @@ class GitHubAppCommandAirlineProcessor {
 
         IndexedGeneratedBeansBuildProducer indexedGeneratedBeans = new IndexedGeneratedBeansBuildProducer(
                 generatedBeans);
-        ClassOutput classOutput = new GeneratedBeanGizmoAdaptor(indexedGeneratedBeans);
+        ClassOutput classOutput = new GeneratedBeanGizmo2Adaptor(indexedGeneratedBeans);
 
         for (AnnotationInstance cliAnnotationInstance : index.getIndex().getAnnotations(CLI)) {
             List<String> aliases = getAliases(cliAnnotationInstance);
@@ -168,25 +170,21 @@ class GitHubAppCommandAirlineProcessor {
         ClassInfo cliClassInfo = cliAnnotationInstance.target().asClass();
         String commandDispatcherClassName = cliClassInfo.name() + "CommandDispatcherImpl";
 
-        ClassCreator commandDispatcherClassCreator = ClassCreator.builder().classOutput(classOutput)
-                .className(commandDispatcherClassName)
-                .superClass(AbstractCommandDispatcher.class)
-                .build();
+        Gizmo gizmo = Gizmo.create(classOutput).withDebugInfo(false).withParameters(false);
 
-        generateCommandDispatcherConstructor(commandDispatcherClassCreator, commandDispatcherClassName, index, cliClassInfo,
-                aliases);
+        gizmo.class_(commandDispatcherClassName, cc -> {
+            cc.extends_(AbstractCommandDispatcher.class);
 
-        generateCommandDispatcherGetCommandConfigsMethod(commandDispatcherClassCreator, index, allCommands);
-        generateCommandDispatcherGetCommandPermissionConfigsMethod(commandDispatcherClassCreator, allCommands);
-        generateCommandDispatcherGetCommandTeamConfigsMethod(commandDispatcherClassCreator, allCommands);
-
-        generateCommandDispatcherDispatchMethod(commandDispatcherClassCreator, runMethod);
-
-        commandDispatcherClassCreator.close();
+            generateCommandDispatcherConstructor(cc, commandDispatcherClassName, index, cliClassInfo, aliases);
+            generateCommandDispatcherGetCommandConfigsMethod(cc, index, allCommands);
+            generateCommandDispatcherGetCommandPermissionConfigsMethod(cc, allCommands);
+            generateCommandDispatcherGetCommandTeamConfigsMethod(cc, allCommands);
+            generateCommandDispatcherDispatchMethod(cc, index, runMethod);
+        });
     }
 
-    private static void generateCommandDispatcherDispatchMethod(ClassCreator commandDispatcherClassCreator,
-            RunMethod runMethod) {
+    private static void generateCommandDispatcherDispatchMethod(io.quarkus.gizmo2.creator.ClassCreator cc,
+            IndexView index, RunMethod runMethod) {
         List<Type> originalMethodParameterTypes = runMethod.getMethod().parameterTypes();
         Map<Short, List<AnnotationInstance>> originalMethodParameterAnnotationMapping = runMethod.getMethod().annotations()
                 .stream()
@@ -205,260 +203,318 @@ class GitHubAppCommandAirlineProcessor {
             }
         }
 
-        List<String> parameterTypes = new ArrayList<>();
-        originalMethodParameterTypes.stream().map(t -> t.name().toString())
+        List<ClassDesc> parameterTypes = new ArrayList<>();
+        originalMethodParameterTypes.stream().map(t -> classDescOf(t.name()))
                 .forEach(parameterTypes::add);
         if (gitHubEventPosition < 0) {
-            parameterTypes.add(GitHubAppDotNames.GITHUB_EVENT.toString());
+            parameterTypes.add(classDescOf(GitHubAppDotNames.GITHUB_EVENT));
             gitHubEventPosition = (short) (parameterTypes.size() - 1);
         }
         if (issueCommentPayloadPosition < 0) {
-            parameterTypes.add(GH_EVENT_PAYLOAD_ISSUE_COMMENT.toString());
+            parameterTypes.add(classDescOf(GH_EVENT_PAYLOAD_ISSUE_COMMENT));
             issueCommentPayloadPosition = (short) (parameterTypes.size() - 1);
         }
 
-        MethodCreator dispatchMethodCreator = commandDispatcherClassCreator.getMethodCreator("dispatch",
-                void.class.getName(), parameterTypes.toArray());
-        for (short i = 0; i < originalMethodParameterTypes.size(); i++) {
-            List<AnnotationInstance> annotations = originalMethodParameterAnnotationMapping.getOrDefault(i,
-                    Collections.emptyList());
-            if (i == issueCommentPayloadPosition) {
-                // enforce issue_comment.created for the IssueComment payload
-                dispatchMethodCreator.getParameterAnnotations(i)
-                        .addAnnotation(ISSUE_COMMENT_CREATED.toString());
-            } else {
-                // copy the annotations
-                for (AnnotationInstance annotation : annotations) {
-                    dispatchMethodCreator.getParameterAnnotations(i)
-                            .addAnnotation(annotation);
-                }
+        final short finalGitHubEventPosition = gitHubEventPosition;
+        final short finalIssueCommentPayloadPosition = issueCommentPayloadPosition;
+
+        cc.method("dispatch", mc -> {
+            mc.public_();
+            mc.returning(void.class);
+
+            // Create parameters
+            List<ParamVar> params = new ArrayList<>();
+            for (short i = 0; i < parameterTypes.size(); i++) {
+                final short paramIndex = i;
+                ParamVar param = mc.parameter("param" + i, pc -> {
+                    pc.setType(parameterTypes.get(paramIndex));
+
+                    // Add annotations
+                    if (paramIndex < originalMethodParameterTypes.size()) {
+                        List<AnnotationInstance> annotations = originalMethodParameterAnnotationMapping.getOrDefault(paramIndex,
+                                Collections.emptyList());
+                        if (paramIndex == finalIssueCommentPayloadPosition) {
+                            // enforce issue_comment.created for the IssueComment payload
+                            pc.addAnnotation(IssueComment.Created.class);
+                        } else {
+                            // copy the annotations
+                            for (AnnotationInstance annotation : annotations) {
+                                Jandex2Gizmo.addAnnotation(pc, annotation, index);
+                            }
+                        }
+                    } else if (paramIndex == finalIssueCommentPayloadPosition) {
+                        pc.addAnnotation(IssueComment.Created.class);
+                    }
+                });
+                params.add(param);
             }
-        }
-        if (issueCommentPayloadPosition < 0) {
-            dispatchMethodCreator.getParameterAnnotations(issueCommentPayloadPosition)
-                    .addAnnotation(ISSUE_COMMENT_CREATED.toString());
-        }
 
-        ResultHandle issueCommentPayloadRh = dispatchMethodCreator.getMethodParam(issueCommentPayloadPosition);
-        ResultHandle gitHubEventRh = dispatchMethodCreator.getMethodParam(gitHubEventPosition);
+            mc.body(b0 -> {
+                Expr thisExpr = mc.this_();
+                Expr issueCommentPayloadExpr = params.get(finalIssueCommentPayloadPosition);
+                Expr gitHubEventExpr = params.get(finalGitHubEventPosition);
 
-        ResultHandle commandExecutionContextOptional = dispatchMethodCreator.invokeSpecialMethod(
-                MethodDescriptor.ofMethod(AbstractCommandDispatcher.class, "getCommand", Optional.class,
-                        GitHubEvent.class, GHEventPayload.IssueComment.class),
-                dispatchMethodCreator.getThis(), gitHubEventRh, issueCommentPayloadRh);
-        BranchResult commandExecutionContextOptionalIsPresent = dispatchMethodCreator.ifTrue(dispatchMethodCreator
-                .invokeVirtualMethod(MethodDescriptor.ofMethod(Optional.class, "isPresent", boolean.class),
-                        commandExecutionContextOptional));
+                LocalVar commandExecutionContextOptional = b0.localVar("commandExecutionContextOptional", Optional.class,
+                        b0.invokeSpecial(
+                                MethodDesc.of(AbstractCommandDispatcher.class, "getCommand", Optional.class,
+                                        GitHubEvent.class, GHEventPayload.IssueComment.class),
+                                thisExpr, gitHubEventExpr, issueCommentPayloadExpr));
 
-        commandExecutionContextOptionalIsPresent.falseBranch().returnValue(null);
+                b0.ifElse(
+                        b0.invokeVirtual(MethodDesc.of(Optional.class, "isPresent", boolean.class),
+                                commandExecutionContextOptional),
+                        b1 -> {
+                            // True branch - command is present
+                            LocalVar commandExecutionContextVar = b1.localVar("commandExecutionContext", Object.class,
+                                    b1.invokeVirtual(
+                                            MethodDesc.of(Optional.class, "get", Object.class),
+                                            commandExecutionContextOptional));
+                            LocalVar commandVar = b1.localVar("command", Object.class,
+                                    b1.invokeVirtual(
+                                            MethodDesc.of(CommandExecutionContext.class, "getCommand", Object.class),
+                                            commandExecutionContextVar));
+                            LocalVar ackReactionVar = b1.localVar("ackReaction", GHReaction.class,
+                                    b1.invokeVirtual(
+                                            MethodDesc.of(CommandExecutionContext.class, "getAckReaction", GHReaction.class),
+                                            commandExecutionContextVar));
+                            LocalVar reactionStrategyVar = b1.localVar("reactionStrategy", ReactionStrategy.class,
+                                    b1.invokeVirtual(
+                                            MethodDesc.of(CommandConfig.class, "getReactionStrategy", ReactionStrategy.class),
+                                            b1.invokeVirtual(
+                                                    MethodDesc.of(CommandExecutionContext.class, "getCommandConfig",
+                                                            CommandConfig.class),
+                                                    commandExecutionContextVar)));
 
-        BytecodeCreator commandExecutionContextOptionalIsPresentTrue = commandExecutionContextOptionalIsPresent.trueBranch();
-        ResultHandle commandExecutionContextRh = commandExecutionContextOptionalIsPresentTrue
-                .invokeVirtualMethod(MethodDescriptor.ofMethod(Optional.class, "get", Object.class),
-                        commandExecutionContextOptional);
-        ResultHandle commandRh = commandExecutionContextOptionalIsPresentTrue
-                .invokeVirtualMethod(MethodDescriptor.ofMethod(CommandExecutionContext.class, "getCommand", Object.class),
-                        commandExecutionContextRh);
-        ResultHandle ackReactionRh = commandExecutionContextOptionalIsPresentTrue
-                .invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(CommandExecutionContext.class, "getAckReaction", GHReaction.class),
-                        commandExecutionContextRh);
-        ResultHandle reactionStrategyRh = commandExecutionContextOptionalIsPresentTrue
-                .invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(CommandConfig.class, "getReactionStrategy", ReactionStrategy.class),
-                        commandExecutionContextOptionalIsPresentTrue
-                                .invokeVirtualMethod(
-                                        MethodDescriptor.ofMethod(CommandExecutionContext.class, "getCommandConfig",
-                                                CommandConfig.class),
-                                        commandExecutionContextRh));
+                            b1.try_(tc -> {
+                                tc.body(b2 -> {
+                                    // Build run method parameters
+                                    List<Expr> runMethodParameters = new ArrayList<>();
+                                    for (int i = 0; i < originalMethodParameterTypes.size(); i++) {
+                                        runMethodParameters.add(params.get(i));
+                                    }
 
-        TryBlock tryBlock = commandExecutionContextOptionalIsPresentTrue.tryBlock();
+                                    // Call the run method
+                                    ClassDesc runMethodOwner = classDescOf(runMethod.getClazz().name());
+                                    ClassDesc runMethodReturnType = classDescOf(runMethod.getMethod().returnType().name());
+                                    ClassDesc[] runMethodParamTypes = runMethod.getMethod().parameterTypes().stream()
+                                            .map(t -> classDescOf(t.name()))
+                                            .toArray(ClassDesc[]::new);
+                                    java.lang.constant.MethodTypeDesc runMethodTypeDesc = java.lang.constant.MethodTypeDesc
+                                            .of(runMethodReturnType, runMethodParamTypes);
+                                    MethodDesc runMethodDesc = io.quarkus.gizmo2.desc.InterfaceMethodDesc.of(
+                                            runMethodOwner,
+                                            runMethod.getMethod().name(),
+                                            runMethodTypeDesc);
 
-        List<ResultHandle> runMethodParameters = new ArrayList<>();
-        for (int i = 0; i < originalMethodParameterTypes.size(); i++) {
-            runMethodParameters.add(commandExecutionContextOptionalIsPresentTrue.getMethodParam(i));
-        }
-        tryBlock.invokeInterfaceMethod(runMethod.getMethod(), commandRh,
-                runMethodParameters.toArray(new ResultHandle[0]));
-        tryBlock.invokeSpecialMethod(MethodDescriptor.ofMethod(AbstractCommandDispatcher.class, "handleSuccess",
-                void.class, GitHubEvent.class, GHEventPayload.IssueComment.class, CommandExecutionContext.class),
-                tryBlock.getThis(), gitHubEventRh, issueCommentPayloadRh, commandExecutionContextRh);
-        deleteReaction(tryBlock, issueCommentPayloadRh, ackReactionRh);
-        BranchResult reactionOnNormalFlow = tryBlock.ifTrue(tryBlock.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(ReactionStrategy.class, "reactionOnNormalFlow", boolean.class), reactionStrategyRh));
-        createReaction(reactionOnNormalFlow.trueBranch(), issueCommentPayloadRh, ReactionContent.PLUS_ONE);
+                                    b2.invokeInterface(runMethodDesc, commandVar,
+                                            runMethodParameters.toArray(new Expr[0]));
 
-        CatchBlockCreator catchBlock = tryBlock.addCatch(Exception.class);
-        deleteReaction(catchBlock, issueCommentPayloadRh, ackReactionRh);
-        BranchResult reactionOnError = catchBlock.ifTrue(catchBlock.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(ReactionStrategy.class, "reactionOnError", boolean.class), reactionStrategyRh));
-        createReaction(reactionOnError.trueBranch(), issueCommentPayloadRh, ReactionContent.MINUS_ONE);
+                                    b2.invokeSpecial(MethodDesc.of(AbstractCommandDispatcher.class, "handleSuccess",
+                                            void.class, GitHubEvent.class, GHEventPayload.IssueComment.class,
+                                            CommandExecutionContext.class),
+                                            thisExpr, gitHubEventExpr, issueCommentPayloadExpr, commandExecutionContextVar);
+                                    deleteReaction(b2, issueCommentPayloadExpr, ackReactionVar);
 
-        catchBlock.invokeSpecialMethod(MethodDescriptor.ofMethod(AbstractCommandDispatcher.class, "handleExecutionError",
-                void.class, GitHubEvent.class, GHEventPayload.IssueComment.class, CommandExecutionContext.class,
-                Exception.class), catchBlock.getThis(),
-                gitHubEventRh, issueCommentPayloadRh, commandExecutionContextRh, catchBlock.getCaughtException());
+                                    b2.if_(b2.invokeVirtual(
+                                            MethodDesc.of(ReactionStrategy.class, "reactionOnNormalFlow", boolean.class),
+                                            reactionStrategyVar),
+                                            b3 -> createReaction(b3, issueCommentPayloadExpr, ReactionContent.PLUS_ONE));
+                                });
 
-        catchBlock.throwException(catchBlock
-                .newInstance(MethodDescriptor.ofConstructor(CommandExecutionException.class, String.class, Exception.class),
-                        stringFormat(catchBlock, catchBlock.load("Unable to execute command: %1$s"),
-                                catchBlock.invokeVirtualMethod(
-                                        MethodDescriptor.ofMethod(GHIssueComment.class, "getBody", String.class),
-                                        getIssueComment(catchBlock, issueCommentPayloadRh))),
-                        catchBlock.getCaughtException()));
+                                tc.catch_(Exception.class, "e", (b2, caughtException) -> {
+                                    deleteReaction(b2, issueCommentPayloadExpr, ackReactionVar);
 
-        dispatchMethodCreator.returnValue(null);
+                                    b2.if_(b2.invokeVirtual(
+                                            MethodDesc.of(ReactionStrategy.class, "reactionOnError", boolean.class),
+                                            reactionStrategyVar),
+                                            b3 -> createReaction(b3, issueCommentPayloadExpr, ReactionContent.MINUS_ONE));
+
+                                    b2.invokeSpecial(MethodDesc.of(AbstractCommandDispatcher.class, "handleExecutionError",
+                                            void.class, GitHubEvent.class, GHEventPayload.IssueComment.class,
+                                            CommandExecutionContext.class,
+                                            Exception.class), thisExpr,
+                                            gitHubEventExpr, issueCommentPayloadExpr, commandExecutionContextVar,
+                                            caughtException);
+
+                                    b2.throw_(b2.new_(
+                                            ConstructorDesc.of(CommandExecutionException.class, String.class, Exception.class),
+                                            stringFormat(b2, Const.of("Unable to execute command: %1$s"),
+                                                    b2.invokeVirtual(
+                                                            MethodDesc.of(GHIssueComment.class, "getBody", String.class),
+                                                            getIssueComment(b2, issueCommentPayloadExpr))),
+                                            caughtException));
+                                });
+                            });
+                        },
+                        b1 -> {
+                            // False branch - command is not present, just return
+                            b1.return_();
+                        });
+
+                b0.return_();
+            });
+        });
     }
 
-    private static void generateCommandDispatcherGetCommandConfigsMethod(ClassCreator commandDispatcherClassCreator,
+    private static void generateCommandDispatcherGetCommandConfigsMethod(io.quarkus.gizmo2.creator.ClassCreator cc,
             IndexView index,
             Collection<ClassInfo> allCommands) {
-        MethodCreator getCommandConfigsMethodCreator = commandDispatcherClassCreator.getMethodCreator("getCommandConfigs",
-                Map.class.getName());
+        cc.method("getCommandConfigs", mc -> {
+            mc.protected_();
+            mc.returning(Map.class);
+            mc.body(bc -> {
+                LocalVar commandConfigsVar = bc.localVar("commandConfigs", HashMap.class,
+                        bc.new_(ConstructorDesc.of(HashMap.class)));
 
-        ResultHandle commandConfigsRh = getCommandConfigsMethodCreator
-                .newInstance(MethodDescriptor.ofConstructor(HashMap.class));
+                for (ClassInfo command : allCommands) {
+                    AnnotationInstance commandOptionsAnnotation = command.declaredAnnotation(COMMAND_OPTIONS);
 
-        for (ClassInfo command : allCommands) {
-            AnnotationInstance commandOptionsAnnotation = command.declaredAnnotation(COMMAND_OPTIONS);
+                    if (commandOptionsAnnotation != null) {
+                        bc.invokeVirtual(
+                                MethodDesc.of(HashMap.class, "put", Object.class, Object.class, Object.class),
+                                commandConfigsVar,
+                                Const.of(command.name().toString()),
+                                getCommandConfig(bc, index, commandOptionsAnnotation));
+                    }
+                }
 
-            if (commandOptionsAnnotation != null) {
-                getCommandConfigsMethodCreator.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(HashMap.class, "put", Object.class, Object.class, Object.class),
-                        commandConfigsRh,
-                        getCommandConfigsMethodCreator.load(command.name().toString()),
-                        getCommandConfig(getCommandConfigsMethodCreator, index, commandOptionsAnnotation));
-            }
-        }
-
-        getCommandConfigsMethodCreator.returnValue(commandConfigsRh);
+                bc.return_(commandConfigsVar);
+            });
+        });
     }
 
-    private static void generateCommandDispatcherGetCommandPermissionConfigsMethod(ClassCreator commandDispatcherClassCreator,
+    private static void generateCommandDispatcherGetCommandPermissionConfigsMethod(io.quarkus.gizmo2.creator.ClassCreator cc,
             Collection<ClassInfo> allCommands) {
-        MethodCreator getCommandPermissionConfigsMethodCreator = commandDispatcherClassCreator.getMethodCreator(
-                "getCommandPermissionConfigs",
-                Map.class.getName());
+        cc.method("getCommandPermissionConfigs", mc -> {
+            mc.protected_();
+            mc.returning(Map.class);
+            mc.body(bc -> {
+                LocalVar commandPermissionConfigsVar = bc.localVar("commandPermissionConfigs", HashMap.class,
+                        bc.new_(ConstructorDesc.of(HashMap.class)));
 
-        ResultHandle commandPermissionConfigsRh = getCommandPermissionConfigsMethodCreator
-                .newInstance(MethodDescriptor.ofConstructor(HashMap.class));
+                for (ClassInfo command : allCommands) {
+                    AnnotationInstance permissionAnnotation = command.declaredAnnotation(PERMISSION);
 
-        for (ClassInfo command : allCommands) {
-            AnnotationInstance permissionAnnotation = command.declaredAnnotation(PERMISSION);
+                    if (permissionAnnotation != null) {
+                        bc.invokeVirtual(
+                                MethodDesc.of(HashMap.class, "put", Object.class, Object.class, Object.class),
+                                commandPermissionConfigsVar,
+                                Const.of(command.name().toString()),
+                                getCommandPermissionConfig(bc, permissionAnnotation));
+                    }
+                }
 
-            if (permissionAnnotation != null) {
-                getCommandPermissionConfigsMethodCreator.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(HashMap.class, "put", Object.class, Object.class, Object.class),
-                        commandPermissionConfigsRh,
-                        getCommandPermissionConfigsMethodCreator.load(command.name().toString()),
-                        getCommandPermissionConfig(getCommandPermissionConfigsMethodCreator, permissionAnnotation));
-            }
-        }
-
-        getCommandPermissionConfigsMethodCreator.returnValue(commandPermissionConfigsRh);
+                bc.return_(commandPermissionConfigsVar);
+            });
+        });
     }
 
-    private static ResultHandle getCommandPermissionConfig(MethodCreator bytecodeCreator,
+    private static Expr getCommandPermissionConfig(BlockCreator bc,
             AnnotationInstance permissionAnnotation) {
-        ResultHandle permissionRh;
+        Expr permissionExpr;
         if (permissionAnnotation != null) {
-            permissionRh = bytecodeCreator.load(GHPermissionType.valueOf(permissionAnnotation.value().asEnum()));
+            permissionExpr = Const.of(GHPermissionType.valueOf(permissionAnnotation.value().asEnum()));
         } else {
-            permissionRh = bytecodeCreator.loadNull();
+            permissionExpr = Const.ofNull(GHPermissionType.class);
         }
 
-        return bytecodeCreator.newInstance(
-                MethodDescriptor.ofConstructor(CommandPermissionConfig.class, GHPermissionType.class),
-                permissionRh);
+        return bc.new_(
+                ConstructorDesc.of(CommandPermissionConfig.class, GHPermissionType.class),
+                permissionExpr);
     }
 
-    private static void generateCommandDispatcherGetCommandTeamConfigsMethod(ClassCreator commandDispatcherClassCreator,
+    private static void generateCommandDispatcherGetCommandTeamConfigsMethod(io.quarkus.gizmo2.creator.ClassCreator cc,
             Collection<ClassInfo> allCommands) {
-        MethodCreator getCommandTeamConfigsMethodCreator = commandDispatcherClassCreator.getMethodCreator(
-                "getCommandTeamConfigs",
-                Map.class.getName());
+        cc.method("getCommandTeamConfigs", mc -> {
+            mc.protected_();
+            mc.returning(Map.class);
+            mc.body(bc -> {
+                LocalVar commandTeamConfigsVar = bc.localVar("commandTeamConfigs", HashMap.class,
+                        bc.new_(ConstructorDesc.of(HashMap.class)));
 
-        ResultHandle commandTeamConfigsRh = getCommandTeamConfigsMethodCreator
-                .newInstance(MethodDescriptor.ofConstructor(HashMap.class));
+                for (ClassInfo command : allCommands) {
+                    AnnotationInstance teamAnnotation = command.declaredAnnotation(TEAM);
 
-        for (ClassInfo command : allCommands) {
-            AnnotationInstance teamAnnotation = command.declaredAnnotation(TEAM);
+                    if (teamAnnotation != null) {
+                        bc.invokeVirtual(
+                                MethodDesc.of(HashMap.class, "put", Object.class, Object.class, Object.class),
+                                commandTeamConfigsVar,
+                                Const.of(command.name().toString()),
+                                getCommandTeamConfig(bc, teamAnnotation));
+                    }
+                }
 
-            if (teamAnnotation != null) {
-                getCommandTeamConfigsMethodCreator.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(HashMap.class, "put", Object.class, Object.class, Object.class),
-                        commandTeamConfigsRh,
-                        getCommandTeamConfigsMethodCreator.load(command.name().toString()),
-                        getCommandTeamConfig(getCommandTeamConfigsMethodCreator, teamAnnotation));
-            }
-        }
-
-        getCommandTeamConfigsMethodCreator.returnValue(commandTeamConfigsRh);
+                bc.return_(commandTeamConfigsVar);
+            });
+        });
     }
 
-    private static ResultHandle getCommandTeamConfig(BytecodeCreator bytecodeCreator, AnnotationInstance teamAnnotation) {
-        ResultHandle teamsRh;
+    private static Expr getCommandTeamConfig(BlockCreator bc, AnnotationInstance teamAnnotation) {
+        Expr teamsExpr;
         if (teamAnnotation != null) {
             String[] teams = teamAnnotation.value().asStringArray();
-            teamsRh = bytecodeCreator.newArray(String.class, teams.length);
-
-            for (int i = 0; i < teams.length; i++) {
-                bytecodeCreator.writeArrayValue(teamsRh, i, bytecodeCreator.load(teams[i]));
+            List<Expr> teamExprs = new ArrayList<>();
+            for (String team : teams) {
+                teamExprs.add(Const.of(team));
             }
+            teamsExpr = bc.newArray(String.class, teamExprs);
         } else {
-            teamsRh = bytecodeCreator.loadNull();
+            teamsExpr = Const.ofNull(String[].class);
         }
 
-        return bytecodeCreator.newInstance(
-                MethodDescriptor.ofConstructor(CommandTeamConfig.class, String[].class),
-                teamsRh);
+        return bc.new_(
+                ConstructorDesc.of(CommandTeamConfig.class, String[].class),
+                teamsExpr);
     }
 
-    private static void generateCommandDispatcherConstructor(ClassCreator commandDispatcherClassCreator,
+    private static void generateCommandDispatcherConstructor(io.quarkus.gizmo2.creator.ClassCreator cc,
             String commandDispatcherClassName, IndexView index, ClassInfo cliClassInfo, List<String> aliases) {
-        MethodCreator constructorMethodCreator = commandDispatcherClassCreator
-                .getMethodCreator(MethodDescriptor.ofConstructor(commandDispatcherClassName));
+        cc.constructor(constr -> {
+            constr.public_();
+            constr.body(bc -> {
+                Expr aliasesExpr = toExpr(bc, aliases);
+                Expr cliConfigExpr;
+                AnnotationInstance cliOptionsAnnotation = cliClassInfo.declaredAnnotation(CLI_OPTIONS);
 
-        ResultHandle aliasesRh = toResultHandle(constructorMethodCreator, aliases);
-        ResultHandle cliConfigRh;
-        AnnotationInstance cliOptionsAnnotation = cliClassInfo.declaredAnnotation(CLI_OPTIONS);
+                Expr defaultCommandConfigExpr = getCommandConfig(bc, index,
+                        cliOptionsAnnotation != null
+                                ? cliOptionsAnnotation.valueWithDefault(index, "defaultCommandOptions").asNested()
+                                : null);
+                Expr defaultCommandPermissionConfigExpr = getCommandPermissionConfig(bc,
+                        cliClassInfo.declaredAnnotation(PERMISSION));
+                Expr defaultCommandTeamConfigExpr = getCommandTeamConfig(bc,
+                        cliClassInfo.declaredAnnotation(TEAM));
 
-        ResultHandle defaultCommandConfigRh = getCommandConfig(constructorMethodCreator, index,
-                cliOptionsAnnotation != null ? cliOptionsAnnotation.valueWithDefault(index, "defaultCommandOptions").asNested()
-                        : null);
-        ResultHandle defaultCommandPermissionConfigRh = getCommandPermissionConfig(constructorMethodCreator,
-                cliClassInfo.declaredAnnotation(PERMISSION));
-        ResultHandle defaultCommandTeamConfigRh = getCommandTeamConfig(constructorMethodCreator,
-                cliClassInfo.declaredAnnotation(TEAM));
+                if (cliOptionsAnnotation != null) {
+                    cliConfigExpr = bc.new_(
+                            ConstructorDesc.of(CliConfig.class, List.class,
+                                    ParseErrorStrategy.class, String.class, Class.class, CommandConfig.class,
+                                    CommandPermissionConfig.class, CommandTeamConfig.class),
+                            aliasesExpr,
+                            Const.of(ParseErrorStrategy
+                                    .valueOf(cliOptionsAnnotation.valueWithDefault(index, "parseErrorStrategy").asEnum())),
+                            Const.of(cliOptionsAnnotation.valueWithDefault(index, "parseErrorMessage").asString()),
+                            Const.of(ClassDesc.of(
+                                    cliOptionsAnnotation.valueWithDefault(index, "parseErrorHandler").asClass().name()
+                                            .toString())),
+                            defaultCommandConfigExpr, defaultCommandPermissionConfigExpr, defaultCommandTeamConfigExpr);
+                } else {
+                    cliConfigExpr = bc.new_(
+                            ConstructorDesc.of(CliConfig.class, List.class, CommandConfig.class,
+                                    CommandPermissionConfig.class, CommandTeamConfig.class),
+                            aliasesExpr, defaultCommandConfigExpr, defaultCommandPermissionConfigExpr,
+                            defaultCommandTeamConfigExpr);
+                }
 
-        if (cliOptionsAnnotation != null) {
-            cliConfigRh = constructorMethodCreator.newInstance(
-                    MethodDescriptor.ofConstructor(CliConfig.class, List.class,
-                            ParseErrorStrategy.class, String.class, Class.class, CommandConfig.class,
-                            CommandPermissionConfig.class, CommandTeamConfig.class),
-                    aliasesRh,
-                    constructorMethodCreator.load(ParseErrorStrategy
-                            .valueOf(cliOptionsAnnotation.valueWithDefault(index, "parseErrorStrategy").asEnum())),
-                    constructorMethodCreator
-                            .load(cliOptionsAnnotation.valueWithDefault(index, "parseErrorMessage").asString()),
-                    constructorMethodCreator
-                            .loadClass(cliOptionsAnnotation.valueWithDefault(index, "parseErrorHandler").asClass().name()
-                                    .toString()),
-                    defaultCommandConfigRh, defaultCommandPermissionConfigRh, defaultCommandTeamConfigRh);
-        } else {
-            cliConfigRh = constructorMethodCreator.newInstance(
-                    MethodDescriptor.ofConstructor(CliConfig.class, List.class, CommandConfig.class,
-                            CommandPermissionConfig.class, CommandTeamConfig.class),
-                    aliasesRh, defaultCommandConfigRh, defaultCommandPermissionConfigRh, defaultCommandTeamConfigRh);
-        }
+                bc.invokeSpecial(
+                        ConstructorDesc.of(AbstractCommandDispatcher.class, Class.class, CliConfig.class),
+                        cc.this_(),
+                        Const.of(ClassDesc.of(cliClassInfo.name().toString())),
+                        cliConfigExpr);
 
-        constructorMethodCreator.invokeSpecialMethod(
-                MethodDescriptor.ofConstructor(AbstractCommandDispatcher.class, Class.class, CliConfig.class),
-                constructorMethodCreator.getThis(),
-                constructorMethodCreator.loadClass(cliClassInfo),
-                cliConfigRh);
-
-        constructorMethodCreator.returnValue(null);
+                bc.return_();
+            });
+        });
     }
 
     private static Map<DotName, ClassInfo> getAllCommands(IndexView index, AnnotationInstance annotationInstance) {
@@ -506,23 +562,24 @@ class GitHubAppCommandAirlineProcessor {
         return cliAliases;
     }
 
-    private static ResultHandle getCommandConfig(BytecodeCreator bytecodeCreator, IndexView index,
+    private static Expr getCommandConfig(BlockCreator bc, IndexView index,
             AnnotationInstance commandOptionsAnnotation) {
         if (commandOptionsAnnotation == null) {
-            return bytecodeCreator.newInstance(
-                    MethodDescriptor.ofConstructor(CommandConfig.class));
+            return bc.new_(
+                    ConstructorDesc.of(CommandConfig.class));
         }
 
-        return bytecodeCreator.newInstance(
-                MethodDescriptor.ofConstructor(CommandConfig.class, CommandScope.class, ExecutionErrorStrategy.class,
+        return bc.new_(
+                ConstructorDesc.of(CommandConfig.class, CommandScope.class, ExecutionErrorStrategy.class,
                         String.class, Class.class, ReactionStrategy.class),
-                bytecodeCreator.load(CommandScope.valueOf(commandOptionsAnnotation.valueWithDefault(index, "scope").asEnum())),
-                bytecodeCreator.load(ExecutionErrorStrategy
+                Const.of(CommandScope.valueOf(commandOptionsAnnotation.valueWithDefault(index, "scope").asEnum())),
+                Const.of(ExecutionErrorStrategy
                         .valueOf(commandOptionsAnnotation.valueWithDefault(index, "executionErrorStrategy").asEnum())),
-                bytecodeCreator.load(commandOptionsAnnotation.valueWithDefault(index, "executionErrorMessage").asString()),
-                bytecodeCreator.loadClass(
-                        commandOptionsAnnotation.valueWithDefault(index, "executionErrorHandler").asClass().name().toString()),
-                bytecodeCreator.load(ReactionStrategy
+                Const.of(commandOptionsAnnotation.valueWithDefault(index, "executionErrorMessage").asString()),
+                Const.of(ClassDesc.of(
+                        commandOptionsAnnotation.valueWithDefault(index, "executionErrorHandler").asClass().name()
+                                .toString())),
+                Const.of(ReactionStrategy
                         .valueOf(commandOptionsAnnotation.valueWithDefault(index, "reactionStrategy").asEnum())));
     }
 
@@ -574,47 +631,47 @@ class GitHubAppCommandAirlineProcessor {
         return commonInterfaceWithRunMethod;
     }
 
-    private static ResultHandle getIssueComment(BytecodeCreator bytecodeCreator, ResultHandle issueCommentPayloadRh) {
-        return bytecodeCreator.invokeVirtualMethod(MethodDescriptor.ofMethod(IssueComment.class,
-                "getComment", GHIssueComment.class), issueCommentPayloadRh);
+    private static Expr getIssueComment(BlockCreator bc, Expr issueCommentPayloadExpr) {
+        return bc.invokeVirtual(MethodDesc.of(GHEventPayload.IssueComment.class,
+                "getComment", GHIssueComment.class), issueCommentPayloadExpr);
     }
 
-    private static ResultHandle createReaction(BytecodeCreator bytecodeCreator, ResultHandle issueCommentPayloadRh,
+    private static Expr createReaction(BlockCreator bc, Expr issueCommentPayloadExpr,
             ReactionContent reactionContent) {
-        return bytecodeCreator.invokeStaticMethod(
-                MethodDescriptor.ofMethod(Reactions.class, "createReaction", GHReaction.class,
+        return bc.invokeStatic(
+                MethodDesc.of(Reactions.class, "createReaction", GHReaction.class,
                         GHEventPayload.IssueComment.class,
                         ReactionContent.class),
-                issueCommentPayloadRh, bytecodeCreator.load(reactionContent));
+                issueCommentPayloadExpr, Const.of(reactionContent));
     }
 
-    private static void deleteReaction(BytecodeCreator bytecodeCreator, ResultHandle issueCommentPayloadRh,
-            ResultHandle reactionRh) {
-        bytecodeCreator.ifNotNull(reactionRh).trueBranch().invokeStaticMethod(
-                MethodDescriptor.ofMethod(Reactions.class, "deleteReaction", void.class, GHEventPayload.IssueComment.class,
+    private static void deleteReaction(BlockCreator bc, Expr issueCommentPayloadExpr,
+            Expr reactionExpr) {
+        bc.ifNotNull(reactionExpr, b -> b.invokeStatic(
+                MethodDesc.of(Reactions.class, "deleteReaction", void.class, GHEventPayload.IssueComment.class,
                         GHReaction.class),
-                issueCommentPayloadRh, reactionRh);
+                issueCommentPayloadExpr, reactionExpr));
     }
 
-    private static <T> ResultHandle toResultHandle(BytecodeCreator bytecodeCreator, List<String> list) {
-        ResultHandle arrayRh = bytecodeCreator.newArray(String.class, list.size());
-        for (int i = 0; i < list.size(); i++) {
-            bytecodeCreator.writeArrayValue(arrayRh, i, bytecodeCreator.load(list.get(i)));
+    private static <T> Expr toExpr(BlockCreator bc, List<String> list) {
+        List<Expr> listExprs = new ArrayList<>();
+        for (String item : list) {
+            listExprs.add(Const.of(item));
         }
+        Expr arrayExpr = bc.newArray(String.class, listExprs);
 
-        return bytecodeCreator
-                .invokeStaticInterfaceMethod(MethodDescriptor.ofMethod(List.class, "of", List.class, Object[].class), arrayRh);
+        return bc.invokeStatic(MethodDesc.of(List.class, "of", List.class, Object[].class), arrayExpr);
     }
 
-    private static ResultHandle stringFormat(BytecodeCreator bytecodeCreator, ResultHandle string, ResultHandle... arguments) {
-        ResultHandle argumentsArrayRh = bytecodeCreator.newArray(Object.class, arguments.length);
-        for (ResultHandle argument : arguments) {
-            bytecodeCreator.writeArrayValue(argumentsArrayRh, 0, argument);
+    private static Expr stringFormat(BlockCreator bc, Expr string, Expr... arguments) {
+        List<Expr> argumentList = new ArrayList<>();
+        for (Expr argument : arguments) {
+            argumentList.add(argument);
         }
-        return bytecodeCreator
-                .invokeStaticMethod(
-                        MethodDescriptor.ofMethod(String.class, "format", String.class, String.class, Object[].class), string,
-                        argumentsArrayRh);
+        Expr argumentsArrayExpr = bc.newArray(Object.class, argumentList);
+        return bc.invokeStatic(
+                MethodDesc.of(String.class, "format", String.class, String.class, Object[].class), string,
+                argumentsArrayExpr);
     }
 
     private static class RunMethod {

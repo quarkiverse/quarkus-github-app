@@ -18,7 +18,6 @@ import io.quarkiverse.githubapp.command.airline.CliOptions;
 import io.quarkiverse.githubapp.command.airline.CommandOptions;
 import io.quarkiverse.githubapp.command.airline.Permission;
 import io.quarkiverse.githubapp.command.airline.Team;
-import io.quarkiverse.githubapp.event.IssueComment;
 
 class GitHubAppCommandAirlineDotNames {
 
@@ -39,5 +38,4 @@ class GitHubAppCommandAirlineDotNames {
     static final DotName COMMAND_METADATA = DotName.createSimple(CommandMetadata.class.getName());
 
     static final DotName GH_EVENT_PAYLOAD_ISSUE_COMMENT = DotName.createSimple(GHEventPayload.IssueComment.class.getName());
-    static final DotName ISSUE_COMMENT_CREATED = DotName.createSimple(IssueComment.Created.class.getName());
 }
