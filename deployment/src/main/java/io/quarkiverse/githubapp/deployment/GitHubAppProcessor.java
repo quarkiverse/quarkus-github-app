@@ -459,7 +459,8 @@ class GitHubAppProcessor {
                 configuration
                         .getOrCreateEventConfiguration(eventDefinition.getEvent(), eventDefinition.getPayloadType().toString())
                         .addEventAnnotation(action, eventSubscriberInstance, eventSubscriberInstance.valuesWithDefaults(index));
-                configuration.addEventDispatchingMethod(new EventDispatchingMethod(eventSubscriberInstance, methodInfo));
+                configuration.addEventDispatchingMethod(
+                        new EventDispatchingMethod(eventDefinition.getEvent(), action, eventSubscriberInstance, methodInfo));
             }
         }
 
@@ -488,7 +489,8 @@ class GitHubAppProcessor {
                     .getOrCreateEventConfiguration(event, null)
                     .addEventAnnotation(action, rawEventSubscriberInstance,
                             rawEventSubscriberInstance.valuesWithDefaults(index));
-            configuration.addEventDispatchingMethod(new EventDispatchingMethod(rawEventSubscriberInstance, methodInfo));
+            configuration.addEventDispatchingMethod(
+                    new EventDispatchingMethod(event, action, rawEventSubscriberInstance, methodInfo));
         }
 
         return configuration;
@@ -1032,299 +1034,313 @@ class GitHubAppProcessor {
                     final short finalPayloadParameterPosition = payloadParameterPosition;
                     final boolean finalIsPayloadGitHubEvent = isPayloadGitHubEvent;
 
-                    cc.method(originalMethod.name() + "_" + HashUtil.sha1(eventSubscriberInstance.toString()), mc -> {
-                        mc.returning(classDescOf(originalMethod.returnType().name()));
+                    cc.method(originalMethod.name() + "_"
+                            + HashUtil.sha1(originalMethod + "_" + eventSubscriberInstance.toString()), mc -> {
+                                mc.returning(classDescOf(originalMethod.returnType().name()));
 
-                        // Add exceptions
-                        for (Type exceptionType : originalMethod.exceptions()) {
-                            mc.throws_(classDescOf(exceptionType.name()));
-                        }
-
-                        // Create parameters and store them
-                        List<ParamVar> methodParams = new ArrayList<>();
-                        for (short i = 0; i < parameterTypes.size(); i++) {
-                            final short paramIndex = i;
-                            ParamVar param = mc.parameter("param" + i, pc -> {
-                                pc.setType(parameterTypes.get(paramIndex));
-
-                                // Find the original parameter index for this generated parameter
-                                for (Map.Entry<Short, Short> mappingEntry : parameterMapping.entrySet()) {
-                                    if (mappingEntry.getValue() == paramIndex) {
-                                        short origParamIndex = mappingEntry.getKey();
-                                        List<AnnotationInstance> parameterAnnotations = originalMethodParameterAnnotationMapping
-                                                .getOrDefault(origParamIndex, Collections.emptyList());
-
-                                        if (!parameterAnnotations.isEmpty()) {
-                                            if (parameterAnnotations.stream()
-                                                    .anyMatch(ai -> ai.name().equals(eventSubscriberInstance.name()))) {
-                                                pc.addAnnotation(ClassDesc.of(DotNames.OBSERVES_ASYNC.toString()),
-                                                        java.lang.annotation.RetentionPolicy.RUNTIME, ab -> {
-                                                        });
-                                                Jandex2Gizmo.addAnnotation(pc, eventSubscriberInstance, index);
-                                            } else {
-                                                for (AnnotationInstance annotationInstance : parameterAnnotations) {
-                                                    Jandex2Gizmo.addAnnotation(pc, annotationInstance, index);
-                                                }
-                                            }
-                                        }
-                                        break;
-                                    }
+                                // Add exceptions
+                                for (Type exceptionType : originalMethod.exceptions()) {
+                                    mc.throws_(classDescOf(exceptionType.name()));
                                 }
-                            });
-                            methodParams.add(param);
-                        }
 
-                        mc.body(b0 -> {
-                            Expr thisExpr = mc.this_();
-                            Expr multiplexedEventExpr = methodParams.get(parameterMapping.get(finalPayloadParameterPosition));
+                                // Create parameters and store them
+                                List<ParamVar> methodParams = new ArrayList<>();
+                                for (short i = 0; i < parameterTypes.size(); i++) {
+                                    final short paramIndex = i;
+                                    ParamVar param = mc.parameter("param" + i, pc -> {
+                                        pc.setType(parameterTypes.get(paramIndex));
 
-                            // Store gitHubEvent and payload in locals for use across nested blocks
-                            LocalVar gitHubEventVar = b0.localVar("gitHubEventVar", GitHubEvent.class,
-                                    b0.invokeVirtual(
-                                            MethodDesc.of(MultiplexedEvent.class, "getGitHubEvent", GitHubEvent.class),
-                                            multiplexedEventExpr));
-                            LocalVar payloadVar;
-                            if (!finalIsPayloadGitHubEvent) {
-                                payloadVar = b0.localVar("payloadVar", GHEventPayload.class,
-                                        b0.invokeVirtual(
-                                                MethodDesc.of(MultiplexedEvent.class, "getPayload", GHEventPayload.class),
-                                                multiplexedEventExpr));
-                            } else {
-                                payloadVar = b0.localVar("payloadVar", GHEventPayload.class,
-                                        Const.ofNull(GHEventPayload.class));
-                            }
+                                        // Find the original parameter index for this generated parameter
+                                        for (Map.Entry<Short, Short> mappingEntry : parameterMapping.entrySet()) {
+                                            if (mappingEntry.getValue() == paramIndex) {
+                                                short origParamIndex = mappingEntry.getKey();
+                                                List<AnnotationInstance> parameterAnnotations = originalMethodParameterAnnotationMapping
+                                                        .getOrDefault(origParamIndex, Collections.emptyList());
 
-                            // OpenTelemetry integration
-                            final LocalVar telemetrySpanWrapperVar;
-                            final LocalVar telemetryScopeWrapperVar;
-                            if (openTelemetryTracesIntegrationEnabled) {
-                                telemetrySpanWrapperVar = b0.localVar("telemetrySpanWrapper", TelemetrySpanWrapper.class,
-                                        b0.invokeInterface(
-                                                MethodDesc.of(TelemetryTracesReporter.class,
-                                                        "createGitHubEventListeningMethodSpan",
-                                                        TelemetrySpanWrapper.class, GitHubEvent.class, String.class,
-                                                        String.class,
-                                                        String.class),
-                                                thisExpr.field(telemetryTracesReporterFieldDescriptor),
-                                                gitHubEventVar, Const.of(declaringClassName.toString()),
-                                                Const.of(originalMethod.name()), Const.of(originalMethod.toString())));
-
-                                telemetryScopeWrapperVar = b0.localVar("telemetryScopeWrapper", TelemetryScopeWrapper.class,
-                                        b0.invokeInterface(
-                                                MethodDesc.of(TelemetryTracesReporter.class, "makeCurrent",
-                                                        TelemetryScopeWrapper.class,
-                                                        TelemetrySpanWrapper.class),
-                                                thisExpr.field(telemetryTracesReporterFieldDescriptor),
-                                                telemetrySpanWrapperVar));
-                            } else {
-                                // won't be used, as the consumer code is protected by the same condition
-                                telemetrySpanWrapperVar = null;
-                                telemetryScopeWrapperVar = null;
-                            }
-
-                            b0.try_(tc -> {
-                                tc.body(b1 -> {
-                                    // Build parameter values for the original method call
-                                    Expr[] parameterValues = new Expr[originalMethod.parameterTypes().size()];
-
-                                    for (short originalMethodParameterIndex = 0; originalMethodParameterIndex < originalMethodParameterTypes
-                                            .size(); originalMethodParameterIndex++) {
-                                        List<AnnotationInstance> parameterAnnotations = originalMethodParameterAnnotationMapping
-                                                .getOrDefault(
-                                                        originalMethodParameterIndex,
-                                                        Collections.emptyList());
-                                        Short multiplexerMethodParameterIndex = parameterMapping
-                                                .get(originalMethodParameterIndex);
-
-                                        if (originalMethodParameterIndex == finalPayloadParameterPosition
-                                                && !finalIsPayloadGitHubEvent) {
-                                            parameterValues[originalMethodParameterIndex] = b1.cast(payloadVar,
-                                                    classDescOf(originalMethodParameterTypes
-                                                            .get(originalMethodParameterIndex).name()));
-                                        } else if (GITHUB
-                                                .equals(originalMethodParameterTypes.get(originalMethodParameterIndex)
-                                                        .name())) {
-                                            parameterValues[originalMethodParameterIndex] = b1.invokeVirtual(
-                                                    MethodDesc.of(MultiplexedEvent.class, "getGitHub", GitHub.class),
-                                                    multiplexedEventExpr);
-                                        } else if (GITHUB_EVENT.equals(
-                                                originalMethodParameterTypes.get(originalMethodParameterIndex).name())) {
-                                            parameterValues[originalMethodParameterIndex] = gitHubEventVar;
-                                        } else if (DYNAMIC_GRAPHQL_CLIENT
-                                                .equals(originalMethodParameterTypes.get(originalMethodParameterIndex)
-                                                        .name())) {
-                                            parameterValues[originalMethodParameterIndex] = b1.invokeVirtual(
-                                                    MethodDesc.of(MultiplexedEvent.class, "getGitHubGraphQLClient",
-                                                            DynamicGraphQLClient.class),
-                                                    multiplexedEventExpr);
-                                        } else if (parameterAnnotations.stream()
-                                                .anyMatch(ai -> ai.name().equals(CONFIG_FILE))) {
-                                            AnnotationInstance configFileAnnotationInstance = parameterAnnotations.stream()
-                                                    .filter(ai -> ai.name().equals(CONFIG_FILE)).findFirst().get();
-                                            String configObjectType = originalMethodParameterTypes
-                                                    .get(originalMethodParameterIndex).name()
-                                                    .toString();
-
-                                            boolean isOptional = false;
-                                            if (Optional.class.getName().equals(configObjectType)) {
-                                                if (originalMethodParameterTypes.get(originalMethodParameterIndex)
-                                                        .kind() != Type.Kind.PARAMETERIZED_TYPE) {
-                                                    throw new IllegalStateException(
-                                                            "Optional is used but not parameterized for method " +
-                                                                    originalMethod.declaringClass().name() + "#"
-                                                                    + originalMethod);
+                                                if (!parameterAnnotations.isEmpty()) {
+                                                    if (parameterAnnotations.stream()
+                                                            .anyMatch(ai -> ai.name().equals(eventSubscriberInstance.name()))) {
+                                                        pc.addAnnotation(ClassDesc.of(DotNames.OBSERVES_ASYNC.toString()),
+                                                                java.lang.annotation.RetentionPolicy.RUNTIME, ab -> {
+                                                                });
+                                                        Jandex2Gizmo.addAnnotation(pc, eventSubscriberInstance, index);
+                                                    } else {
+                                                        for (AnnotationInstance annotationInstance : parameterAnnotations) {
+                                                            Jandex2Gizmo.addAnnotation(pc, annotationInstance, index);
+                                                        }
+                                                    }
                                                 }
-                                                isOptional = true;
-                                                configObjectType = originalMethodParameterTypes
-                                                        .get(originalMethodParameterIndex)
-                                                        .asParameterizedType().arguments().get(0)
-                                                        .name().toString();
+                                                break;
                                             }
-
-                                            // it's a config file, we will use the ConfigFileReader (last parameter of the method) and inject the result
-                                            Expr configFileReaderExpr = methodParams.get(parameterTypes.size() - 1);
-                                            Expr ghRepositoryExpr;
-                                            if (!finalIsPayloadGitHubEvent) {
-                                                ghRepositoryExpr = b1.invokeStatic(
-                                                        MethodDesc.of(PayloadHelper.class, "getRepository", GHRepository.class,
-                                                                GHEventPayload.class),
-                                                        payloadVar);
-                                            } else {
-                                                ghRepositoryExpr = b1.invokeStatic(
-                                                        MethodDesc.of(GitHub.class, "getRepository", GHRepository.class,
-                                                                String.class),
-                                                        b1.invokeInterface(
-                                                                MethodDesc.of(GitHubEvent.class, "getRepositoryOrThrow",
-                                                                        String.class),
-                                                                gitHubEventVar));
-                                            }
-
-                                            Expr configObjectExpr = b1.invokeVirtual(
-                                                    MethodDesc.of(RequestScopeCachingGitHubConfigFileProvider.class,
-                                                            "getConfigObject",
-                                                            Object.class,
-                                                            GHRepository.class, String.class, ConfigFile.Source.class,
-                                                            Class.class),
-                                                    configFileReaderExpr,
-                                                    ghRepositoryExpr,
-                                                    Const.of(configFileAnnotationInstance.value().asString()),
-                                                    Const.of(ConfigFile.Source.valueOf(
-                                                            configFileAnnotationInstance.valueWithDefault(index, "source")
-                                                                    .asEnum())),
-                                                    Const.of(ClassDesc.of(configObjectType)));
-                                            configObjectExpr = b1.cast(configObjectExpr, ClassDesc.of(configObjectType));
-
-                                            if (isOptional) {
-                                                configObjectExpr = b1.invokeStatic(
-                                                        MethodDesc.of(Optional.class, "ofNullable", Optional.class,
-                                                                Object.class),
-                                                        configObjectExpr);
-                                            }
-
-                                            parameterValues[originalMethodParameterIndex] = configObjectExpr;
-                                        } else {
-                                            parameterValues[originalMethodParameterIndex] = methodParams
-                                                    .get(multiplexerMethodParameterIndex);
                                         }
-                                    }
+                                    });
+                                    methodParams.add(param);
+                                }
 
-                                    // Invoke the original method
-                                    ClassDesc originalMethodOwner = classDescOf(originalMethod.declaringClass().name());
-                                    ClassDesc originalMethodReturnType = classDescOf(originalMethod.returnType().name());
-                                    ClassDesc[] originalMethodParamTypes = originalMethod.parameterTypes().stream()
-                                            .map(t -> classDescOf(t.name()))
-                                            .toArray(ClassDesc[]::new);
-                                    java.lang.constant.MethodTypeDesc originalMethodTypeDesc = java.lang.constant.MethodTypeDesc
-                                            .of(originalMethodReturnType, originalMethodParamTypes);
-                                    MethodDesc originalMethodDesc = io.quarkus.gizmo2.desc.ClassMethodDesc.of(
-                                            originalMethodOwner,
-                                            originalMethod.name(),
-                                            originalMethodTypeDesc);
-                                    Expr returnValue = b1.invokeVirtual(originalMethodDesc, thisExpr, parameterValues);
+                                mc.body(b0 -> {
+                                    Expr thisExpr = mc.this_();
+                                    Expr multiplexedEventExpr = methodParams
+                                            .get(parameterMapping.get(finalPayloadParameterPosition));
 
-                                    // OpenTelemetry integration - success path
-                                    if (openTelemetryTracesIntegrationEnabled) {
-                                        b1.invokeInterface(
-                                                MethodDesc.of(TelemetryTracesReporter.class, "reportSuccess", void.class,
-                                                        GitHubEvent.class, TelemetrySpanWrapper.class),
-                                                thisExpr.field(telemetryTracesReporterFieldDescriptor),
-                                                gitHubEventVar, telemetrySpanWrapperVar);
-                                        // we don't have a finally clause in Gizmo 2 that works with catch returns,
-                                        // so we duplicate the close/endSpan in both the try and catch blocks
-                                        b1.invokeInterface(MethodDesc.of(AutoCloseable.class, "close", void.class),
-                                                telemetryScopeWrapperVar);
-                                        b1.invokeInterface(
-                                                MethodDesc.of(TelemetryTracesReporter.class, "endSpan", void.class,
-                                                        TelemetrySpanWrapper.class),
-                                                thisExpr.field(telemetryTracesReporterFieldDescriptor),
-                                                telemetrySpanWrapperVar);
-                                    }
-                                    if (openTelemetryMetricsIntegrationEnabled) {
-                                        b1.invokeInterface(
-                                                MethodDesc.of(TelemetryMetricsReporter.class,
-                                                        "incrementGitHubEventMethodSuccess",
-                                                        void.class,
-                                                        GitHubEvent.class, String.class, String.class, String.class),
-                                                thisExpr.field(telemetryMetricsReporterFieldDescriptor),
-                                                gitHubEventVar, Const.of(declaringClassName.toString()),
-                                                Const.of(originalMethod.name()), Const.of(originalMethod.toString()));
-                                    }
-
-                                    if (originalMethod.returnType().kind() == Type.Kind.VOID) {
-                                        b1.return_();
+                                    // Store gitHubEvent and payload in locals for use across nested blocks
+                                    LocalVar gitHubEventVar = b0.localVar("gitHubEventVar", GitHubEvent.class,
+                                            b0.invokeVirtual(
+                                                    MethodDesc.of(MultiplexedEvent.class, "getGitHubEvent", GitHubEvent.class),
+                                                    multiplexedEventExpr));
+                                    LocalVar payloadVar;
+                                    if (!finalIsPayloadGitHubEvent) {
+                                        payloadVar = b0.localVar("payloadVar", GHEventPayload.class,
+                                                b0.invokeVirtual(
+                                                        MethodDesc.of(MultiplexedEvent.class, "getPayload",
+                                                                GHEventPayload.class),
+                                                        multiplexedEventExpr));
                                     } else {
-                                        b1.return_(returnValue);
+                                        payloadVar = b0.localVar("payloadVar", GHEventPayload.class,
+                                                Const.ofNull(GHEventPayload.class));
                                     }
-                                });
 
-                                tc.catch_(Throwable.class, "t", (b1, caughtException) -> {
-                                    b1.invokeInterface(
-                                            MethodDesc.of(ErrorHandler.class, "handleError", void.class, GitHubEvent.class,
-                                                    GHEventPayload.class, Throwable.class),
-                                            thisExpr.field(errorHandlerFieldDescriptor),
-                                            gitHubEventVar,
-                                            payloadVar,
-                                            caughtException);
-
-                                    // OpenTelemetry integration - exception path
+                                    // OpenTelemetry integration
+                                    final LocalVar telemetrySpanWrapperVar;
+                                    final LocalVar telemetryScopeWrapperVar;
                                     if (openTelemetryTracesIntegrationEnabled) {
-                                        b1.invokeInterface(
-                                                MethodDesc.of(TelemetryTracesReporter.class, "reportException", void.class,
-                                                        GitHubEvent.class,
-                                                        TelemetrySpanWrapper.class, Throwable.class),
-                                                thisExpr.field(telemetryTracesReporterFieldDescriptor),
-                                                gitHubEventVar, telemetrySpanWrapperVar, caughtException);
-                                        // close/endSpan duplicated here since finally doesn't run on catch return
-                                        b1.invokeInterface(MethodDesc.of(AutoCloseable.class, "close", void.class),
-                                                telemetryScopeWrapperVar);
-                                        b1.invokeInterface(
-                                                MethodDesc.of(TelemetryTracesReporter.class, "endSpan", void.class,
-                                                        TelemetrySpanWrapper.class),
-                                                thisExpr.field(telemetryTracesReporterFieldDescriptor),
-                                                telemetrySpanWrapperVar);
-                                    }
-                                    if (openTelemetryMetricsIntegrationEnabled) {
-                                        b1.invokeInterface(
-                                                MethodDesc.of(TelemetryMetricsReporter.class,
-                                                        "incrementGitHubEventMethodError",
-                                                        void.class,
-                                                        GitHubEvent.class, String.class, String.class, String.class,
-                                                        Throwable.class),
-                                                thisExpr.field(telemetryMetricsReporterFieldDescriptor),
-                                                gitHubEventVar, Const.of(declaringClassName.toString()),
-                                                Const.of(originalMethod.name()), Const.of(originalMethod.toString()),
-                                                caughtException);
+                                        telemetrySpanWrapperVar = b0.localVar("telemetrySpanWrapper",
+                                                TelemetrySpanWrapper.class,
+                                                b0.invokeInterface(
+                                                        MethodDesc.of(TelemetryTracesReporter.class,
+                                                                "createGitHubEventListeningMethodSpan",
+                                                                TelemetrySpanWrapper.class, GitHubEvent.class, String.class,
+                                                                String.class,
+                                                                String.class),
+                                                        thisExpr.field(telemetryTracesReporterFieldDescriptor),
+                                                        gitHubEventVar, Const.of(declaringClassName.toString()),
+                                                        Const.of(originalMethod.name()), Const.of(originalMethod.toString())));
+
+                                        telemetryScopeWrapperVar = b0.localVar("telemetryScopeWrapper",
+                                                TelemetryScopeWrapper.class,
+                                                b0.invokeInterface(
+                                                        MethodDesc.of(TelemetryTracesReporter.class, "makeCurrent",
+                                                                TelemetryScopeWrapper.class,
+                                                                TelemetrySpanWrapper.class),
+                                                        thisExpr.field(telemetryTracesReporterFieldDescriptor),
+                                                        telemetrySpanWrapperVar));
+                                    } else {
+                                        // won't be used, as the consumer code is protected by the same condition
+                                        telemetrySpanWrapperVar = null;
+                                        telemetryScopeWrapperVar = null;
                                     }
 
-                                    if (originalMethod.returnType().kind() == org.jboss.jandex.Type.Kind.VOID) {
-                                        b1.return_();
-                                    } else {
-                                        b1.return_(Const.ofNull(classDescOf(originalMethod.returnType().name())));
-                                    }
+                                    b0.try_(tc -> {
+                                        tc.body(b1 -> {
+                                            // Build parameter values for the original method call
+                                            Expr[] parameterValues = new Expr[originalMethod.parameterTypes().size()];
+
+                                            for (short originalMethodParameterIndex = 0; originalMethodParameterIndex < originalMethodParameterTypes
+                                                    .size(); originalMethodParameterIndex++) {
+                                                List<AnnotationInstance> parameterAnnotations = originalMethodParameterAnnotationMapping
+                                                        .getOrDefault(
+                                                                originalMethodParameterIndex,
+                                                                Collections.emptyList());
+                                                Short multiplexerMethodParameterIndex = parameterMapping
+                                                        .get(originalMethodParameterIndex);
+
+                                                if (originalMethodParameterIndex == finalPayloadParameterPosition
+                                                        && !finalIsPayloadGitHubEvent) {
+                                                    parameterValues[originalMethodParameterIndex] = b1.cast(payloadVar,
+                                                            classDescOf(originalMethodParameterTypes
+                                                                    .get(originalMethodParameterIndex).name()));
+                                                } else if (GITHUB
+                                                        .equals(originalMethodParameterTypes.get(originalMethodParameterIndex)
+                                                                .name())) {
+                                                    parameterValues[originalMethodParameterIndex] = b1.invokeVirtual(
+                                                            MethodDesc.of(MultiplexedEvent.class, "getGitHub", GitHub.class),
+                                                            multiplexedEventExpr);
+                                                } else if (GITHUB_EVENT.equals(
+                                                        originalMethodParameterTypes.get(originalMethodParameterIndex)
+                                                                .name())) {
+                                                    parameterValues[originalMethodParameterIndex] = gitHubEventVar;
+                                                } else if (DYNAMIC_GRAPHQL_CLIENT
+                                                        .equals(originalMethodParameterTypes.get(originalMethodParameterIndex)
+                                                                .name())) {
+                                                    parameterValues[originalMethodParameterIndex] = b1.invokeVirtual(
+                                                            MethodDesc.of(MultiplexedEvent.class, "getGitHubGraphQLClient",
+                                                                    DynamicGraphQLClient.class),
+                                                            multiplexedEventExpr);
+                                                } else if (parameterAnnotations.stream()
+                                                        .anyMatch(ai -> ai.name().equals(CONFIG_FILE))) {
+                                                    AnnotationInstance configFileAnnotationInstance = parameterAnnotations
+                                                            .stream()
+                                                            .filter(ai -> ai.name().equals(CONFIG_FILE)).findFirst().get();
+                                                    String configObjectType = originalMethodParameterTypes
+                                                            .get(originalMethodParameterIndex).name()
+                                                            .toString();
+
+                                                    boolean isOptional = false;
+                                                    if (Optional.class.getName().equals(configObjectType)) {
+                                                        if (originalMethodParameterTypes.get(originalMethodParameterIndex)
+                                                                .kind() != Type.Kind.PARAMETERIZED_TYPE) {
+                                                            throw new IllegalStateException(
+                                                                    "Optional is used but not parameterized for method " +
+                                                                            originalMethod.declaringClass().name() + "#"
+                                                                            + originalMethod);
+                                                        }
+                                                        isOptional = true;
+                                                        configObjectType = originalMethodParameterTypes
+                                                                .get(originalMethodParameterIndex)
+                                                                .asParameterizedType().arguments().get(0)
+                                                                .name().toString();
+                                                    }
+
+                                                    // it's a config file, we will use the ConfigFileReader (last parameter of the method) and inject the result
+                                                    Expr configFileReaderExpr = methodParams.get(parameterTypes.size() - 1);
+                                                    Expr ghRepositoryExpr;
+                                                    if (!finalIsPayloadGitHubEvent) {
+                                                        ghRepositoryExpr = b1.invokeStatic(
+                                                                MethodDesc.of(PayloadHelper.class, "getRepository",
+                                                                        GHRepository.class,
+                                                                        GHEventPayload.class),
+                                                                payloadVar);
+                                                    } else {
+                                                        ghRepositoryExpr = b1.invokeStatic(
+                                                                MethodDesc.of(GitHub.class, "getRepository", GHRepository.class,
+                                                                        String.class),
+                                                                b1.invokeInterface(
+                                                                        MethodDesc.of(GitHubEvent.class, "getRepositoryOrThrow",
+                                                                                String.class),
+                                                                        gitHubEventVar));
+                                                    }
+
+                                                    Expr configObjectExpr = b1.invokeVirtual(
+                                                            MethodDesc.of(RequestScopeCachingGitHubConfigFileProvider.class,
+                                                                    "getConfigObject",
+                                                                    Object.class,
+                                                                    GHRepository.class, String.class, ConfigFile.Source.class,
+                                                                    Class.class),
+                                                            configFileReaderExpr,
+                                                            ghRepositoryExpr,
+                                                            Const.of(configFileAnnotationInstance.value().asString()),
+                                                            Const.of(ConfigFile.Source.valueOf(
+                                                                    configFileAnnotationInstance
+                                                                            .valueWithDefault(index, "source")
+                                                                            .asEnum())),
+                                                            Const.of(ClassDesc.of(configObjectType)));
+                                                    configObjectExpr = b1.cast(configObjectExpr,
+                                                            ClassDesc.of(configObjectType));
+
+                                                    if (isOptional) {
+                                                        configObjectExpr = b1.invokeStatic(
+                                                                MethodDesc.of(Optional.class, "ofNullable", Optional.class,
+                                                                        Object.class),
+                                                                configObjectExpr);
+                                                    }
+
+                                                    parameterValues[originalMethodParameterIndex] = configObjectExpr;
+                                                } else {
+                                                    parameterValues[originalMethodParameterIndex] = methodParams
+                                                            .get(multiplexerMethodParameterIndex);
+                                                }
+                                            }
+
+                                            // Invoke the original method
+                                            ClassDesc originalMethodOwner = classDescOf(originalMethod.declaringClass().name());
+                                            ClassDesc originalMethodReturnType = classDescOf(
+                                                    originalMethod.returnType().name());
+                                            ClassDesc[] originalMethodParamTypes = originalMethod.parameterTypes().stream()
+                                                    .map(t -> classDescOf(t.name()))
+                                                    .toArray(ClassDesc[]::new);
+                                            java.lang.constant.MethodTypeDesc originalMethodTypeDesc = java.lang.constant.MethodTypeDesc
+                                                    .of(originalMethodReturnType, originalMethodParamTypes);
+                                            MethodDesc originalMethodDesc = io.quarkus.gizmo2.desc.ClassMethodDesc.of(
+                                                    originalMethodOwner,
+                                                    originalMethod.name(),
+                                                    originalMethodTypeDesc);
+                                            Expr returnValue = b1.invokeVirtual(originalMethodDesc, thisExpr, parameterValues);
+
+                                            // OpenTelemetry integration - success path
+                                            if (openTelemetryTracesIntegrationEnabled) {
+                                                b1.invokeInterface(
+                                                        MethodDesc.of(TelemetryTracesReporter.class, "reportSuccess",
+                                                                void.class,
+                                                                GitHubEvent.class, TelemetrySpanWrapper.class),
+                                                        thisExpr.field(telemetryTracesReporterFieldDescriptor),
+                                                        gitHubEventVar, telemetrySpanWrapperVar);
+                                                // we don't have a finally clause in Gizmo 2 that works with catch returns,
+                                                // so we duplicate the close/endSpan in both the try and catch blocks
+                                                b1.invokeInterface(MethodDesc.of(AutoCloseable.class, "close", void.class),
+                                                        telemetryScopeWrapperVar);
+                                                b1.invokeInterface(
+                                                        MethodDesc.of(TelemetryTracesReporter.class, "endSpan", void.class,
+                                                                TelemetrySpanWrapper.class),
+                                                        thisExpr.field(telemetryTracesReporterFieldDescriptor),
+                                                        telemetrySpanWrapperVar);
+                                            }
+                                            if (openTelemetryMetricsIntegrationEnabled) {
+                                                b1.invokeInterface(
+                                                        MethodDesc.of(TelemetryMetricsReporter.class,
+                                                                "incrementGitHubEventMethodSuccess",
+                                                                void.class,
+                                                                GitHubEvent.class, String.class, String.class, String.class),
+                                                        thisExpr.field(telemetryMetricsReporterFieldDescriptor),
+                                                        gitHubEventVar, Const.of(declaringClassName.toString()),
+                                                        Const.of(originalMethod.name()), Const.of(originalMethod.toString()));
+                                            }
+
+                                            if (originalMethod.returnType().kind() == Type.Kind.VOID) {
+                                                b1.return_();
+                                            } else {
+                                                b1.return_(returnValue);
+                                            }
+                                        });
+
+                                        tc.catch_(Throwable.class, "t", (b1, caughtException) -> {
+                                            b1.invokeInterface(
+                                                    MethodDesc.of(ErrorHandler.class, "handleError", void.class,
+                                                            GitHubEvent.class,
+                                                            GHEventPayload.class, Throwable.class),
+                                                    thisExpr.field(errorHandlerFieldDescriptor),
+                                                    gitHubEventVar,
+                                                    payloadVar,
+                                                    caughtException);
+
+                                            // OpenTelemetry integration - exception path
+                                            if (openTelemetryTracesIntegrationEnabled) {
+                                                b1.invokeInterface(
+                                                        MethodDesc.of(TelemetryTracesReporter.class, "reportException",
+                                                                void.class,
+                                                                GitHubEvent.class,
+                                                                TelemetrySpanWrapper.class, Throwable.class),
+                                                        thisExpr.field(telemetryTracesReporterFieldDescriptor),
+                                                        gitHubEventVar, telemetrySpanWrapperVar, caughtException);
+                                                // close/endSpan duplicated here since finally doesn't run on catch return
+                                                b1.invokeInterface(MethodDesc.of(AutoCloseable.class, "close", void.class),
+                                                        telemetryScopeWrapperVar);
+                                                b1.invokeInterface(
+                                                        MethodDesc.of(TelemetryTracesReporter.class, "endSpan", void.class,
+                                                                TelemetrySpanWrapper.class),
+                                                        thisExpr.field(telemetryTracesReporterFieldDescriptor),
+                                                        telemetrySpanWrapperVar);
+                                            }
+                                            if (openTelemetryMetricsIntegrationEnabled) {
+                                                b1.invokeInterface(
+                                                        MethodDesc.of(TelemetryMetricsReporter.class,
+                                                                "incrementGitHubEventMethodError",
+                                                                void.class,
+                                                                GitHubEvent.class, String.class, String.class, String.class,
+                                                                Throwable.class),
+                                                        thisExpr.field(telemetryMetricsReporterFieldDescriptor),
+                                                        gitHubEventVar, Const.of(declaringClassName.toString()),
+                                                        Const.of(originalMethod.name()), Const.of(originalMethod.toString()),
+                                                        caughtException);
+                                            }
+
+                                            if (originalMethod.returnType().kind() == org.jboss.jandex.Type.Kind.VOID) {
+                                                b1.return_();
+                                            } else {
+                                                b1.return_(Const.ofNull(classDescOf(originalMethod.returnType().name())));
+                                            }
+                                        });
+                                    });
                                 });
                             });
-                        });
-                    });
                 }
 
             }); // Close cc lambda

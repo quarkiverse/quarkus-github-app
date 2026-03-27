@@ -243,13 +243,27 @@ class DispatchingConfiguration {
 
     static class EventDispatchingMethod implements Comparable<EventDispatchingMethod> {
 
+        private final String event;
+
+        private final String action;
+
         private final AnnotationInstance eventSubscriberInstance;
 
         private final MethodInfo method;
 
-        EventDispatchingMethod(AnnotationInstance eventSubscriberInstance, MethodInfo method) {
+        EventDispatchingMethod(String event, String action, AnnotationInstance eventSubscriberInstance, MethodInfo method) {
+            this.event = event;
+            this.action = action;
             this.eventSubscriberInstance = eventSubscriberInstance;
             this.method = method;
+        }
+
+        public String getEvent() {
+            return event;
+        }
+
+        public String getAction() {
+            return action;
         }
 
         public AnnotationInstance getEventSubscriberInstance() {
@@ -275,9 +289,19 @@ class DispatchingConfiguration {
                 return classNameCompareTo;
             }
 
-            int methodNameComparator = method.toString().compareTo(other.method.toString());
-            if (methodNameComparator != 0) {
-                return methodNameComparator;
+            int methodCompareTo = method.toString().compareTo(other.method.toString());
+            if (methodCompareTo != 0) {
+                return methodCompareTo;
+            }
+
+            int eventCompareTo = event.compareTo(other.event);
+            if (eventCompareTo != 0) {
+                return eventCompareTo;
+            }
+
+            int actionCompareTo = action.compareTo(other.action);
+            if (actionCompareTo != 0) {
+                return actionCompareTo;
             }
 
             return eventSubscriberInstance.toString(false).compareTo(other.eventSubscriberInstance.toString(false));
