@@ -29,6 +29,8 @@ public class IssueOpenedTest {
                 .then().github(mocks -> {
                     verify(mocks.issue(750705278))
                             .addLabels("testCatchAll");
+                    verify(mocks.issue(750705278))
+                            .addLabels("sameNameIssue");
                     verify(mocks.repository("test/test"), times(4))
                             .getIssue(1);
                     verify(mocks.issue(1))

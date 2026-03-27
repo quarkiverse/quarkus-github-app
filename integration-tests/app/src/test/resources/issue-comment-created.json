@@ -1,0 +1,64 @@
+{
+  "action": "created",
+  "issue": {
+    "url": "https://api.github.com/repos/test/test/issues/1",
+    "repository_url": "https://api.github.com/repos/test/test",
+    "labels_url": "https://api.github.com/repos/test/test/issues/1/labels{/name}",
+    "comments_url": "https://api.github.com/repos/test/test/issues/1/comments",
+    "events_url": "https://api.github.com/repos/test/test/issues/1/events",
+    "html_url": "https://github.com/test/test/issues/1",
+    "id": 850000001,
+    "node_id": "I_test1",
+    "number": 1,
+    "title": "Test issue for comment",
+    "user": {
+      "login": "testuser",
+      "id": 1234567
+    },
+    "labels": [],
+    "state": "open",
+    "locked": false,
+    "assignee": null,
+    "assignees": [],
+    "comments": 1,
+    "created_at": "2022-01-01T00:00:00Z",
+    "updated_at": "2022-01-01T00:00:00Z",
+    "closed_at": null,
+    "body": "Test issue body"
+  },
+  "comment": {
+    "url": "https://api.github.com/repos/test/test/issues/comments/1",
+    "html_url": "https://github.com/test/test/issues/1#issuecomment-1",
+    "issue_url": "https://api.github.com/repos/test/test/issues/1",
+    "id": 900000001,
+    "node_id": "IC_test1",
+    "user": {
+      "login": "testuser",
+      "id": 1234567
+    },
+    "created_at": "2022-01-01T00:00:00Z",
+    "updated_at": "2022-01-01T00:00:00Z",
+    "body": "Test comment"
+  },
+  "repository": {
+    "id": 315892888,
+    "node_id": "MDEwOlJlcG9zaXRvcnkzMTU4OTI4ODg=",
+    "name": "test",
+    "full_name": "test/test",
+    "private": false,
+    "owner": {
+      "login": "test",
+      "id": 1234567
+    },
+    "html_url": "https://github.com/test/test",
+    "url": "https://api.github.com/repos/test/test"
+  },
+  "sender": {
+    "login": "testuser",
+    "id": 1234567
+  },
+  "installation": {
+    "id": 13173124,
+    "node_id": "MDIzOkludGVncmF0aW9uSW5zdGFsbGF0aW9uMTMxNzMxMjQ="
+  }
+}
