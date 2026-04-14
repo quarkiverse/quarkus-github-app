@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.regex.Pattern;
 
 import jakarta.enterprise.event.Event;
 import jakarta.enterprise.event.Observes;
@@ -69,11 +70,14 @@ public class Routes {
     @Inject
     TelemetryMetricsReporter telemetryMetricsReporter;
 
+    private Pattern fileNameUnsafeCharactersPattern;
+
     public void init(@Observes StartupEvent startupEvent) throws IOException {
         if (checkedConfigProvider.debug().payloadDirectory().isPresent()) {
             Files.createDirectories(checkedConfigProvider.debug().payloadDirectory().get());
             LOG.warn("Payloads saved to: "
                     + checkedConfigProvider.debug().payloadDirectory().get().toAbsolutePath().toString());
+            fileNameUnsafeCharactersPattern = Pattern.compile("[^A-Za-z0-9._-]");
         }
     }
 
@@ -136,14 +140,20 @@ public class Routes {
 
         String action = payloadObject.getString("action");
 
-        if (!isBlank(deliveryId) && checkedConfigProvider.debug().payloadDirectory().isPresent()) {
-            String fileName = DATE_TIME_FORMATTER.format(LocalDateTime.now()) + "-" + event + "-"
-                    + (!isBlank(action) ? action + "-" : "") + deliveryId + ".json";
-            Path path = checkedConfigProvider.debug().payloadDirectory().get().resolve(fileName);
-            try {
-                Files.write(path, bodyBytes);
-            } catch (Exception e) {
-                LOG.warnf(e, "Unable to write debug payload: %s", path);
+        if (checkedConfigProvider.debug().payloadDirectory().isPresent() && !isBlank(deliveryId)) {
+            String fileName = DATE_TIME_FORMATTER.format(LocalDateTime.now()) + "-" + sanitize(event) + "-"
+                    + (!isBlank(action) ? sanitize(action) + "-" : "") + sanitize(deliveryId)
+                    + ".json";
+            Path baseDir = checkedConfigProvider.debug().payloadDirectory().get().normalize();
+            Path path = baseDir.resolve(fileName).normalize();
+            if (!path.startsWith(baseDir)) {
+                LOG.warnf("Refusing to write debug payload outside base directory: %s", path);
+            } else {
+                try {
+                    Files.write(path, bodyBytes);
+                } catch (Exception e) {
+                    LOG.warnf(e, "Unable to write debug payload: %s", path);
+                }
             }
         }
 
@@ -191,6 +201,13 @@ public class Routes {
                 response.end();
             }
         }
+    }
+
+    private String sanitize(String value) {
+        if (value == null) {
+            return "";
+        }
+        return fileNameUnsafeCharactersPattern.matcher(value).replaceAll("_");
     }
 
     private static boolean isBlank(String value) {
