@@ -9,7 +9,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.kohsuke.github.GHEventPayload;
 
 import io.quarkiverse.githubapp.ConfigFile;
-import io.quarkiverse.githubapp.deployment.junit.GitHubMockingQuarkusUnitTest;
+import io.quarkiverse.githubapp.deployment.junit.GitHubMockingQuarkusExtensionTest;
 import io.quarkiverse.githubapp.event.Label;
 import io.quarkiverse.githubapp.runtime.Headers;
 import io.restassured.RestAssured;
@@ -19,7 +19,7 @@ public class OptionalConfigFileTest {
     private static final String PAYLOAD = "payloads/label-created.json";
 
     @RegisterExtension
-    static final GitHubMockingQuarkusUnitTest config = new GitHubMockingQuarkusUnitTest()
+    static final GitHubMockingQuarkusExtensionTest config = new GitHubMockingQuarkusExtensionTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClass(ListeningClass.class)
                     .addAsResource(PAYLOAD))

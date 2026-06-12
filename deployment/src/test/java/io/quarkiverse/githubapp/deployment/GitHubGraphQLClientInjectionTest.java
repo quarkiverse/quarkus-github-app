@@ -11,13 +11,13 @@ import io.quarkiverse.githubapp.ConfigFile;
 import io.quarkiverse.githubapp.GitHubEvent;
 import io.quarkiverse.githubapp.event.Label;
 import io.quarkiverse.githubapp.event.RawEvent;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.graphql.client.dynamic.api.DynamicGraphQLClient;
 
 public class GitHubGraphQLClientInjectionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClass(ListeningClass.class))
             .withConfigurationResource("application.properties");
