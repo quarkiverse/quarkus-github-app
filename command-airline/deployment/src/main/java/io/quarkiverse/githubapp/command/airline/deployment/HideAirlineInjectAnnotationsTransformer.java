@@ -9,16 +9,16 @@ import static io.quarkiverse.githubapp.command.airline.deployment.GitHubAppComma
 import java.util.Set;
 
 import org.jboss.jandex.AnnotationTarget.Kind;
+import org.jboss.jandex.AnnotationTransformation;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Type;
 
-import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.DotNames;
 
-public class HideAirlineInjectAnnotationsTransformer implements AnnotationsTransformer {
+public class HideAirlineInjectAnnotationsTransformer implements AnnotationTransformation {
 
     private final IndexView index;
 
@@ -27,20 +27,20 @@ public class HideAirlineInjectAnnotationsTransformer implements AnnotationsTrans
     }
 
     @Override
-    public boolean appliesTo(Kind kind) {
+    public boolean supports(Kind kind) {
         return Kind.FIELD == kind;
     }
 
     @Override
-    public void transform(TransformationContext transformationContext) {
-        FieldInfo fieldInfo = transformationContext.getTarget().asField();
+    public void apply(TransformationContext context) {
+        FieldInfo fieldInfo = context.declaration().asField();
 
-        if (!fieldInfo.hasAnnotation(DotNames.INJECT)) {
+        if (!context.hasAnnotation(DotNames.INJECT)) {
             return;
         }
 
-        if (!fieldInfo.hasAnnotation(ARGUMENTS) &&
-                !fieldInfo.hasAnnotation(OPTION) &&
+        if (!context.hasAnnotation(ARGUMENTS) &&
+                !context.hasAnnotation(OPTION) &&
                 !GLOBAL_METADATA.equals(fieldInfo.type().name()) &&
                 !COMMAND_GROUP_METADATA.equals(fieldInfo.type().name()) &&
                 !COMMAND_METADATA.equals(fieldInfo.type().name()) &&
@@ -48,7 +48,7 @@ public class HideAirlineInjectAnnotationsTransformer implements AnnotationsTrans
             return;
         }
 
-        transformationContext.transform().remove(ai -> DotNames.INJECT.equals(ai.name())).done();
+        context.remove(ai -> DotNames.INJECT.equals(ai.name()));
     }
 
     private boolean isComposition(FieldInfo fieldInfo) {

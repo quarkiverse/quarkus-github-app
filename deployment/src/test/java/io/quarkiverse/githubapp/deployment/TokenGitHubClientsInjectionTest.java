@@ -10,12 +10,12 @@ import org.kohsuke.github.GHEventPayload;
 
 import io.quarkiverse.githubapp.TokenGitHubClients;
 import io.quarkiverse.githubapp.event.Label;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class TokenGitHubClientsInjectionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClass(ListeningClass.class).addClass(ListeningClass2.class))
             .withConfigurationResource("application-token.properties");

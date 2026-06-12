@@ -2,11 +2,10 @@ package io.quarkiverse.githubapp.testing.internal;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 import org.apache.commons.io.IOUtils;
 import org.mockito.Answers;
-
-import com.google.common.base.Charsets;
 
 import io.quarkiverse.githubapp.testing.GitHubAppTest;
 
@@ -45,7 +44,7 @@ public final class GitHubAppTestingContext {
             if (stream == null) {
                 throw new IllegalArgumentException("No such file in classpath: '" + path + "'");
             }
-            return IOUtils.toString(stream, Charsets.UTF_8);
+            return IOUtils.toString(stream, StandardCharsets.UTF_8);
         }
     }
 }

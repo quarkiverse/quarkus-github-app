@@ -11,14 +11,14 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkiverse.githubapp.deployment.util.PayloadUtil;
 import io.quarkiverse.githubapp.runtime.signing.PayloadSignatureChecker;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class PayloadSignatureCheckerTest {
 
     private static final String PAYLOAD = "payloads/payload-signature-checker.json";
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClass(PayloadUtil.class)
                     .addAsResource(PAYLOAD))

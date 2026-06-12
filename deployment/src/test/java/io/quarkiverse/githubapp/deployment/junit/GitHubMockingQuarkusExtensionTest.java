@@ -5,18 +5,18 @@ import java.util.function.Supplier;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
-public class GitHubMockingQuarkusUnitTest extends QuarkusUnitTest {
+public class GitHubMockingQuarkusExtensionTest extends QuarkusExtensionTest {
 
     @Override
-    public GitHubMockingQuarkusUnitTest setArchiveProducer(Supplier<JavaArchive> archiveProducer) {
+    public GitHubMockingQuarkusExtensionTest setArchiveProducer(Supplier<JavaArchive> archiveProducer) {
         super.setArchiveProducer(() -> archiveProducer.get()
                 .addClass(CallMockedMethodOrCallRealMethodAndSpyGHObjectResults.class)
                 .addClass(CallRealMethodAndSpyGHObjectResults.class)
                 .addClass(DefaultableMocking.class)
                 .addClass(GitHubMockContextImpl.class)
-                .addClass(GitHubMockingQuarkusUnitTest.class)
+                .addClass(GitHubMockingQuarkusExtensionTest.class)
                 .addClass(GitHubMocks.class)
                 .addClass(QuarkusMock.class)
                 .addClass(MockSupport.class));
@@ -24,7 +24,7 @@ public class GitHubMockingQuarkusUnitTest extends QuarkusUnitTest {
     }
 
     @Override
-    public GitHubMockingQuarkusUnitTest withConfigurationResource(String resourceName) {
+    public GitHubMockingQuarkusExtensionTest withConfigurationResource(String resourceName) {
         super.withConfigurationResource(resourceName);
         return this;
     }
