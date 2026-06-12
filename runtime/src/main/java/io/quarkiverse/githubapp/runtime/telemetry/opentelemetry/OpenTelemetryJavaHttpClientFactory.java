@@ -19,6 +19,6 @@ public class OpenTelemetryJavaHttpClientFactory extends AbstractJavaHttpClientFa
 
     @Override
     public HttpClient create() {
-        return JavaHttpClientTelemetry.builder(openTelemetry).build().newHttpClient(createDefaultClientBuilder().build());
+        return JavaHttpClientTelemetry.builder(openTelemetry).build().wrap(createDefaultClientBuilder().build());
     }
 }
