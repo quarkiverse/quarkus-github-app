@@ -1,0 +1,31 @@
+{
+  "action": "created",
+  "label": {
+    "id": 1,
+    "node_id": "MDU6TGFiZWwx",
+    "url": "https://api.github.com/repos/test/test/labels/bug",
+    "name": "bug",
+    "color": "d73a4a",
+    "default": true,
+    "description": "Something isn't working"
+  },
+  "repository": {
+    "id": 1,
+    "node_id": "MDEwOlJlcG9zaXRvcnkx",
+    "name": "test",
+    "full_name": "test/test",
+    "private": false,
+    "owner": {
+      "login": "test",
+      "id": 1
+    }
+  },
+  "sender": {
+    "login": "test",
+    "id": 1
+  },
+  "installation": {
+    "id": 1,
+    "node_id": "MDIzOkludGVncmF0aW9uSW5zdGFsbGF0aW9uMQ=="
+  }
+}

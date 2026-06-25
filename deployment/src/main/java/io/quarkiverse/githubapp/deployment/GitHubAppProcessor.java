@@ -1200,9 +1200,13 @@ class GitHubAppProcessor {
                                                                         GHEventPayload.class),
                                                                 payloadVar);
                                                     } else {
-                                                        ghRepositoryExpr = b1.invokeStatic(
+                                                        ghRepositoryExpr = b1.invokeVirtual(
                                                                 MethodDesc.of(GitHub.class, "getRepository", GHRepository.class,
                                                                         String.class),
+                                                                b1.invokeVirtual(
+                                                                        MethodDesc.of(MultiplexedEvent.class, "getGitHub",
+                                                                                GitHub.class),
+                                                                        multiplexedEventExpr),
                                                                 b1.invokeInterface(
                                                                         MethodDesc.of(GitHubEvent.class, "getRepositoryOrThrow",
                                                                                 String.class),
