@@ -44,6 +44,7 @@
         <module>runtime</module>
         <module>command-airline</module>
         <module>testing</module>
+        <module>docs-rag</module>
     </modules>
 
     <dependencyManagement>
