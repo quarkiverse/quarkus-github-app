@@ -233,7 +233,7 @@ public class GitHubService implements GitHubClientProvider, InstallationTokenPro
                         .getInstallationById(installationId)
                         .createToken().create();
 
-                return new CachedInstallationToken(installationToken.getToken(), installationToken.getExpiresAt().toInstant());
+                return new CachedInstallationToken(installationToken.getToken(), installationToken.getExpiresAt());
             } catch (IOException e) {
                 throw new IllegalStateException("Unable to create a GitHub token for the installation " + installationId, e);
             }
