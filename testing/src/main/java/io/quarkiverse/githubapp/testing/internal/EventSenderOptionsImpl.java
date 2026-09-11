@@ -5,6 +5,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
 import java.util.Locale;
@@ -111,8 +112,10 @@ final class EventSenderOptionsImpl implements EventSenderOptions {
 
         testingContext.errorHandler.captured = null;
         AssertionError callAssertionError = null;
+        int statusCode = -1;
         try {
-            httpClient.send(request, BodyHandlers.discarding());
+            HttpResponse<Void> response = httpClient.send(request, BodyHandlers.discarding());
+            statusCode = response.statusCode();
         } catch (Throwable e) {
             callAssertionError = new AssertionError("The HTTP call threw an exception: " + e.getMessage(), e);
         }
@@ -135,7 +138,7 @@ final class EventSenderOptionsImpl implements EventSenderOptions {
         } else if (callAssertionError != null) {
             throw callAssertionError;
         }
-        return new EventHandlingResponseImpl(testingContext);
+        return new EventHandlingResponseImpl(testingContext, statusCode);
     }
 
     private static Throwable unwrapCompletionException(Throwable captured) {

@@ -5,9 +5,16 @@ import io.quarkiverse.githubapp.testing.dsl.EventHandlingResponse;
 final class EventHandlingResponseImpl implements EventHandlingResponse {
 
     private final GitHubAppTestingContext testingContext;
+    private final int statusCode;
 
-    EventHandlingResponseImpl(GitHubAppTestingContext testingContext) {
+    EventHandlingResponseImpl(GitHubAppTestingContext testingContext, int statusCode) {
         this.testingContext = testingContext;
+        this.statusCode = statusCode;
+    }
+
+    @Override
+    public int statusCode() {
+        return statusCode;
     }
 
     @Override

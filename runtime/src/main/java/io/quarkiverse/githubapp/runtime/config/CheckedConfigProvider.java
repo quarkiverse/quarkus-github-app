@@ -1,6 +1,8 @@
 package io.quarkiverse.githubapp.runtime.config;
 
 import java.security.PrivateKey;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -36,6 +38,7 @@ public class CheckedConfigProvider {
     private final Optional<PrivateKey> privateKey;
     private final Optional<String> webhookSecret;
     private final String webhookUrlPath;
+    private final List<String> organizations;
 
     private final Set<String> missingPropertyKeys = new TreeSet<>();
 
@@ -71,6 +74,8 @@ public class CheckedConfigProvider {
         if (launchMode == LaunchMode.NORMAL && this.webhookSecret.isEmpty()) {
             missingPropertyKeys.add("quarkus.github-app.webhook-secret (.env: QUARKUS_GITHUB_APP_WEBHOOK_SECRET)");
         }
+        this.organizations = gitHubAppRuntimeConfig.organizations().orElse(List.of()).stream()
+                .map(s -> s.toLowerCase(Locale.ROOT)).toList();
 
         if (launchMode != LaunchMode.TEST) {
             checkConfig();
@@ -121,6 +126,10 @@ public class CheckedConfigProvider {
 
     public String graphqlApiEndpoint() {
         return gitHubAppRuntimeConfig.graphqlApiEndpoint();
+    }
+
+    public List<String> organizations() {
+        return this.organizations;
     }
 
     public Optional<String> personalAccessToken() {

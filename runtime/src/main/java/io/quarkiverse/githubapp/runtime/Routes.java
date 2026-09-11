@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 import java.util.regex.Pattern;
 
 import jakarta.enterprise.event.Event;
@@ -138,6 +139,14 @@ public class Routes {
         String payload = new String(bodyBytes, StandardCharsets.UTF_8);
         JsonObject payloadObject = (JsonObject) Json.decodeValue(payload);
 
+        if (!checkedConfigProvider.organizations().isEmpty()) {
+            String organization = extractOrganization(payloadObject);
+            if (organization == null || !checkedConfigProvider.organizations().contains(organization)) {
+                routingExchange.response().setStatusCode(403).end();
+                return;
+            }
+        }
+
         String action = payloadObject.getString("action");
 
         if (checkedConfigProvider.debug().payloadDirectory().isPresent() && !isBlank(deliveryId)) {
@@ -235,5 +244,18 @@ public class Routes {
         }
 
         return repository.getString("full_name");
+    }
+
+    private static String extractOrganization(JsonObject body) {
+        JsonObject organizationObject = body.getJsonObject("organization");
+        if (organizationObject == null) {
+            return null;
+        }
+
+        String organization = organizationObject.getString("login");
+        if (organization == null) {
+            return null;
+        }
+        return organization.toLowerCase(Locale.ROOT);
     }
 }

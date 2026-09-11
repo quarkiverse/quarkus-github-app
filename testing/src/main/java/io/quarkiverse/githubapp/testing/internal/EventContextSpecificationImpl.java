@@ -27,6 +27,6 @@ public final class EventContextSpecificationImpl implements EventContextSpecific
     @Override
     public <T extends Throwable> EventHandlingResponseImpl when(TestedAction<T> action) throws T {
         action.run();
-        return new EventHandlingResponseImpl(testingContext);
+        return new EventHandlingResponseImpl(testingContext, -1);
     }
 }

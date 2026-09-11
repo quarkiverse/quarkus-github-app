@@ -1,5 +1,9 @@
 {
   "action": "sponsored",
+  "organization": {
+    "login": "test-org",
+    "id": 1
+  },
   "sender": {
     "login": "yrodiere",
     "id": 412878,

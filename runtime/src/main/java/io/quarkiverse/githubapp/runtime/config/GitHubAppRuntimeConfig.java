@@ -1,6 +1,7 @@
 package io.quarkiverse.githubapp.runtime.config;
 
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Optional;
 
 import io.quarkiverse.githubapp.Credentials;
@@ -97,6 +98,7 @@ public interface GitHubAppRuntimeConfig {
      */
     @WithDefault("https://api.github.com")
     @WithConverter(TrimmedStringConverter.class)
+    @SuppressWarnings("unused")
     String instanceEndpoint();
 
     /**
@@ -116,6 +118,13 @@ public interface GitHubAppRuntimeConfig {
     @WithDefault("${quarkus.github-app.instance-endpoint}/graphql")
     @WithConverter(TrimmedStringConverter.class)
     String graphqlApiEndpoint();
+
+    /**
+     * A list of organizations allowed to send events.
+     * <p>
+     * By default, all organizations are authorized.
+     */
+    Optional<List<String>> organizations();
 
     /**
      * A personal access token for use with {@code TokenGitHubClients} or when no installation id is provided in the payload.

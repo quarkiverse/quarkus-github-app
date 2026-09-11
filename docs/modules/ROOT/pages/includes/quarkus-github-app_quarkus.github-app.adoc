@@ -281,6 +281,29 @@ endif::add-copy-button-to-env-var[]
 |string
 |`+++${quarkus.github-app.instance-endpoint}/graphql+++`
 
+a| [[quarkus-github-app_quarkus-github-app-organizations]] [.property-path]##link:#quarkus-github-app_quarkus-github-app-organizations[`+++quarkus.github-app.organizations+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.github-app.organizations+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+A list of organizations allowed to send events.
+
+By default, all organizations are authorized.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_GITHUB_APP_ORGANIZATIONS+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_GITHUB_APP_ORGANIZATIONS+++`
+endif::add-copy-button-to-env-var[]
+--
+|list of string
+|
+
 a| [[quarkus-github-app_quarkus-github-app-personal-access-token]] [.property-path]##link:#quarkus-github-app_quarkus-github-app-personal-access-token[`+++quarkus.github-app.personal-access-token+++`]##
 ifdef::add-copy-button-to-config-props[]
 config_property_copy_button:+++quarkus.github-app.personal-access-token+++[]

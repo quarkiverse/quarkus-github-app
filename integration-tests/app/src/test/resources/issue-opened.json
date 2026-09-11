@@ -140,6 +140,10 @@
     "watchers": 0,
     "default_branch": "main"
   },
+  "organization": {
+    "login": "test-org",
+    "id": 1
+  },
   "sender": {
     "login": "yrodiere",
     "id": 412878,

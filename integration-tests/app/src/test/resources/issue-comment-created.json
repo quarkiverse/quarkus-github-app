@@ -53,6 +53,10 @@
     "html_url": "https://github.com/test/test",
     "url": "https://api.github.com/repos/test/test"
   },
+  "organization": {
+    "login": "test-org",
+    "id": 1
+  },
   "sender": {
     "login": "testuser",
     "id": 1234567
