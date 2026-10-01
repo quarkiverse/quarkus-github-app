@@ -4,6 +4,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
@@ -32,6 +33,13 @@ public final class GitHubAppMockito {
             Iterator<T> actualIterator = List.of(contentMocks).iterator();
             when(iteratorMock.next()).thenAnswer(ignored2 -> actualIterator.next());
             when(iteratorMock.hasNext()).thenAnswer(ignored2 -> actualIterator.hasNext());
+            when(iteratorMock.nextPage()).thenAnswer(ignored2 -> {
+                List<T> page = new ArrayList<>();
+                while (actualIterator.hasNext()) {
+                    page.add(actualIterator.next());
+                }
+                return page;
+            });
             return iteratorMock;
         });
         return iterableMock;
