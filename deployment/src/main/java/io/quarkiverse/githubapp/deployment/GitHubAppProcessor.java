@@ -118,6 +118,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
@@ -175,6 +176,15 @@ class GitHubAppProcessor {
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(FEATURE);
+    }
+
+    @BuildStep
+    void rateLimitThrottleDefaults(LaunchModeBuildItem launchMode,
+            BuildProducer<RunTimeConfigurationDefaultBuildItem> defaults) {
+        if (launchMode.getLaunchMode() == LaunchMode.TEST) {
+            defaults.produce(new RunTimeConfigurationDefaultBuildItem(
+                    "quarkus.github-app.rate-limit.throttle.enabled", "false"));
+        }
     }
 
     @BuildStep

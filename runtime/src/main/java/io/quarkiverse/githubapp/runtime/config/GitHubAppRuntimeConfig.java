@@ -1,6 +1,7 @@
 package io.quarkiverse.githubapp.runtime.config;
 
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 
@@ -154,6 +155,12 @@ public interface GitHubAppRuntimeConfig {
     boolean checkInstallationTokenValidity();
 
     /**
+     * Rate limiting configuration.
+     */
+    @ConfigDocSection
+    RateLimit rateLimit();
+
+    /**
      * Telemetry configuration.
      */
     @ConfigDocSection
@@ -163,6 +170,42 @@ public interface GitHubAppRuntimeConfig {
      * Debug configuration.
      */
     Debug debug();
+
+    @ConfigGroup
+    interface RateLimit {
+
+        /**
+         * Proactive throttling configuration to avoid triggering GitHub's secondary rate limits.
+         */
+        Throttle throttle();
+    }
+
+    @ConfigGroup
+    interface Throttle {
+
+        /**
+         * Whether proactive throttling is enabled.
+         * <p>
+         * Defaults to {@code true} in production and dev mode, {@code false} in tests.
+         */
+        @WithDefault("true")
+        boolean enabled();
+
+        /**
+         * Delay between page fetches when using
+         * {@link io.quarkiverse.githubapp.GitHubApiUtil#toStream(org.kohsuke.github.PagedIterable)}
+         * or {@link io.quarkiverse.githubapp.GitHubApiUtil#sleepForReadThrottling()}.
+         */
+        @WithDefault("0.2s")
+        Duration read();
+
+        /**
+         * Delay between write/delete operations when using
+         * {@link io.quarkiverse.githubapp.GitHubApiUtil#sleepForWriteThrottling()}.
+         */
+        @WithDefault("1s")
+        Duration write();
+    }
 
     @ConfigGroup
     interface Debug {

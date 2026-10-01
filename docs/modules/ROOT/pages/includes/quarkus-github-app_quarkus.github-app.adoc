@@ -520,5 +520,94 @@ endif::add-copy-button-to-env-var[]
 |`+++false+++`
 
 
+h|[[quarkus-github-app_section_quarkus-github-app-rate-limit]] [.section-name.section-level0]##link:#quarkus-github-app_section_quarkus-github-app-rate-limit[Rate limiting configuration]##
+h|Type
+h|Default
+
+a| [[quarkus-github-app_quarkus-github-app-rate-limit-throttle-enabled]] [.property-path]##link:#quarkus-github-app_quarkus-github-app-rate-limit-throttle-enabled[`+++quarkus.github-app.rate-limit.throttle.enabled+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.github-app.rate-limit.throttle.enabled+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Whether proactive throttling is enabled.
+
+Defaults to `true` in production and dev mode, `false` in tests.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_GITHUB_APP_RATE_LIMIT_THROTTLE_ENABLED+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_GITHUB_APP_RATE_LIMIT_THROTTLE_ENABLED+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|`+++true+++`
+
+a| [[quarkus-github-app_quarkus-github-app-rate-limit-throttle-read]] [.property-path]##link:#quarkus-github-app_quarkus-github-app-rate-limit-throttle-read[`+++quarkus.github-app.rate-limit.throttle.read+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.github-app.rate-limit.throttle.read+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Delay between page fetches when using `io.quarkiverse.githubapp.GitHubApiUtil++#++toStream(org.kohsuke.github.PagedIterable)` or `io.quarkiverse.githubapp.GitHubApiUtil++#++sleepForReadThrottling()`.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_GITHUB_APP_RATE_LIMIT_THROTTLE_READ+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_GITHUB_APP_RATE_LIMIT_THROTTLE_READ+++`
+endif::add-copy-button-to-env-var[]
+--
+|link:https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html[Duration] link:#duration-note-anchor-quarkus-github-app_quarkus-github-app[icon:question-circle[title=More information about the Duration format]]
+|`+++0.2S+++`
+
+a| [[quarkus-github-app_quarkus-github-app-rate-limit-throttle-write]] [.property-path]##link:#quarkus-github-app_quarkus-github-app-rate-limit-throttle-write[`+++quarkus.github-app.rate-limit.throttle.write+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.github-app.rate-limit.throttle.write+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Delay between write/delete operations when using `io.quarkiverse.githubapp.GitHubApiUtil++#++sleepForWriteThrottling()`.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_GITHUB_APP_RATE_LIMIT_THROTTLE_WRITE+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_GITHUB_APP_RATE_LIMIT_THROTTLE_WRITE+++`
+endif::add-copy-button-to-env-var[]
+--
+|link:https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html[Duration] link:#duration-note-anchor-quarkus-github-app_quarkus-github-app[icon:question-circle[title=More information about the Duration format]]
+|`+++1S+++`
+
+
 |===
 
+ifndef::no-duration-note[]
+[NOTE]
+[id=duration-note-anchor-quarkus-github-app_quarkus-github-app]
+.About the Duration format
+====
+To write duration values, use the standard `java.time.Duration` format.
+See the link:https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html#parse(java.lang.CharSequence)[Duration#parse() Java API documentation] for more information.
+
+You can also use a simplified format, starting with a number:
+
+* If the value is only a number, it represents time in seconds.
+* If the value is a number followed by `ms`, it represents time in milliseconds.
+
+In other cases, the simplified format is translated to the `java.time.Duration` format for parsing:
+
+* If the value is a number followed by `h`, `m`, or `s`, it is prefixed with `PT`.
+* If the value is a number followed by `d`, it is prefixed with `P`.
+====
+endif::no-duration-note[]
