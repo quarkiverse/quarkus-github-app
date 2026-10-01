@@ -15,6 +15,7 @@ import org.kohsuke.github.PagedIterable;
 import org.kohsuke.github.PagedIterator;
 
 import io.quarkiverse.githubapp.runtime.config.GitHubAppRuntimeConfig;
+import io.quarkus.runtime.LaunchMode;
 
 /**
  * Utilities for proactive throttling of GitHub API calls,
@@ -52,7 +53,7 @@ public final class GitHubApiUtil {
      */
     public static void sleepForReadThrottling() {
         GitHubAppRuntimeConfig config = config();
-        if (config != null && config.rateLimit().throttle().enabled()) {
+        if (config != null && isThrottlingEnabled(config)) {
             sleep(config.rateLimit().throttle().read().toMillis());
         }
     }
@@ -65,9 +66,14 @@ public final class GitHubApiUtil {
      */
     public static void sleepForWriteThrottling() {
         GitHubAppRuntimeConfig config = config();
-        if (config != null && config.rateLimit().throttle().enabled()) {
+        if (config != null && isThrottlingEnabled(config)) {
             sleep(config.rateLimit().throttle().write().toMillis());
         }
+    }
+
+    private static boolean isThrottlingEnabled(GitHubAppRuntimeConfig config) {
+        return config.rateLimit().throttle().enabled()
+                .orElseGet(() -> LaunchMode.current() != LaunchMode.TEST);
     }
 
     private static GitHubAppRuntimeConfig config() {

@@ -545,7 +545,7 @@ Environment variable: `+++QUARKUS_GITHUB_APP_RATE_LIMIT_THROTTLE_ENABLED+++`
 endif::add-copy-button-to-env-var[]
 --
 |boolean
-|`+++true+++`
+|
 
 a| [[quarkus-github-app_quarkus-github-app-rate-limit-throttle-read]] [.property-path]##link:#quarkus-github-app_quarkus-github-app-rate-limit-throttle-read[`+++quarkus.github-app.rate-limit.throttle.read+++`]##
 ifdef::add-copy-button-to-config-props[]

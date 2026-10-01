@@ -207,8 +207,7 @@ public interface GitHubAppRuntimeConfig {
          * <p>
          * Defaults to {@code true} in production and dev mode, {@code false} in tests.
          */
-        @WithDefault("true")
-        boolean enabled();
+        Optional<Boolean> enabled();
 
         /**
          * Delay between page fetches when using
