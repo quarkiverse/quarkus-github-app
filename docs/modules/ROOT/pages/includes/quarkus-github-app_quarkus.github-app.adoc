@@ -589,6 +589,29 @@ endif::add-copy-button-to-env-var[]
 |link:https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html[Duration] link:#duration-note-anchor-quarkus-github-app_quarkus-github-app[icon:question-circle[title=More information about the Duration format]]
 |`+++1S+++`
 
+a| [[quarkus-github-app_quarkus-github-app-rate-limit-retry-max-attempts]] [.property-path]##link:#quarkus-github-app_quarkus-github-app-rate-limit-retry-max-attempts[`+++quarkus.github-app.rate-limit.retry.max-attempts+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.github-app.rate-limit.retry.max-attempts+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Maximum number of retry attempts when a GitHub API call is denied due to a secondary rate limit.
+
+Maps to the hub4j/github-api retry count. If not set, the default from hub4j/github-api applies (2 retries).
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_GITHUB_APP_RATE_LIMIT_RETRY_MAX_ATTEMPTS+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_GITHUB_APP_RATE_LIMIT_RETRY_MAX_ATTEMPTS+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|
+
 
 |===
 

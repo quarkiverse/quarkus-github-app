@@ -509,14 +509,21 @@ quarkus.github-app.rate-limit.throttle.read=0.2s
 quarkus.github-app.rate-limit.throttle.write=1s
 ----
 
+=== Retry on rate limit
+
+When a GitHub API call is denied due to a secondary rate limit,
+hub4j/github-api automatically retries with appropriate backoff.
+You can control the maximum number of retry attempts:
+
+[source,properties]
+----
+# Maximum retry attempts on secondary rate limit (default: 2, from hub4j/github-api)
+quarkus.github-app.rate-limit.retry.max-attempts=3
+----
+
 [NOTE]
 ====
 Throttling is automatically disabled in tests to avoid slowing down test suites.
-
-These utilities handle *proactive* throttling — slowing down requests to avoid hitting limits.
-For *reactive* retry when limits are hit, hub4j/github-api handles that automatically at the HTTP level
-(detecting secondary rate limits and retrying with appropriate backoff).
-The retry count can be adjusted via the system property `org.kohsuke.github.GitHubClient.retryCount` (default: 2).
 ====
 
 == Configuration Reference

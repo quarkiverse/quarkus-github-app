@@ -188,6 +188,12 @@ class GitHubAppProcessor {
     }
 
     @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void configureRetry(GitHubAppRecorder recorder) {
+        recorder.configureRetry();
+    }
+
+    @BuildStep
     AdditionalIndexedClassesBuildItem additionalIndexedClasses() {
         return new AdditionalIndexedClassesBuildItem(GitHubEvent.class.getName(),
                 ReplayEvent.class.getName(),
