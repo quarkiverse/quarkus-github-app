@@ -1,3 +1,5 @@
+_extends: runs-on-config
+
 runners:
   linux:
     family: ["m6a.xlarge"]
