@@ -1,5 +1,7 @@
 package io.quarkiverse.githubapp.runtime.telemetry.opentelemetry;
 
+import jakarta.annotation.Priority;
+import jakarta.enterprise.inject.Reserve;
 import jakarta.inject.Singleton;
 
 import io.opentelemetry.api.common.Attributes;
@@ -10,10 +12,10 @@ import io.quarkiverse.githubapp.GitHubEvent;
 import io.quarkiverse.githubapp.runtime.config.CheckedConfigProvider;
 import io.quarkiverse.githubapp.telemetry.CommandErrorType;
 import io.quarkiverse.githubapp.telemetry.TelemetryMetricsReporter;
-import io.quarkus.arc.DefaultBean;
 
 @Singleton
-@DefaultBean
+@Reserve
+@Priority(0)
 public class OpenTelemetryMetricsReporter implements TelemetryMetricsReporter {
 
     private final LongCounter gitHubEventCounter;

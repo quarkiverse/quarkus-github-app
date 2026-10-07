@@ -14,9 +14,8 @@ import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Qualifier;
 import jakarta.inject.Singleton;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 
 @Singleton
 public class UtilsProducer {
@@ -24,10 +23,10 @@ public class UtilsProducer {
     @Produces
     @Singleton
     @Yaml
-    public ObjectMapper yamlObjectMapper() {
-        ObjectMapper yamlObjectMapper = new ObjectMapper(new YAMLFactory());
-        yamlObjectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
-        return yamlObjectMapper;
+    public YAMLMapper yamlObjectMapper() {
+        return YAMLMapper.builder()
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .build();
     }
 
     @Target({ METHOD, FIELD, PARAMETER, TYPE })

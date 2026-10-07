@@ -4,7 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Reserve;
 import jakarta.inject.Inject;
 
 import org.jboss.logging.Logger;
@@ -15,11 +17,11 @@ import io.quarkiverse.githubapp.GitHubEvent;
 import io.quarkiverse.githubapp.error.ErrorHandler;
 import io.quarkiverse.githubapp.runtime.github.GitHubServiceDownException;
 import io.quarkiverse.githubapp.runtime.github.PayloadHelper;
-import io.quarkus.arc.DefaultBean;
 import io.quarkus.runtime.LaunchMode;
 
 @ApplicationScoped
-@DefaultBean
+@Reserve
+@Priority(0)
 public class DefaultErrorHandler implements ErrorHandler {
 
     private static final Logger LOG = Logger.getLogger(GitHubEvent.class.getPackageName());

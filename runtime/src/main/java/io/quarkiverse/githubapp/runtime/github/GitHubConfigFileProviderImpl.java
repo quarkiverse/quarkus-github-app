@@ -12,12 +12,12 @@ import jakarta.inject.Inject;
 
 import org.kohsuke.github.GHRepository;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.quarkiverse.githubapp.ConfigFile;
 import io.quarkiverse.githubapp.GitHubConfigFileProvider;
 import io.quarkiverse.githubapp.runtime.UtilsProducer;
 import io.quarkiverse.githubapp.runtime.config.CheckedConfigProvider;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 @ApplicationScoped
 public class GitHubConfigFileProviderImpl implements GitHubConfigFileProvider {
@@ -37,7 +37,7 @@ public class GitHubConfigFileProviderImpl implements GitHubConfigFileProvider {
     GitHubFileDownloader gitHubFileDownloader;
 
     @Inject
-    ObjectMapper jsonObjectMapper;
+    JsonMapper jsonObjectMapper;
 
     @Inject
     @UtilsProducer.Yaml

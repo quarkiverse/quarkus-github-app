@@ -10,7 +10,7 @@
     </parent>
 
     <artifactId>quarkus-github-app-docs-rag</artifactId>
-    <name>Documentation RAG</name>
+    <name>Quarkus - GitHub App - Documentation RAG</name>
     <description>RAG vector embeddings for documentation</description>
 
     <properties>
@@ -22,6 +22,7 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-extension-maven-plugin</artifactId>
+                <version>${quarkus.version}</version>
                 <executions>
                     <execution>
                         <id>generate-extension-descriptor</id>
