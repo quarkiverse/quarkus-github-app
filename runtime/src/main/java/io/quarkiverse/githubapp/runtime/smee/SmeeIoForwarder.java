@@ -17,9 +17,6 @@ import jakarta.inject.Inject;
 
 import org.jboss.logging.Logger;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.quarkiverse.githubapp.runtime.config.CheckedConfigProvider;
 import io.quarkiverse.githubapp.runtime.sse.EventStreamListener;
 import io.quarkiverse.githubapp.runtime.sse.HttpEventStreamClient;
@@ -27,6 +24,8 @@ import io.quarkiverse.githubapp.runtime.sse.HttpEventStreamClient.Event;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.Startup;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 @ApplicationScoped
 @Startup
@@ -41,7 +40,7 @@ public class SmeeIoForwarder {
 
     @Inject
     SmeeIoForwarder(CheckedConfigProvider checkedConfigProvider, VertxHttpConfig vertxHttpConfig,
-            ObjectMapper objectMapper) {
+            JsonMapper objectMapper) {
         if (checkedConfigProvider.webhookProxyUrl().isEmpty()) {
             this.replayEventStreamAdapter = null;
             this.eventStreamClient = null;
@@ -74,12 +73,12 @@ public class SmeeIoForwarder {
 
         private final String proxyUrl;
         private final URI localUrl;
-        private final ObjectMapper objectMapper;
+        private final JsonMapper objectMapper;
         private final HttpClient forwardingHttpClient;
 
         private volatile boolean stopped = false;
 
-        private ReplayEventStreamAdapter(String proxyUrl, URI localUrl, ObjectMapper objectMapper) {
+        private ReplayEventStreamAdapter(String proxyUrl, URI localUrl, JsonMapper objectMapper) {
             this.proxyUrl = proxyUrl;
             this.localUrl = localUrl;
             this.objectMapper = objectMapper;
@@ -117,8 +116,8 @@ public class SmeeIoForwarder {
 
                     for (String forwardedHeader : FORWARDED_HEADERS) {
                         JsonNode headerValue = rootNode.get(forwardedHeader.toLowerCase(Locale.ROOT));
-                        if (headerValue != null && headerValue.isTextual()) {
-                            requestBuilder.header(forwardedHeader, headerValue.textValue());
+                        if (headerValue != null && headerValue.isString()) {
+                            requestBuilder.header(forwardedHeader, headerValue.stringValue());
                         }
                     }
 

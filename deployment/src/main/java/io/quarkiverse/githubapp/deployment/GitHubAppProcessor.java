@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.event.Event;
@@ -117,6 +118,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -323,6 +325,7 @@ class GitHubAppProcessor {
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<GeneratedResourceBuildItem> generatedResources,
+            BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer) {
         List<IndexView> indexes = new ArrayList<>();
@@ -345,7 +348,9 @@ class GitHubAppProcessor {
         DispatchingConfiguration dispatchingConfiguration = getDispatchingConfiguration(
                 index, allEventDefinitions);
 
-        ClassOutput classOutput = new GeneratedClassGizmo2Adaptor(generatedClasses, generatedResources, true);
+        ClassOutput classOutput = new GeneratedClassGizmo2Adaptor(generatedClasses, generatedResources,
+                generatedServiceProviders,
+                (Predicate<String>) name -> true);
         generateAnnotationLiterals(classOutput, dispatchingConfiguration);
 
         ClassOutput beanClassOutput = new GeneratedBeanGizmo2Adaptor(generatedBeans);

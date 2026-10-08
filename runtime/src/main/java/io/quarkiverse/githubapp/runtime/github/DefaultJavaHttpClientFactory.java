@@ -2,12 +2,13 @@ package io.quarkiverse.githubapp.runtime.github;
 
 import java.net.http.HttpClient;
 
+import jakarta.annotation.Priority;
 import jakarta.enterprise.context.Dependent;
-
-import io.quarkus.arc.DefaultBean;
+import jakarta.enterprise.inject.Reserve;
 
 @Dependent
-@DefaultBean
+@Reserve
+@Priority(0)
 public class DefaultJavaHttpClientFactory extends AbstractJavaHttpClientFactory {
 
     @Override

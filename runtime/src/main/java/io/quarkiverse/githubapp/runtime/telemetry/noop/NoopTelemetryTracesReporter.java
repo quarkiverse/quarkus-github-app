@@ -1,5 +1,7 @@
 package io.quarkiverse.githubapp.runtime.telemetry.noop;
 
+import jakarta.annotation.Priority;
+import jakarta.enterprise.inject.Reserve;
 import jakarta.inject.Singleton;
 
 import io.quarkiverse.githubapp.GitHubEvent;
@@ -7,10 +9,10 @@ import io.quarkiverse.githubapp.telemetry.CommandErrorType;
 import io.quarkiverse.githubapp.telemetry.TelemetryScopeWrapper;
 import io.quarkiverse.githubapp.telemetry.TelemetrySpanWrapper;
 import io.quarkiverse.githubapp.telemetry.TelemetryTracesReporter;
-import io.quarkus.arc.DefaultBean;
 
 @Singleton
-@DefaultBean
+@Reserve
+@Priority(0)
 public class NoopTelemetryTracesReporter implements TelemetryTracesReporter {
 
     @Override
