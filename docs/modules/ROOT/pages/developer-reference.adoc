@@ -455,6 +455,77 @@ A GitHub App relies on two types of GitHub clients:
 - The installation client: it is created specifically for an installation of the application (i.e. it is tied where the application is installed) and it is the client you consume in your GitHub App code. It has the permissions you defined for your GitHub App.
 ====
 
+== Avoiding secondary rate limits
+
+GitHub imposes https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api#about-secondary-rate-limits[secondary rate limits] based on request frequency, regardless of your primary rate limit quota.
+These are particularly easy to hit when iterating over paginated results or performing bulk mutations.
+
+The `GitHubApiUtil` class provides proactive throttling utilities to avoid triggering these limits.
+
+=== Paginated results
+
+Use `GitHubApiUtil.toStream()` to iterate over paginated GitHub API results with automatic throttling between page fetches:
+
+[source,java]
+----
+import io.quarkiverse.githubapp.GitHubApiUtil;
+
+class IssueProcessor {
+
+    void onOpen(@Issue.Opened GHEventPayload.Issue issuePayload, GitHub gitHub) throws IOException {
+        GHRepository repo = issuePayload.getRepository();
+        GitHubApiUtil.toStream(repo.listIssues(GHIssueState.OPEN))
+                .filter(issue -> issue.getLabels().isEmpty())
+                .forEach(issue -> {
+                    // process issue
+                });
+    }
+}
+----
+
+=== Write operations
+
+Call `GitHubApiUtil.sleepForWriteThrottling()` between write operations:
+
+[source,java]
+----
+for (GHIssueComment comment : commentsToDelete) {
+    comment.delete();
+    GitHubApiUtil.sleepForWriteThrottling();
+}
+----
+
+=== Configuration
+
+[source,properties]
+----
+# Enable/disable throttling (default: true in prod/dev, false in tests)
+quarkus.github-app.rate-limit.throttle.enabled=true
+
+# Delay between page fetches during pagination (default: 200ms)
+quarkus.github-app.rate-limit.throttle.read=0.2s
+
+# Delay between write/delete operations (default: 1s)
+quarkus.github-app.rate-limit.throttle.write=1s
+----
+
+[NOTE]
+====
+Throttling is automatically disabled in tests to avoid slowing down test suites.
+====
+
+=== Retry on rate limit
+
+When a GitHub API call is denied due to a secondary rate limit,
+hub4j/github-api automatically retries with appropriate backoff.
+You can control the maximum number of retry attempts:
+
+[source,properties]
+----
+# Maximum retry attempts on secondary rate limit (default: 2, from hub4j/github-api)
+quarkus.github-app.rate-limit.retry.max-attempts=3
+----
+
 == Configuration Reference
 
 The Quarkus GitHub App extension exposes the following configuration properties:

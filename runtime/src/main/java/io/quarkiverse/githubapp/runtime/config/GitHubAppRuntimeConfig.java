@@ -1,8 +1,10 @@
 package io.quarkiverse.githubapp.runtime.config;
 
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import io.quarkiverse.githubapp.Credentials;
 import io.quarkus.runtime.annotations.ConfigDocSection;
@@ -154,6 +156,12 @@ public interface GitHubAppRuntimeConfig {
     boolean checkInstallationTokenValidity();
 
     /**
+     * Rate limiting configuration.
+     */
+    @ConfigDocSection
+    RateLimit rateLimit();
+
+    /**
      * Telemetry configuration.
      */
     @ConfigDocSection
@@ -163,6 +171,59 @@ public interface GitHubAppRuntimeConfig {
      * Debug configuration.
      */
     Debug debug();
+
+    @ConfigGroup
+    interface RateLimit {
+
+        /**
+         * Proactive throttling configuration to avoid triggering GitHub's secondary rate limits.
+         */
+        Throttle throttle();
+
+        /**
+         * Retry configuration for GitHub API calls that fail due to secondary rate limits
+         * or other transient errors.
+         */
+        Retry retry();
+    }
+
+    @ConfigGroup
+    interface Retry {
+
+        /**
+         * Maximum number of retry attempts when a GitHub API call is denied due to a secondary rate limit.
+         * <p>
+         * Maps to the hub4j/github-api retry count.
+         * If not set, the default from hub4j/github-api applies (2 retries).
+         */
+        OptionalInt maxAttempts();
+    }
+
+    @ConfigGroup
+    interface Throttle {
+
+        /**
+         * Whether proactive throttling is enabled.
+         * <p>
+         * Defaults to {@code true} in production and dev mode, {@code false} in tests.
+         */
+        Optional<Boolean> enabled();
+
+        /**
+         * Delay between page fetches when using
+         * {@link io.quarkiverse.githubapp.GitHubApiUtil#toStream(org.kohsuke.github.PagedIterable)}
+         * or {@link io.quarkiverse.githubapp.GitHubApiUtil#sleepForReadThrottling()}.
+         */
+        @WithDefault("0.2s")
+        Duration read();
+
+        /**
+         * Delay between write/delete operations when using
+         * {@link io.quarkiverse.githubapp.GitHubApiUtil#sleepForWriteThrottling()}.
+         */
+        @WithDefault("1s")
+        Duration write();
+    }
 
     @ConfigGroup
     interface Debug {
