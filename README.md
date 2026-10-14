@@ -46,7 +46,10 @@ Finally, it comes with a nice and searchable Replay UI:
 
 ## Compatibility
 
-Quarkus GitHub App 2.x is compatible with Quarkus 3.x.
+| Quarkus GitHub App | Quarkus | Java |
+| --- | --- | --- |
+| 2.x | 3.x | 17+ |
+| 3.x | 4.x | 21+ |
 
 We recommend using the latest versions of both for the best experience.
 
