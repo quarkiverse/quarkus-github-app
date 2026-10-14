@@ -24,7 +24,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: runs-on=${{ github.run_id }}-${{ matrix.java.version }}/runner=linux
 
     strategy:
       fail-fast: false
@@ -38,6 +38,8 @@ jobs:
           }
 
     steps:
+    - uses: runs-on/action@v2
+
     - uses: actions/checkout@v7
 
     - name: Set up JDK ${{ matrix.java.version }}
