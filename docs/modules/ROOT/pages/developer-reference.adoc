@@ -455,6 +455,13 @@ A GitHub App relies on two types of GitHub clients:
 - The installation client: it is created specifically for an installation of the application (i.e. it is tied where the application is installed) and it is the client you consume in your GitHub App code. It has the permissions you defined for your GitHub App.
 ====
 
+== Avoiding secondary rate limits
+
+The Quarkus GitHub API extension (`quarkus-github-api`) provides utilities for proactive throttling and retry of GitHub API calls,
+to avoid triggering https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api#about-secondary-rate-limits[GitHub's secondary rate limits].
+
+See the https://docs.quarkiverse.io/quarkus-github-api/dev/rate-limiting.html[Quarkus GitHub API documentation] for usage and configuration details.
+
 == Configuration Reference
 
 The Quarkus GitHub App extension exposes the following configuration properties:
