@@ -11,7 +11,7 @@ metadata:
   - "airline"
   guide: "https://quarkiverse.github.io/quarkiverse-docs/quarkus-github-app/dev/index.html"
   categories:
-    - "business-automation"
+    - "automation"
   status: "stable"
   config:
     - "quarkus.github-app."
